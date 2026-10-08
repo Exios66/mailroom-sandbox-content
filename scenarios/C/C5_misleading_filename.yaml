@@ -12,7 +12,7 @@ timeline:
       channel: email
       claimed_from: sfield@prairielabs.sandbox.invalid
     attach:
-      - {class: contract, stratum: revenue_profit_sharing}
+      - {class: contract, stratum: reseller}
 expect:
   intent: document_submission
   signals:

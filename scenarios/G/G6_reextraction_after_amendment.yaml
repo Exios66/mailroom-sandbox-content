@@ -16,7 +16,7 @@ timeline:
       auth: {spf: pass, dkim: pass, dmarc: pass}
       gen_spec: gen_g6_reextraction_0606
     attach:
-      - {class: contract, stratum: agreement_date}
+      - {class: contract, stratum: consulting}
 expect:
   intent: correction_or_amendment
   signals:

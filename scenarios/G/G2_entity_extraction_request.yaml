@@ -17,7 +17,7 @@ timeline:
       gen_spec: gen_g2_entity_extraction_0602
       template: g_entity_answer.j2
     attach:
-      - {class: contract, stratum: effective_date}
+      - {class: contract, stratum: license}
 expect:
   intent: general_question
   signals:

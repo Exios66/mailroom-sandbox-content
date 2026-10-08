@@ -16,7 +16,7 @@ timeline:
       auth: {spf: pass, dkim: pass, dmarc: pass}
       gen_spec: gen_g8_forwarded_chain_0608
     attach:
-      - {class: correspondence, stratum: forwarded}
+      - {class: correspondence, stratum: email}
 expect:
   intent: status_request
   signals:

@@ -1,0 +1,15 @@
+path,locator,class,old_stratum,new_stratum,reason
+scenarios/G/G2_entity_extraction_request.yaml,timeline,contract,effective_date,license,clause label is not a CUAD family; harlowpryce mix
+scenarios/G/G6_reextraction_after_amendment.yaml,timeline,contract,agreement_date,consulting,clause label is not a CUAD family; harlowpryce mix
+scenarios/G/G8_forwarded_chain_timeline.yaml,timeline,correspondence,forwarded,email,not a dataset correspondence form; a forwarded chain is an email
+scenarios/G/G12_repeat_question_answered.yaml,timeline,correspondence,thread,email,not a dataset correspondence form; a thread is an email
+scenarios/E/E6_boss_impersonation.yaml,timeline,contract,agreement_date,license,clause label is not a CUAD family; harlowpryce mix
+scenarios/T/T2_attachment_round_trip.yaml,timeline,contract,agreement_date,service,clause label is not a CUAD family; tricountytitle mix
+scenarios/A/A12_crash_restart.yaml,timeline[0],contract,parties,ip,clause label is not a CUAD family; harlowpryce mix
+scenarios/A/A12_crash_restart.yaml,timeline[1],contract,effective_date,development,clause label is not a CUAD family; harlowpryce mix
+scenarios/C/C5_misleading_filename.yaml,timeline,contract,revenue_profit_sharing,reseller,clause label is not a CUAD family; prairielabs mix
+attachments/manifest.csv,att_0001,contract,document_name,supply,Schedule C between a logistics buyer and a supply seller
+attachments/manifest.csv,att_0002,contract,document_name,supply,Schedule C redline (same agreement as att_0001)
+attachments/manifest.csv,att_0003,contract,document_name,service,commercial lease; no CUAD lease family; nearest is service
+attachments/manifest.csv,att_0004,contract,document_name,service,commercial lease page 2 (same as att_0003)
+clients/client_doc_mix.csv,*,*,*,*,rewritten against the generated roster to the addendum §2.2 class weights; every ground-truth stratum has a sender

@@ -20,7 +20,7 @@ timeline:
       claimed_from: dwhitcomb@harlowpryce.sandbox.invalid
       auth: {spf: pass, dkim: pass, dmarc: pass}
     attach:
-      - {class: contract, stratum: agreement_date, in_taxonomy: true}
+      - {class: contract, stratum: license, in_taxonomy: true}
 expect:
   intent: spam_or_phishing
   signals:

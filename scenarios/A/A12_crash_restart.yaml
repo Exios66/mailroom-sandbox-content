@@ -12,7 +12,7 @@ timeline:
       channel: email
       claimed_from: dwhitcomb@harlowpryce.sandbox.invalid
     attach:
-      - {class: contract, stratum: parties}
+      - {class: contract, stratum: ip}
   - at: 00:06
     fault: crash_mid_triage
   - at: 00:09
@@ -21,7 +21,7 @@ timeline:
       channel: email
       claimed_from: dwhitcomb@harlowpryce.sandbox.invalid
     attach:
-      - {class: contract, stratum: effective_date}
+      - {class: contract, stratum: development}
 expect:
   intent: document_submission
   signals:

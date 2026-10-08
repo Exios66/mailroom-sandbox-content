@@ -16,7 +16,7 @@ timeline:
     attach:
       - {class: corporate_record, stratum: officer_certificate, in_taxonomy: 
           true}
-      - {class: contract, stratum: agreement_date, in_taxonomy: true}
+      - {class: contract, stratum: service, in_taxonomy: true}
 expect:
   intent: document_submission
   signals:

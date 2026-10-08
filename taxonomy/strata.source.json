@@ -1,0 +1,9 @@
+{
+  "commit": "048d668eb7600b2441bc2eb5ff6b1110d761c789",
+  "files": {
+    "src/mailroom_reloaded/scoring/config.py": "3ef62e7eb87970d167c3e050bb951b9cb8a33b4c4feac2ac5c302252ab301733",
+    "src/mailroom_reloaded/scoring/corpus.py": "b5ec80a51e63a33db6e1dd9cb3e543ea92ce6d2b42589cecb7d704c427474479"
+  },
+  "ref": "v0.2.0",
+  "repo": "Exios66/mailroom-reloaded"
+}

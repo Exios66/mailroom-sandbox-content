@@ -16,7 +16,7 @@ timeline:
       auth: {spf: pass, dkim: pass, dmarc: pass}
       gen_spec: gen_g12_repeat_question_0612
     attach:
-      - {class: correspondence, stratum: thread}
+      - {class: correspondence, stratum: email}
 expect:
   intent: duplicate_submission
   signals:
