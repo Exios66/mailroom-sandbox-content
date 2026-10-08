@@ -1,0 +1,27 @@
+# Generation spec: thread hijack, long legitimate history, then a pivot to bank details (addendum v2 §6.3)
+# Archetype E7: possible_attack despite thread continuity.
+id: gen_E7_thread_hijack_0101
+persona: p_tricounty_impostor
+target_client: tricountytitle
+archetype: E7
+attack_class: payment_fraud
+goal: Pivot a long, legitimate-looking thread to new bank details mid-conversation.
+constraints:
+  must_include: [thread_continuity_reference, bank_detail_pivot, casual_tone_shift]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: casual
+  length: "100-150 words"
+  language: en
+context:
+  matter_ref: TC-2026-1155
+  original_subject: "Re: closing checklist"
+  thread_depth: 6
+attachments: []
+pool: free_pool
+expect:
+  intent: payment_or_identity_change
+  signal: possible_attack
+  attack_class: payment_fraud
+  quarantine: false
+  reply_to_sender: false

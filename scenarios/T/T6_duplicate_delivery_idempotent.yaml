@@ -1,0 +1,21 @@
+name: T6_duplicate_delivery_idempotent
+seed: 2406
+profile: demo
+gen: scripted
+transports: [agentmail]
+title: "Duplicate delivery handled idempotently on the real transport"
+tags: [transport-conformance, real-mail, idempotency, assert-one-message-processed]
+timeline:
+  - at: 00:02
+    client:
+      persona: p_tricounty_real
+      channel: email
+      claimed_from: kalvarado@tricountytitle.sandbox.invalid
+      auth: {spf: pass, dkim: pass, dmarc: pass}
+    fault: duplicate_delivery
+expect:
+  intent: general_question
+  signals:
+    - {kind: new_info, priority: normal, within: 00:02}
+  outbox: []
+  invariants: [audit_chain_ok, no_stuck_docs, comms_offpath]

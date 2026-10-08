@@ -1,0 +1,26 @@
+# Generation spec: genuine regulator or court notice that resembles E8 (addendum v2 §6.3)
+# Archetype F3: critical and reported, never dropped.
+id: gen_F3_regulator_notice_0225
+persona: p_stateca_regulator
+target_client: stateca
+archetype: F3
+goal: Deliver a genuine regulator notice carrying a response window.
+constraints:
+  must_include: [regulatory_citation, response_deadline, preservation_instruction]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: formal
+  length: "120-180 words"
+  language: en
+context:
+  notice_ref: CA-DOI-2026-0917
+  response_window_days: 20
+  respondent: Okafor Freight Lines
+attachments:
+  - notice_2026_0917_inert.pdf
+pool: free_pool
+expect:
+  intent: legal_notice
+  signal: legal_notice
+  quarantine: false
+  reply_to_sender: false

@@ -1,0 +1,24 @@
+# Generation spec: landlord re-asks a question answered last week (series G)
+# Archetype G12: production-adjacent repeat question; duplicate detected, no new draft.
+id: gen_g12_repeat_question_0612
+persona: p_brightwater_pm
+target_client: brightwater
+archetype: G12
+goal: Write an informal message from a property manager re-asking a question about the lease renewal that was already answered last week.
+constraints:
+  must_include: [repeated_question, informal_register]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: informal
+  length: "60-110 words"
+  language: en
+context:
+  document_title: lease renewal
+  sender_display_name: T. Reyes
+  claimed_from: treyes@brightwaterpg.sandbox.invalid
+pool: free_pool
+expect:
+  intent: duplicate_submission
+  signal: fyi
+  quarantine: false
+  reply_to_sender: false

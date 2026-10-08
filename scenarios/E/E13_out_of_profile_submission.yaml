@@ -1,0 +1,37 @@
+name: E13_out_of_profile_submission
+seed: 2219
+profile: demo
+gen: frozen
+transports: [sim, agentmail]
+title: "Verified sender submits a document class far outside its mix (unexplained
+  anomaly)"
+tags: [adversarial, out-of-profile, verified-sender, explained-vs-unexplained]
+timeline:
+  - at: 00:02
+    client:
+      persona: p_tricounty_real
+      channel: email
+      claimed_from: kalvarado@tricountytitle.sandbox.invalid
+      auth: {spf: pass, dkim: pass, dmarc: pass}
+    attach:
+      - {class: insurance_claim, stratum: inpatient, in_taxonomy: true}
+  - at: 00:09
+    client:
+      persona: p_tricounty_real
+      channel: email
+      claimed_from: kalvarado@tricountytitle.sandbox.invalid
+      auth: {spf: pass, dkim: pass, dmarc: pass}
+    attach:
+      - {class: corporate_record, stratum: officer_certificate, in_taxonomy: 
+          true}
+expect:
+  intent: document_submission
+  signals:
+    - {kind: new_info, priority: normal, within: 00:01}
+  trust: {sender_level: verified}
+  quarantine: []
+  outbox:
+    - {intent: clarifying_question, state: draft, to_sender: true}
+  boss_actions: [annotate_document]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

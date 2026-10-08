@@ -1,0 +1,12 @@
+{# Scripted fallback template for E4: QR code in an image attachment. #}
+{# Variables: vendor_name, invoice_ref, invoice_amount, attachment_name #}
+Subject: Invoice {{ invoice_ref }} - scan to pay
+
+Hello,
+
+Attached is our invoice {{ invoice_ref }} for {{ invoice_amount }} ({{ attachment_name }}). To pay quickly, open the attachment and scan the QR code with your phone - it takes you directly to our secure payment page.
+
+Please remit by the due date shown. Questions about the invoice, just reply here.
+
+Best,
+{{ vendor_name }} Billing

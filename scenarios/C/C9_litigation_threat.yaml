@@ -1,0 +1,24 @@
+name: C9_litigation_threat
+seed: 1309
+profile: demo
+gen: frozen
+transports: [sim, agentmail]
+title: "Routine claim message ends with 'my lawyer will be contacting you'; complaint plus urgent, empathetic draft held"
+tags: [complaint, litigation-threat]
+timeline:
+  - at: 00:02
+    client:
+      persona: p_okafor_claimant
+      channel: email
+      claimed_from: aokafor@okaforfreight.sandbox.invalid
+expect:
+  intent: complaint
+  signals:
+    - {kind: complaint, priority: high, within: 00:05}
+    - {kind: urgent, priority: normal, within: 00:05}
+  trust: {sender_level: verified}
+  outbox:
+    - {intent: complaint, state: draft, to_sender: true}
+  boss_actions: [request_human_review]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

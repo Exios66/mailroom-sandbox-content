@@ -1,0 +1,26 @@
+# Generation spec: cover note conditioned on class and stratum, insurance_claim class (addendum v2 §6.1, §6.3)
+id: gen_cover_claim_0507
+persona: p_cedarridge_adjuster
+target_client: cedarridge
+archetype: cover_claim
+goal: Write a terse cover note submitting an insurance-claim document, conditioned on its line.
+constraints:
+  must_include: [class_label, stratum_label, submission_purpose]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: terse
+  length: "40-80 words"
+  language: en
+context:
+  class: insurance_claim
+  stratum: property
+  claim_ref: CR-2026-7714
+  sender_name: R. Sandoval
+attachments:
+  - property_claim_packet.pdf
+pool: free_pool
+expect:
+  intent: document_submission
+  signal: new_info
+  quarantine: false
+  reply_to_sender: false

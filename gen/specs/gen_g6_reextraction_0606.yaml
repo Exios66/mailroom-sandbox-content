@@ -1,0 +1,26 @@
+# Generation spec: counsel asks to re-run extraction for key dates after an amendment (series G)
+# Archetype G6: production-adjacent re-extraction request; a human decides whether to reprocess.
+id: gen_g6_reextraction_0606
+persona: p_harlow_counsel
+target_client: harlowpryce
+archetype: G6
+goal: Write a formal request from outside counsel asking the recipient to re-run extraction for the key dates in a services agreement after an amendment landed.
+constraints:
+  must_include: [matter_reference, amendment_reference, fields_to_reextract]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: formal
+  length: "90-140 words"
+  language: en
+context:
+  matter_ref: HP-2026-0522
+  document_title: services agreement
+  fields: [agreement_date, effective_date, expiration_date]
+  sender_display_name: D. Whitcomb
+  claimed_from: dwhitcomb@harlowpryce.sandbox.invalid
+pool: free_pool
+expect:
+  intent: correction_or_amendment
+  signal: new_info
+  quarantine: false
+  reply_to_sender: false

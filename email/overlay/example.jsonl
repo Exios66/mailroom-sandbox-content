@@ -1,0 +1,6 @@
+{"v":1,"kind":"message","provider_message_id":"msg_01","from":"kalvarado@tricounty-title.sandbox.invalid","display":"Kendra Alvarado","auth":{"spf":"fail","dkim":"none","dmarc":"fail"}}
+{"v":1,"kind":"route","virtual":"kdavis@harlowpryce.sandbox.invalid","inbox":"sender-a@agentmail.to"}
+{"v":1,"kind":"route","virtual":"dwhitcomb@harlowpryce.sandbox.invalid","inbox":"sender-a@agentmail.to"}
+{"v":1,"kind":"route","virtual":"tomas.reyes.personal@mailbox.sandbox.invalid","inbox":"sender-a@agentmail.to"}
+{"v":1,"kind":"route","virtual":"hello@claimsboost-ai.sandbox.invalid","inbox":"sender-b@agentmail.to"}
+{"v":1,"kind":"message","provider_message_id":"msg_02","from":"tomas.reyes.personal@mailbox.sandbox.invalid","display":"Tomas Reyes","auth":{"spf":"pass","dkim":"pass","dmarc":"pass"}}

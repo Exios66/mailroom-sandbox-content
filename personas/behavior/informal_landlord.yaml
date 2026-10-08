@@ -1,0 +1,26 @@
+persona_id: p_brightwater_pm
+tone: informal
+register: casual and chatty; short emails typed on a phone, apologies for scan quality, generic filenames
+escalation:
+  patience_sim_min: 300
+  steps:
+    - after_sim_min: 300
+      action: casual_nudge
+    - after_sim_min: 600
+      action: resends_as_phone_photo
+    - after_sim_min: 1200
+      action: goes_quiet
+attachment_habits:
+  formats: [pdf, jpg, heic]
+  naming: phone_photo_scans
+  fragmentation: whole
+notes: >
+  Property manager at Brightwater Property Group. Sends phone-photo scans
+  with generic filenames (IMG_0042.jpg, scan.pdf) and skewed pages; the
+  simulator's OCR and off-taxonomy handling get exercised on certificates
+  of insurance and lease documents. Long patience; nudges are casual and
+  often apologize. Never uses templated names.
+reply_templates:
+  - "Subject: insurance cert — hi, snapped a pic of the new certificate, attached. sorry about the angle lol"
+  - "Subject: Re: insurance cert — re-sending the photo, let me know if this one reads better"
+  - "Subject: lease renewal docs — sending the renewal paperwork for unit 4C, it's all in the one scan"

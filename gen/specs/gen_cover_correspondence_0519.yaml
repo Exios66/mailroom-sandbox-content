@@ -1,0 +1,28 @@
+# Generation spec: cover note conditioned on class and stratum, correspondence class (addendum v2 §6.1, §6.3, §6.5)
+# §6.5: nothing derived from the correspondence class may enter a prompt.
+# This cover note may name the class/stratum labels only; correspondence text is forbidden.
+id: gen_cover_correspondence_0519
+persona: p_harlow_counsel
+target_client: harlowpryce
+archetype: cover_correspondence
+goal: Write a formal cover note for a correspondence-class submission, naming only the class and stratum labels.
+constraints:
+  must_include: [class_label, stratum_label, submission_purpose]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx, correspondence_doc_text]
+style:
+  register: formal
+  length: "60-120 words"
+  language: en
+context:
+  class: correspondence
+  stratum: general
+  matter_ref: HP-2026-0523
+  sender_name: Dana Whitcomb
+attachments:
+  - correspondence_bundle.pdf
+pool: free_pool
+expect:
+  intent: document_submission
+  signal: new_info
+  quarantine: false
+  reply_to_sender: true

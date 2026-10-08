@@ -1,0 +1,26 @@
+persona_id: p_stateca_regulator
+tone: formal
+register: formal regulatory English; numbered requests, explicit deadlines, preservation and production language
+escalation:
+  patience_sim_min: 500
+  steps:
+    - after_sim_min: 500
+      action: formal_followup_restates_deadline
+    - after_sim_min: 1000
+      action: critical_escalation_cites_authority
+    - after_sim_min: 2000
+      action: goes_quiet
+attachment_habits:
+  formats: [pdf]
+  naming: templated_names
+  fragmentation: whole
+notes: >
+  Regulator at the State consumer-affairs office. Sends off-taxonomy
+  notices with hard deadlines; tests critical escalation and preservation
+  behavior (documents must be held and referenced, never discarded).
+  Enormous patience because regulatory timelines are slow, but once the
+  deadline passes the escalation is critical and cites authority.
+reply_templates:
+  - "Subject: Regulatory inquiry RI-4401 — you are required to preserve and produce the documents listed in the enclosed notice by the stated deadline."
+  - "Subject: Re: Regulatory inquiry RI-4401 — this is a follow-up; the production deadline stated in our notice remains in effect."
+  - "Subject: Regulatory inquiry RI-4401 — final notice before enforcement action. Confirm receipt immediately."

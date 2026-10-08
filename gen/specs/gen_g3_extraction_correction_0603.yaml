@@ -1,0 +1,27 @@
+# Generation spec: adviser corrects an extracted purchase price (series G)
+# Archetype G3: production-adjacent extraction correction with both values stated.
+id: gen_g3_extraction_correction_0603
+persona: p_northstar_adviser
+target_client: northstar
+archetype: G3
+goal: Write a precise correction from a transaction adviser stating the extracted purchase price is wrong ($42M, not $24M), citing the source document.
+constraints:
+  must_include: [wrong_value, correct_value, source_citation]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: precise
+  length: "90-140 words"
+  language: en
+context:
+  deal_ref: NA-2026-0330
+  wrong_value: $24M
+  correct_value: $42M
+  source: all-cash deal memo
+  sender_display_name: J. Lin
+  claimed_from: jlin@northstar.sandbox.invalid
+pool: free_pool
+expect:
+  intent: correction_or_amendment
+  signal: correction
+  quarantine: false
+  reply_to_sender: false

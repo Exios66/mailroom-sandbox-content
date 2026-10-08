@@ -1,0 +1,6 @@
+dataset_relation,mailroom_kind,notes
+bundles,completes,bundle parts jointly complete the set; bundle members map pairwise to completes
+related_document_ids,references,generic related-doc links map to the neutral references kind
+supporting_documents,references,supporting/enclosed documents reference the primary document
+version_chain,supersedes,ordered version chains map to supersedes between successive versions
+duplicate_of,duplicates,explicit duplicate pointers map to duplicates

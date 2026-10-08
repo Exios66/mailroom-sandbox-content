@@ -1,0 +1,5 @@
+sku,description,quantity,unit_cost,location
+INV-0001,Cardboard mailer boxes,500,0.42,Warehouse A
+INV-0002,Bubble mailers small,1200,0.18,Warehouse A
+INV-0003,Shipping labels roll,80,6.99,Warehouse B
+INV-0004,Return envelopes,300,0.12,Warehouse B

@@ -1,0 +1,22 @@
+name: T5_outbound_send_gate
+seed: 2405
+profile: demo
+gen: scripted
+transports: [agentmail]
+title: "Outbound gated: with send disabled a draft stays a draft"
+tags: [transport-conformance, real-mail, send-gate, assert-draft-stays-draft]
+timeline:
+  - at: 00:02
+    client:
+      persona: p_tricounty_real
+      channel: email
+      claimed_from: kalvarado@tricountytitle.sandbox.invalid
+      auth: {spf: pass, dkim: pass, dmarc: pass}
+    fault: outbound_send_disabled
+expect:
+  intent: general_question
+  signals:
+    - {kind: new_info, priority: normal, within: 00:02}
+  outbox:
+    - {intent: reply, state: draft, to_sender: true}
+  invariants: [audit_chain_ok, comms_offpath]

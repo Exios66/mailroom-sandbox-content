@@ -1,0 +1,26 @@
+persona_id: p_cedarridge_adjuster
+tone: terse
+register: one-line emails, lowercase fragments, no greeting, no sign-off beyond initials
+escalation:
+  patience_sim_min: 200
+  steps:
+    - after_sim_min: 200
+      action: sends_next_fragment
+    - after_sim_min: 400
+      action: terse_reminder
+    - after_sim_min: 800
+      action: goes_quiet
+attachment_habits:
+  formats: [pdf, jpg]
+  naming: templated_names
+  fragmentation: split_across_messages
+notes: >
+  Third-party field adjuster at Cedar Ridge Adjusting. Documents arrive in
+  fragments across several messages — a partial submission first, then
+  supporting photos and forms later — so the simulator must reassemble a
+  set from the series. Emails are terse fragments ("part 2 of 3"). Long
+  patience because field work keeps the adjuster away from email.
+reply_templates:
+  - "Subject: field photos — part 1 of 3 attached. more coming. dp"
+  - "Subject: Re: field photos — part 2. form scanned. dp"
+  - "Subject: claim CL-3301 — need the policy number before I can finish the report. dp"

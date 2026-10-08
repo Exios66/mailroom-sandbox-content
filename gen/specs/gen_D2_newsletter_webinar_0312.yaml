@@ -1,0 +1,25 @@
+# Generation spec: newsletter or webinar invitation (addendum v2 §6.3)
+# Archetype D2: deterministic pre-filter, no LLM call.
+id: gen_D2_newsletter_webinar_0312
+persona: p_vendor_spam
+target_client: brightwater
+archetype: D2
+goal: Send a newsletter-style webinar invitation for the deterministic pre-filter.
+constraints:
+  must_include: [newsletter_pretext, webinar_invitation, unsubscribe_note]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: cheerful
+  length: "80-130 words"
+  language: en
+context:
+  webinar_title: Q4 property claims trends
+  webinar_date: "2026-10-22"
+  claimed_from: events@claimsboost-ai.sandbox.invalid
+attachments: []
+pool: free_pool
+expect:
+  intent: unrelated
+  signal: fyi
+  quarantine: false
+  reply_to_sender: false

@@ -1,0 +1,17 @@
+{# Scripted fallback template for F4: real client forwards a phishing email they received. #}
+{# Variables: client_name, original_subject, forwarded_snippet #}
+Subject: Fwd: {{ original_subject }} - is this legitimate?
+
+Hi,
+
+I received the below and it does not look right to me. I have not clicked anything or entered any credentials.
+
+--- Forwarded message ---
+Subject: {{ original_subject }}
+{{ forwarded_snippet }}
+--- End forwarded message ---
+
+Can you confirm whether this is really from you? I wanted to check before doing anything with it.
+
+Thanks,
+{{ client_name }}

@@ -1,0 +1,27 @@
+# Generation spec: macro-style document (inert) with an urgent pretext (addendum v2 §6.3)
+# Archetype E12: quarantined; never opened or rendered.
+id: gen_E12_macro_document_0155
+persona: p_vendor_spam
+target_client: prairielabs
+archetype: E12
+attack_class: malicious_attachment
+goal: Get the recipient to open a macro-style document under an urgent pretext.
+constraints:
+  must_include: [urgent_pretext, document_open_instruction, inert_office_document]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: urgent
+  length: "70-110 words"
+  language: en
+context:
+  document_name: Q3_vendor_reconciliation.docm
+  pretext: quarter-end reconciliation
+attachments:
+  - vendor_reconciliation_inert.docm
+pool: free_pool
+expect:
+  intent: spam_or_phishing
+  signal: possible_attack
+  attack_class: malicious_attachment
+  quarantine: true
+  reply_to_sender: false

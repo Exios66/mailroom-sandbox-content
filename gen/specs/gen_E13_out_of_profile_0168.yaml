@@ -1,0 +1,28 @@
+# Generation spec: registered sender submits a document class far outside its mix (addendum v2 §6.3)
+# Archetype E13: NOT an attack. Sender stays verified; out_of_profile annotation, normal priority.
+# No attack_class on this spec by design.
+id: gen_E13_out_of_profile_0168
+persona: p_tricounty_real
+target_client: tricountytitle
+archetype: E13
+goal: Submit a legitimate document far outside the sender's usual class mix, with an explanatory cover note.
+constraints:
+  must_include: [out_of_profile_document, explanatory_cover_note, matter_reference]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: apologetic
+  length: "80-130 words"
+  language: en
+context:
+  document_class: insurance_claim
+  document_line: inpatient
+  matter_ref: TC-2026-1190
+  explanation: forwarding on behalf of a borrower
+attachments:
+  - inpatient_bundle_client_provided.pdf
+pool: free_pool
+expect:
+  intent: document_submission
+  signal: new_info
+  quarantine: false
+  reply_to_sender: true

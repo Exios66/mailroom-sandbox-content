@@ -1,0 +1,25 @@
+# Generation spec: tone variant, terse field-adjuster note (addendum v2 §6.1, §6.3)
+id: gen_tone_terse_adjuster_0408
+persona: p_cedarridge_adjuster
+target_client: cedarridge
+archetype: terse_adjuster_note
+goal: Send a terse field-adjuster note transmitting partial documents.
+constraints:
+  must_include: [terse_status_update, fragment_reference]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: terse
+  length: "30-60 words"
+  language: en
+context:
+  claim_ref: CR-2026-7714
+  site_visit_date: "2026-10-06"
+  adjuster_name: R. Sandoval
+attachments:
+  - site_photos_batch2.zip
+pool: free_pool
+expect:
+  intent: document_submission
+  signal: new_info
+  quarantine: false
+  reply_to_sender: false

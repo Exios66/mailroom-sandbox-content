@@ -1,0 +1,30 @@
+name: G9_expedite_request
+seed: 1309
+profile: demo
+gen: frozen
+transports: [sim, agentmail]
+title: "Closing officer asks to expedite processing before today's closing; bounded priority raise"
+tags: [production-adjacent, sla, expedite]
+timeline:
+  - at: 00:00
+    ingress: {doc: closing_package_TC-2026-1184.pdf}
+  - at: 00:04
+    client:
+      persona: p_tricounty_real
+      channel: email
+      claimed_from: kalvarado@tricountytitle.sandbox.invalid
+      auth: {spf: pass, dkim: pass, dmarc: pass}
+      gen_spec: gen_g9_expedite_request_0609
+      template: g_expedite_ack.j2
+    attach:
+      - {class: corporate_record, stratum: officer_certificate}
+expect:
+  intent: urgent_deadline
+  signals:
+    - {kind: urgent, priority: high, within: 00:02}
+  trust: {sender_level: verified}
+  outbox:
+    - {intent: urgent_deadline, state: draft, to_sender: true}
+  boss_actions: [raise_priority]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

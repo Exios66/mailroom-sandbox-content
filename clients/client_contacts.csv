@@ -1,0 +1,13 @@
+contact_id,client_id,full_name,role,email,is_registered,usual_channel,notes
+tc_kalvarado,tricountytitle,Kendra Alvarado,closing officer,kalvarado@tricountytitle.sandbox.invalid,true,email,Sends templated wire and document checklists ahead of closing dates.
+hp_dwhitcomb,harlowpryce,D. Whitcomb,partner,dwhitcomb@harlowpryce.sandbox.invalid,true,email,Partner; cites matter numbers on every message and expects fast acknowledgment.
+ns_jlin,northstar,J. Lin,managing director,jlin@northstar.sandbox.invalid,true,email,Leads the deal team; sends long redline threads.
+pl_agarcia,prairielabs,A. Garcia,founder,agarcia@prairielabs.sandbox.invalid,true,email,Founder; casual; forwards incorporation drafts for review.
+bw_treyes,brightwater,T. Reyes,property manager,treyes@brightwaterpg.sandbox.invalid,true,phone,Informal; sends phone-photo scans with generic filenames.
+of_aokafor,okafor,A. Okafor,owner-operator,aokafor@okaforfreight.sandbox.invalid,true,phone,Stressed; sends repeated check-ins on open claims.
+cr_dpark,cedarridge,D. Park,field adjuster,dpark@cedarridge.sandbox.invalid,true,email,Terse; documents arrive in fragments across multiple messages.
+ls_nnguyen,lakeshore,N. Nguyen,billing supervisor,nnguyen@lakeshore.sandbox.invalid,true,email,Templated billing submissions; high volume.
+vg_marisol,vega,Marisol Vega,policyholder,marisol.vega@vega.sandbox.invalid,true,email,Vague; sometimes uses the wrong channel; emotional tone.
+sc_rpatel,stateca,R. Patel,consumer affairs officer,rpatel@stateca.sandbox.invalid,true,email,Formal; deadline-bound regulator correspondence.
+hp_asorensen,harlowpryce,A. Sorensen,associate,asorensen@harlowpryce.sandbox.invalid,false,email,Junior associate; drafts reviewed by a partner before filing.
+ns_rmukherjee,northstar,R. Mukherjee,analyst,rmukherjee@northstar.sandbox.invalid,true,email,Runs redline comparisons; sends long redlines late in the day.

@@ -1,0 +1,12 @@
+{# Scripted template for G7: catalog-backed receipt confirmation for a fragmented submission. #}
+{# Variables: sender_name, fragment_ref, claim_ref, received (true/false), missing_parts #}
+Subject: Re: {{ fragment_ref }} - {{ claim_ref }}
+
+Hello {{ sender_name }},
+
+Confirming receipt for {{ fragment_ref }} ({{ claim_ref }}): {% if received %}yes, it arrived and is logged in our system{% else %}it has not arrived yet{% endif %}.
+
+{% if missing_parts %}Still outstanding: {{ missing_parts }}. Please send the remaining part(s) when ready and I will confirm each one.{% else %}All parts received — thank you.{% endif %}
+
+Best regards,
+Mailroom Correspondent

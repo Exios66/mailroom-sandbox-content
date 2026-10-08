@@ -1,0 +1,53 @@
+# Generation policy: payload guard, inertness linter, freeze manifest, conformance (addendum v2 §6.5, §6.3).
+# Free models may log and train on prompts, so nothing sensitive may leave the machine.
+schema: mailroom.gen_policy/v1
+
+payload_guard:
+  rationale: free-tier providers may log prompts and train on them; the guard sits at the client boundary.
+  allowed_into_prompts:
+    - persona_sheets
+    - class_and_stratum_labels
+    - synthetic_field_values
+    - reference_number_formats
+  never_into_prompts:
+    - any_dataset_doc_text            # all classes, no exceptions (§6.5)
+    - anything_derived_from_correspondence_class   # Enron-derived; carries real named individuals
+    - registry_contact_details_beyond_synthetic_ones
+    - real_credentials_or_tokens
+  enforcement:
+    - check every outbound prompt against dataset text hashes (n-gram fingerprints, not just whole-document hashes)
+    - check against sensitive patterns (credentials, tokens, non-synthetic contacts)
+    - block on any hit; nothing leaves the machine
+    - log a redacted copy locally (S4)
+
+inertness_linter:
+  description: rewrite or strip risky surface forms; reject real brand names.
+  rules:
+    - urls: rewrite or strip to reserved hosts only (.sandbox.invalid, .example, .test, .localhost)
+    - domains: rewrite to *.sandbox.invalid
+    - phone_numbers: rewrite to +1-555-01xx
+    - brand_names: reject on match against the real-brand blocklist
+    - attachments: adversarial attachments stay inert (no executable content; links only to reserved hosts)
+  on_violation: rewrite_or_strip
+  on_unrepairable: fail_the_attempt_and_regenerate   # a lint failure rewriting cannot repair is a generation failure (§6.4)
+
+freeze_manifest:
+  description: every frozen email carries a manifest entry; determinism comes from freezing, not seeding.
+  fields:
+    - model_id        # e.g. xiaomi/mimo-v2.6-flash, or "template" for scripted
+    - tier            # free | paid | scripted
+    - prompt_hash     # sha256 of the prompt (scripted: sha256 of the template name)
+    - timestamp       # frozen_at, UTC
+    - attempts        # total generation attempts for this email
+    - refusals        # refusal count observed while generating this email
+    - linter_actions  # list of rewrite/strip actions the inertness linter applied
+  storage: emails/frozen/<series>.jsonl, one JSONL object per email; emails/emails_index.csv carries the audit columns
+
+conformance_check:
+  description: does the generated text carry the features its archetype requires?
+  procedure:
+    - extract the archetype's required features from the spec's constraints.must_include
+    - verify each required feature is present in the generated text
+    - verify style register/length/language match the spec
+    - verify no forbidden content survived the linter
+  on_failure: regenerate (counts as a failed attempt); never hand-patch silently

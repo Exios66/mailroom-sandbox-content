@@ -1,0 +1,14 @@
+{# Scripted fallback template for F5: counsel forwards an insurance claim for a coverage matter. #}
+{# Variables: sender_name, matter_ref, coverage_issue, claim_ref, attachment_name #}
+Subject: Coverage matter {{ matter_ref }} - claim packet forwarded
+
+Hello,
+
+Forwarding the claim packet ({{ attachment_name }}) for your review in connection with coverage matter {{ matter_ref }}. The coverage issue is {{ coverage_issue }}.
+
+The underlying claim is {{ claim_ref }}. I am sending this because the coverage question turns on the claim file, not because anything is wrong with the claim itself.
+
+Please confirm receipt and let me know if you need anything further.
+
+Best regards,
+{{ sender_name }}

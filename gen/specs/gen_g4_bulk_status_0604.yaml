@@ -1,0 +1,25 @@
+# Generation spec: billing office asks for status on eight claim documents in one email (series G)
+# Archetype G4: production-adjacent bulk status request.
+id: gen_g4_bulk_status_0604
+persona: p_lakeshore_biller
+target_client: lakeshore
+archetype: G4
+goal: Write a templated bulk status request from a billing office listing eight claim documents under one matter and asking for the state of each.
+constraints:
+  must_include: [matter_reference, document_list, per_document_status_ask]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: templated
+  length: "120-180 words"
+  language: en
+context:
+  matter_ref: LS-2026-0931
+  document_count: 8
+  sender_display_name: N. Nguyen
+  claimed_from: nnguyen@lakeshore.sandbox.invalid
+pool: free_pool
+expect:
+  intent: status_request
+  signal: status_request
+  quarantine: false
+  reply_to_sender: true

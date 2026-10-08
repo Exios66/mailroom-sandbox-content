@@ -1,0 +1,24 @@
+# Generation spec: founder asks for a plain-English summary of a filed charter amendment (series G)
+# Archetype G5: production-adjacent summary request.
+id: gen_g5_summary_request_0605
+persona: p_prairie_founder
+target_client: prairielabs
+archetype: G5
+goal: Write a casual request from a startup founder asking for a plain-English summary of the charter amendment that was just filed.
+constraints:
+  must_include: [document_reference, plain_language_ask, casual_register]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: casual
+  length: "60-110 words"
+  language: en
+context:
+  document_title: charter amendment
+  sender_display_name: A. Garcia
+  claimed_from: agarcia@prairielabs.sandbox.invalid
+pool: free_pool
+expect:
+  intent: general_question
+  signal: new_info
+  quarantine: false
+  reply_to_sender: true

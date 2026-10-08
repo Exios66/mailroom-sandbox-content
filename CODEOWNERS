@@ -1,0 +1,13 @@
+# CODEOWNERS for mailroom-sandbox-content
+#
+# Everything routes to @Exios66 for now. The commented sections below mark
+# where per-directory delegation will land once the one-agent-per-series
+# contribution model is staffed (see README.md "Contributing").
+
+* @Exios66
+
+# --- future delegation (no owner assigned yet) ---
+# clients/             — client registry data
+# scenarios/<series>/  — one owner per scenario series
+# adversary/           — adversary fixtures (lookalikes, impostors)
+# email/               — email infrastructure config

@@ -1,0 +1,31 @@
+# The dedicated Correspondent inbox (addendum v2 §7.5)
+#
+# ONE dedicated inbox that the Correspondent leg reads. It is separate from
+# any real mailroom address — sandbox mail never touches the production
+# mailbox, and the production mailbox is never reachable from the sandbox.
+
+schema: mailroom.correspondent_inbox/v1
+
+client_id: mailroom-sandbox-correspondent-v1   # stable → idempotent create
+
+purpose: sole ingress point for the Correspondent in the egress profile
+owned_by: Correspondent leg (comms/channels/agentmail.py)
+writes_to: persona leg (sandbox/gateway/) — the sender pool sends here;
+           live scenario injects also address this inbox
+
+# Ingestion order (decision D5). Webhook and websocket events are TRIGGERS
+# only; the adapter then fetches the full message + attachments via the API.
+ingest_order:
+  - mechanism: websocket
+    note: default — outbound-only subscription, no public URL or tunnel needed
+  - mechanism: webhook
+    note: needs a reachable URL; Svix signature verified, replays rejected,
+           idempotent on provider message id (S9)
+  - mechanism: poll
+    note: fallback of last resort
+preferred: websocket
+
+env:
+  MAILROOM_AGENTMAIL_INBOX_CLIENT_ID: mailroom-sandbox-correspondent-v1
+  MAILROOM_AGENTMAIL_INGEST: websocket   # websocket | webhook | poll
+  MAILROOM_AGENTMAIL_WEBHOOK_SECRET: ""   # Svix signing secret; webhook mode only

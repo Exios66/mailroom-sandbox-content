@@ -1,0 +1,20 @@
+name: T1_plain_round_trip
+seed: 2401
+profile: demo
+gen: scripted
+transports: [agentmail]
+title: "Plain message round trip through the real transport"
+tags: [transport-conformance, real-mail, assert-body-intact]
+timeline:
+  - at: 00:02
+    client:
+      persona: p_tricounty_real
+      channel: email
+      claimed_from: kalvarado@tricountytitle.sandbox.invalid
+      auth: {spf: pass, dkim: pass, dmarc: pass}
+expect:
+  intent: general_question
+  signals:
+    - {kind: new_info, priority: normal, within: 00:02}
+  outbox: []
+  invariants: [audit_chain_ok, comms_offpath]

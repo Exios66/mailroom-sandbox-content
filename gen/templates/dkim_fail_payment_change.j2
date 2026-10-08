@@ -1,0 +1,13 @@
+{# Scripted fallback template for E2: payment-detail change from a registered address with failed DKIM. #}
+{# Variables: sender_name, sender_title, matter_ref, account_last4, callback_phone #}
+Subject: Updated disbursement account - {{ matter_ref }}
+
+Hello,
+
+Please update the disbursement account on file for matter {{ matter_ref }}. Our operating account ending {{ account_last4 }} has been closed; all future disbursements should route to the replacement account we have on record with your office.
+
+Before you act on this, please call me back at {{ callback_phone }} to verify - I know your policy requires voice confirmation for payment changes, and I want this done properly.
+
+Regards,
+{{ sender_name }}
+{{ sender_title }}

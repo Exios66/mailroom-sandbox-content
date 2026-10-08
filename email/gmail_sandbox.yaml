@@ -1,0 +1,54 @@
+# Dedicated sandbox Gmail mailbox (addendum v2 §7.6)
+#
+# A Gmail account created FOR THE SANDBOX. Never a mailbox with real mail.
+# Role: the real-mail leg — personas send through AgentMail into this address
+# and the Correspondent reads it as the sole mail reader (core §5.2) on the
+# same code path as production. SPF/DKIM/DMARC here are GENUINE, so this route
+# tests header parsing on real mail.
+#
+# The startup guard REFUSES to start if the production token path is
+# reachable; only the sandbox mailbox credentials below are allowed.
+
+schema: mailroom.gmail_sandbox/v1
+
+account:
+  # To be filled by the OWNER (open item §15.2 #2: who owns the account,
+  # internal Workspace app vs published app).
+  address: ""   # env: MAILROOM_SANDBOX_GMAIL_ADDRESS — placeholder, owner fills
+
+credentials:
+  # Gitignored, apart from production gmail paths (§11.1).
+  oauth_client_path: sandbox/.secrets/gmail_client.json
+  token_path: sandbox/.secrets/gmail_token.json
+  env:
+    MAILROOM_SANDBOX_GMAIL_CREDENTIALS: sandbox/.secrets/gmail_client.json
+    MAILROOM_SANDBOX_GMAIL_TOKEN: sandbox/.secrets/gmail_token.json
+
+scopes:
+  default: gmail.readonly
+  # gmail.send is a SEPARATE, gated scope upgrade, matching the core's rule
+  # that sending is a separate gated scope. Off unless explicitly enabled.
+  send_scope: gmail.send
+  send_enabled_only_when: MAILROOM_SANDBOX_GMAIL_SEND_ENABLED=1
+  default_send_enabled: 0
+
+push:
+  # Push watch (users.watch) is optional and OFF by default. Polling is the
+  # default so pubsub.googleapis.com stays OFF the allowlist.
+  enabled: false
+  env: MAILROOM_SANDBOX_GMAIL_PUSH   # default 0
+  note: >
+    If push is ever enabled, pubsub.googleapis.com must be added to the
+    egress allowlist in mailroom-reloaded (sandbox/egress/allowlist.yaml).
+
+operational_warning: >
+  [verify — §15.2 open item #2] An OAuth app left in "Testing" status with an
+  external user type issues refresh tokens that expire after about SEVEN
+  DAYS, which would silently break nightly live runs. Use a Workspace-internal
+  app or publish the app instead. `mailroom sandbox doctor` reports Gmail
+  token age and scopes at startup — do not ignore its token-age warning.
+
+recipient_allowlist_note: >
+  The sandbox Gmail address is one of the three allowed recipient classes in
+  the egress profile (recipient_policy.yaml); nothing else outside
+  *.sandbox.invalid is permitted.

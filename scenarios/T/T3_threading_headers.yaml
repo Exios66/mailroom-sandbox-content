@@ -1,0 +1,26 @@
+name: T3_threading_headers
+seed: 2403
+profile: demo
+gen: scripted
+transports: [agentmail]
+title: "Threading headers (In-Reply-To, References) preserved across a reply"
+tags: [transport-conformance, real-mail, threading, assert-headers-preserved]
+timeline:
+  - at: 00:02
+    client:
+      persona: p_tricounty_real
+      channel: email
+      claimed_from: kalvarado@tricountytitle.sandbox.invalid
+      auth: {spf: pass, dkim: pass, dmarc: pass}
+  - at: 00:05
+    client:
+      persona: p_tricounty_real
+      channel: email
+      claimed_from: kalvarado@tricountytitle.sandbox.invalid
+      auth: {spf: pass, dkim: pass, dmarc: pass}
+expect:
+  intent: general_question
+  signals:
+    - {kind: new_info, priority: normal, within: 00:02}
+  outbox: []
+  invariants: [audit_chain_ok, comms_offpath]

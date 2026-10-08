@@ -1,0 +1,60 @@
+# AgentMail config reference (addendum v2 §7.5; checked 2026-10-08 [verify])
+#
+# This file is a REFERENCE: the actual behavior lives in
+# mailroom-reloaded's sandbox/gateway/ (persona leg) and
+# comms/channels/agentmail.py (Correspondent leg).
+
+schema: mailroom.agentmail/v1
+
+auth:
+  mechanism: api_key
+  # Role-scoped sandbox key. MAILROOM_AGENTMAIL_API_KEY from ENVIRONMENT ONLY.
+  # No secrets in files, no checked-in tokens, no production keys.
+  env_var: MAILROOM_AGENTMAIL_API_KEY
+
+endpoints:
+  base_url: "[verify: exact AgentMail API host — confirm against current docs before the matching PR]"
+  websocket: "[verify: exact websocket endpoint host — needed for the allowlist]"
+  note: >
+    Both hosts go on the egress allowlist (sandbox/egress/allowlist.yaml in
+    mailroom-reloaded). Hostnames here are written WITHOUT a scheme so they
+    stay plain host references in this data repo.
+
+inbox_management:
+  # Idempotent inbox creation via a stable client_id: re-running create with
+  # the same client_id returns the existing inbox instead of creating a
+  # duplicate. Used by sandbox up for the pool and the Correspondent inbox.
+  idempotency: stable_client_id
+  grouping: pods group inboxes   # AgentMail-side organization primitive
+
+events:
+  ingest:
+    - websocket subscription (default; outbound-only, no tunnel)
+    - webhook delivery with Svix signatures (needs reachable URL)
+    - poll (fallback)
+  verification:
+    - verify Svix signatures on every webhook delivery
+    - reject replayed deliveries
+    - idempotent processing on the PROVIDER message id (duplicate and
+      out-of-order deliveries collapse to one message — S9)
+  # Webhook payloads OMIT attachment bytes: download through the attachments
+  # API after the trigger arrives. Webhook/websocket events are triggers only.
+  attachments: fetch_via_attachments_api
+  notable_events:
+    - message.received
+    - message.received.unauthenticated   # mail without authentication headers
+  quoted_history: >
+    Provider-side reply-extraction fields are NOT authoritative; the
+    Correspondent runs its own quoted-history trimming (core §5.3).
+
+plan_limits:
+  # From a third-party listing — NOT the vendor's own pricing page.
+  free:
+    inboxes: 3            # [verify]
+    emails_per_month: 3000  # [verify]
+  first_paid_plan:
+    inboxes: 10          # [verify]
+  implication: >
+    The default pool (2 sender inboxes + 1 Correspondent inbox = 3 total)
+    fits the free plan exactly. sandbox doctor (§11.5) checks inbox count
+    against the plan at startup.

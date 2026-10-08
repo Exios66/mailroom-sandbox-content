@@ -1,0 +1,29 @@
+name: G8_forwarded_chain_timeline
+seed: 1308
+profile: demo
+gen: frozen
+transports: [sim, agentmail]
+title: "Landlord forwards a long chain asking where things stand overall; newest message triaged, history trimmed"
+tags: [production-adjacent, status, forwarded]
+timeline:
+  - at: 00:00
+    ingress: {doc: lease_renewal_thread.pdf}
+  - at: 00:09
+    client:
+      persona: p_brightwater_pm
+      channel: email
+      claimed_from: treyes@brightwaterpg.sandbox.invalid
+      auth: {spf: pass, dkim: pass, dmarc: pass}
+      gen_spec: gen_g8_forwarded_chain_0608
+    attach:
+      - {class: correspondence, stratum: forwarded}
+expect:
+  intent: status_request
+  signals:
+    - {kind: new_info, priority: normal, within: 00:05}
+  trust: {sender_level: verified}
+  outbox:
+    - {intent: status_request, state: draft, to_sender: true}
+  boss_actions: [ack_signal, task_correspondent]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

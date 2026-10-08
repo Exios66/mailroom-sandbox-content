@@ -1,0 +1,13 @@
+{# Scripted fallback template for E5: invoice fraud with a plausible PO number. #}
+{# Variables: vendor_name, po_number, invoice_ref, invoice_amount, remittance_account, attachment_name #}
+Subject: Invoice {{ invoice_ref }} against {{ po_number }} - payment due
+
+Hello,
+
+Please find attached invoice {{ invoice_ref }} ({{ attachment_name }}) against purchase order {{ po_number }} in the amount of {{ invoice_amount }}.
+
+Remit to the account shown on the invoice: {{ remittance_account }}. Our remittance details changed with our new bank - please update your vendor record.
+
+Payment terms are net 15. Thank you for your business.
+
+{{ vendor_name }}

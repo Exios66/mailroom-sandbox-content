@@ -1,0 +1,6 @@
+domain,impersonates_client_id,technique,scenario_ids
+tricounty-title.sandbox.invalid,tricountytitle,hyphen_insertion,E1
+tr1countytitle.sandbox.invalid,tricountytitle,homoglyph,E1
+harlow-pryce.sandbox.invalid,harlowpryce,hyphen_insertion,E6
+okafor-freight.sandbox.invalid,okafor,hyphen_insertion,E7
+secure-tricountytitle.sandbox.invalid,tricountytitle,subdomain_trick,E5

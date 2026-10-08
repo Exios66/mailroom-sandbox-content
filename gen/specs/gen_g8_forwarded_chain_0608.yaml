@@ -1,0 +1,24 @@
+# Generation spec: landlord forwards a long chain asking where things stand (series G)
+# Archetype G8: production-adjacent forwarded-chain status question.
+id: gen_g8_forwarded_chain_0608
+persona: p_brightwater_pm
+target_client: brightwater
+archetype: G8
+goal: Write an informal forwarded chain from a property manager asking where the lease renewal stands overall, with quoted history below the new message.
+constraints:
+  must_include: [forwarded_history, overall_status_ask, informal_register]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: informal
+  length: "90-160 words"
+  language: en
+context:
+  document_title: lease renewal
+  sender_display_name: T. Reyes
+  claimed_from: treyes@brightwaterpg.sandbox.invalid
+pool: free_pool
+expect:
+  intent: status_request
+  signal: new_info
+  quarantine: false
+  reply_to_sender: true

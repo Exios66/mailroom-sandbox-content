@@ -1,0 +1,22 @@
+name: C10_regulator_inquiry
+seed: 1310
+profile: demo
+gen: frozen
+transports: [sim, agentmail]
+title: "Regulator inquiry with a response window; critical, preservation hold recommended"
+tags: [regulator, legal-notice]
+timeline:
+  - at: 00:02
+    client:
+      persona: p_stateca_regulator
+      channel: email
+      claimed_from: rcalloway@stateca.sandbox.invalid
+expect:
+  intent: legal_notice
+  signals:
+    - {kind: legal_notice, priority: critical, within: 00:05}
+  trust: {sender_level: verified}
+  outbox: []
+  boss_actions: [request_human_review]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

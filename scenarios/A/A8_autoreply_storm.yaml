@@ -1,0 +1,27 @@
+name: A8_autoreply_storm
+seed: 1108
+profile: demo
+gen: frozen
+transports: [sim, agentmail]
+title: "Auto-reply loop from a billing mailbox; classified auto_reply, no LLM-driven reply"
+tags: [auto-reply, storm]
+timeline:
+  - at: 00:03
+    client:
+      persona: p_lakeshore_biller
+      channel: email
+      claimed_from: nbilling@lakeshorebilling.sandbox.invalid
+  - at: 00:07
+    client:
+      persona: p_lakeshore_biller
+      channel: email
+      claimed_from: nbilling@lakeshorebilling.sandbox.invalid
+expect:
+  intent: auto_reply
+  signals:
+    - {kind: fyi, priority: low, within: 00:10}
+  trust: {sender_level: verified}
+  outbox: []
+  boss_actions: [dismiss_signal]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

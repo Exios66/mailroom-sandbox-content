@@ -1,0 +1,32 @@
+name: G4_bulk_status_request
+seed: 1304
+profile: demo
+gen: frozen
+transports: [sim, agentmail]
+title: "Billing office asks for status on eight claim documents under one matter in a single email"
+tags: [production-adjacent, status, digest]
+timeline:
+  - at: 00:00
+    ingress: {doc: batch_LS-2026-0931_part1.pdf}
+  - at: 00:02
+    ingress: {doc: batch_LS-2026-0931_part2.pdf}
+  - at: 00:08
+    client:
+      persona: p_lakeshore_biller
+      channel: email
+      claimed_from: nnguyen@lakeshore.sandbox.invalid
+      auth: {spf: pass, dkim: pass, dmarc: pass}
+      gen_spec: gen_g4_bulk_status_0604
+      template: g_bulk_digest.j2
+    attach:
+      - {class: insurance_claim, stratum: carrier}
+expect:
+  intent: status_request
+  signals:
+    - {kind: status_request, priority: normal, within: 00:10}
+  trust: {sender_level: verified}
+  outbox:
+    - {intent: status_request, state: draft, to_sender: true}
+  boss_actions: [ack_signal, task_correspondent]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

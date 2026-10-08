@@ -1,0 +1,24 @@
+# Generation spec: claimant cites a court deadline requiring turnaround (series G)
+# Archetype G10: production-adjacent legal-urgency notice; no substantive reply warranted.
+id: gen_g10_court_deadline_0610
+persona: p_okafor_claimant
+target_client: okafor
+archetype: G10
+goal: Write a stressed message from a claimant citing a court deadline that requires fast processing turnaround on their claim.
+constraints:
+  must_include: [court_deadline, claim_reference, turnaround_ask]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: stressed
+  length: "90-140 words"
+  language: en
+context:
+  claim_ref: CL-558201
+  sender_display_name: A. Okafor
+  claimed_from: aokafor@okaforfreight.sandbox.invalid
+pool: free_pool
+expect:
+  intent: urgent_deadline
+  signal: urgent
+  quarantine: false
+  reply_to_sender: false

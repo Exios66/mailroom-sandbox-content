@@ -1,0 +1,26 @@
+persona_id: p_vega_prose
+tone: emotional
+register: vague and meandering; emotional, uses the wrong channel for legal content, apologizes, asks identity-adjacent questions
+escalation:
+  patience_sim_min: 90
+  steps:
+    - after_sim_min: 90
+      action: emotional_followup
+    - after_sim_min: 180
+      action: repeats_same_request
+    - after_sim_min: 360
+      action: goes_quiet
+attachment_habits:
+  formats: [pdf, jpg]
+  naming: generic_filenames
+  fragmentation: whole
+notes: >
+  Pro-se policyholder (Marisol Vega) with an auto claim. Sends vague,
+  emotional mail, sometimes through the wrong channel for legal or privacy
+  content — the simulator's identity-matching and privacy-request routing
+  get exercised here. Attachments are generic phone photos of documents.
+  Short patience; follow-up messages repeat the same request with more emotion.
+reply_templates:
+  - "Subject: my claim — hi I'm not sure who I'm supposed to send this to but here's the paper from the accident, please help"
+  - "Subject: Re: my claim — I still haven't heard anything and I'm really worried. Can someone please call me about my claim?"
+  - "Subject: please delete my info — I want you to delete my personal information from your records. My claim number is CL-9012."
