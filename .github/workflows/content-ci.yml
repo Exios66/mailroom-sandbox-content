@@ -19,6 +19,6 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install dependencies
-        run: pip install pyyaml
+        run: pip install pyyaml jsonschema
       - name: Run content validator
         run: python3 tools/validate.py

@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install dependencies
-        run: pip install pyyaml
+        run: pip install pyyaml jsonschema
       - name: Validate content
         run: python3 tools/validate.py
       - name: Build tarball and checksums

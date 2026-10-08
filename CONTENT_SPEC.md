@@ -42,7 +42,8 @@ Tabular, one row per entity, bulk-editable → **CSV**. Nested or behavioral
 | Attachments | `att_<nnnn>` | `att_0001` |
 | Relations | `rel_<nnnn>` | `rel_0001` |
 
-CI enforces these as regexes: scenario `^[A-T][0-9]+_[a-z0-9_]+$`,
+CI enforces these as regexes: scenario `^[A-GST][0-9]+_[a-z0-9_]+$`
+(series letters A–G, S, T only),
 persona `^p_[a-z0-9_]+$`, spec `^gen_[a-zA-Z0-9_]+$`, email
 `^em_[A-Z]_[0-9]+$`, attachment `^att_[0-9]+$`, relation `^rel_[0-9]+$`.
 
@@ -124,10 +125,12 @@ blob. A leak is an ERROR.
 | AgentMail | Leg honored by `comms/channels/agentmail.py` **only** when `MAILROOM_ENV=sandbox`; the sandbox gateway writes `overlay/overlay.jsonl`, mounted read-only into the Correspondent container |
 | Gmail sandbox | Genuine-auth leg; identity-dependent (E-series) scenarios are not valid here |
 | Recipient policy | Who may receive sandbox mail on each leg |
+| Ingress policy | Metered admission rates, inbox capacity, backpressure |
+| Send schedule | Scheduled free-model outbound windows + doom-loop guards |
 
-[verify] File-level contracts for the sender pool, AgentMail account
-configuration, Gmail sandbox set up, and the recipient policy are not yet
-written — confirm against the addendum before adding files under `email/`.
+File-level contracts now exist for all of the above; the remaining
+[verify] items are the live-service values (AgentMail host/limits,
+Gmail token lifetime) confirmed at sandbox-up, tracked in §10.
 
 ## 8. content-ci checks
 

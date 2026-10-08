@@ -41,7 +41,11 @@ schedule:
 
 # ------------------------------------------------------------------ caps
 caps:
-  max_sends_per_hour_total: 90   # across all windows; the windows above sum below this
+  # NOTE: window capacities can exceed this cap (correspondent_outbound 3x/hr x 25
+  # = 75, digest 5, smoke 12x/hr x 3 = 36 when enabled -> up to 116/hr offered).
+  # The cap below is the hard ceiling: the scheduler stops admitting sends for
+  # the hour once it is reached, regardless of window allowances.
+  max_sends_per_hour_total: 90
   max_recipients_per_send: 5
   max_sends_per_thread_per_day: 2
   min_seconds_between_sends_same_thread: 3600

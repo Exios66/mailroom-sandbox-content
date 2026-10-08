@@ -20,7 +20,7 @@ Release history lives in [`CHANGELOG.md`](CHANGELOG.md).
 | `schemas/` | JSON Schemas for every content file (`content_files.json`, `registry.v1.json`, `scenario.v2.json`, `gen_spec.v1.json`, `overlay.v1.json`, `persona_behavior.v1.json`) |
 | `clients/` | Client registry sources: `clients.csv`, `client_contacts.csv`, `client_domains.csv`, `client_doc_mix.csv` |
 | `personas/` | `personas.csv` plus `behavior/<persona_id>.yaml` persona behavior files |
-| `scenarios/` | One YAML per scenario under `<Series>/` (series `A`–`F`, `S`, `T`); `scenarios_index.csv` is generated |
+| `scenarios/` | One YAML per scenario under `<Series>/` (series `A`–`G`, `S`, `T`); `scenarios_index.csv` is generated |
 | `gen/` | Generation specs (`specs/*.yaml`) and templates (`templates/`); `gen_specs_index.csv` is generated |
 | `emails/` | `emails_index.csv`, frozen bodies (`frozen/<series>.jsonl`), hand-written anchors (`handwritten/*.md`) |
 | `attachments/` | `manifest.csv` plus `synthetic/`, `offtaxonomy/`, `adversarial/` fixture files |

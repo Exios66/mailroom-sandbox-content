@@ -74,7 +74,7 @@ ID_PATTERNS = {
     "client_id": re.compile(r"^[a-z0-9_]+$"),
     "persona_id": re.compile(r"^p_[a-z0-9_]+$"),
     "contact_id": re.compile(r"^[a-z0-9_]+$"),
-    "scenario": re.compile(r"^[A-T][0-9]+_[a-z0-9_]+$"),
+    "scenario": re.compile(r"^[A-GST][0-9]+_[a-z0-9_]+$"),
     "spec_id": re.compile(r"^gen_[a-zA-Z0-9_]+$"),
     "email_id": re.compile(r"^em_[A-Z]_[0-9]+$"),
     "attachment_id": re.compile(r"^att_[0-9]+$"),
@@ -464,6 +464,18 @@ def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
                     rep: Report) -> tuple[dict, dict]:
     scenarios: dict[str, dict] = {}
     by_series: dict[str, list[str]] = {}
+    # Strict schema validation: manual checks below cover cross-references,
+    # but field shapes/formats are the schema's job.
+    schema_validator = None
+    try:
+        from jsonschema import Draft202012Validator
+        schema_validator = Draft202012Validator(json.loads(
+            (root / "schemas" / "scenario.v2.json").read_text(encoding="utf-8")))
+    except ImportError:
+        rep.warn("jsonschema not installed; skipping strict scenario schema "
+                 "validation (pip install jsonschema)")
+    except Exception as e:  # noqa: BLE001 - bad schema file is a real error
+        rep.error(f"schemas/scenario.v2.json unreadable: {e}")
     spec_ids: set[str] = set()
     for spec_file in sorted((root / "gen" / "specs").glob("*.yaml")):
         try:
@@ -492,6 +504,11 @@ def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
                 rep.error(f"scenarios/{series}/{yf.name}: top level must be "
                           f"a mapping")
                 continue
+            if schema_validator is not None:
+                for error in schema_validator.iter_errors(s):
+                    path = ".".join(str(p) for p in error.absolute_path)
+                    rep.error(f"scenarios/{series}/{yf.name}: schema violation "
+                              f"at {path or '<root>'}: {error.message[:160]}")
             name = s.get("name", "")
             if stem != name:
                 rep.error(f"scenarios/{series}/{yf.name}: filename stem "
@@ -552,7 +569,10 @@ def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
                     for k, v in auth.items():
                         if v not in AUTH_RESULTS:
                             rep.error(f"{where}: bad auth {k}={v!r}")
-                for a in ev.get("attach", []) or []:
+                for i, a in enumerate(ev.get("attach", []) or []):
+                    if not isinstance(a, dict):
+                        rep.error(f"{where}: attach[{i}] must be a mapping")
+                        continue
                     if a.get("file") and a["file"] not in attach_files:
                         rep.error(f"{where}: attachment file {a['file']!r} "
                                   f"not in attachments/manifest.csv")
@@ -561,7 +581,10 @@ def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
             if exp.get("intent") not in INTENTS:
                 rep.error(f"{name}: bad expect.intent "
                           f"{exp.get('intent')!r}")
-            for sig in exp.get("signals", []) or []:
+            for i, sig in enumerate(exp.get("signals", []) or []):
+                if not isinstance(sig, dict):
+                    rep.error(f"{name}: expect.signals[{i}] must be a mapping")
+                    continue
                 if sig.get("kind") not in SIGNAL_KINDS:
                     rep.error(f"{name}: bad signal kind {sig.get('kind')!r}")
                 if sig.get("kind") == "possible_attack" and \
@@ -595,15 +618,20 @@ def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
             for inv in exp.get("invariants", []) or []:
                 if inv not in INVARIANTS:
                     rep.error(f"{name}: bad invariant {inv!r}")
-            for rel in exp.get("relations", []) or []:
+            for i, rel in enumerate(exp.get("relations", []) or []):
+                if not isinstance(rel, dict):
+                    rep.error(f"{name}: expect.relations[{i}] must be a mapping")
+                    continue
                 if rel.get("kind") not in RELATION_KINDS:
                     rep.error(f"{name}: bad relation kind {rel.get('kind')!r}")
             # quarantine targets must bind to a file actually attached in the
             # timeline (and present in the manifest); otherwise the harness
             # cannot deterministically assert the quarantine.
-            attached_here = {a.get("file") for ev in tl
-                             for a in ev.get("attach", []) or []
-                             if a.get("file")}
+            attached_here = set()
+            for ev in tl:
+                for a in ev.get("attach", []) or []:
+                    if isinstance(a, dict) and a.get("file"):
+                        attached_here.add(a["file"])
             for q in exp.get("quarantine", []) or []:
                 if q not in attached_here:
                     rep.error(f"{name}: expect.quarantine {q!r} is not "
@@ -953,6 +981,8 @@ def coverage_report(root: Path, mixes: list[dict], scenarios: dict,
     for name, sc in scenarios.items():
         for ev in sc.get("timeline", []) or []:
             for a in ev.get("attach", []) or []:
+                if not isinstance(a, dict):
+                    continue
                 if a.get("class") and a.get("stratum"):
                     key = (a["class"], a["stratum"])
                     if key in cov:
