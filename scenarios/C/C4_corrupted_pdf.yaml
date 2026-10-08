@@ -1,22 +1,25 @@
 name: C4_corrupted_pdf
+title: Corrupted phone-photo scan quarantined; missing_doc signal carries the reason
 seed: 1304
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Corrupted phone-photo scan quarantined; missing_doc signal carries the reason"
+status: draft
 tags: [corrupted, quarantine]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_brightwater_pm
-      channel: email
-      claimed_from: treyes@brightwaterpg.sandbox.invalid
+- at: "00:02"
+  client:
+    persona: p_brightwater_pm
+    channel: email
+    claimed_from: treyes@brightwaterpg.sandbox.invalid
+    template: informal_photo_submission
+    vars: {subject_line: scan, note: here's the scan from the site}
     attach:
-      - {file: corrupted_scan_01.pdf}
+    - {file: corrupted_scan_01.pdf}
 expect:
   intent: document_submission
   signals:
-    - {kind: missing_doc, priority: normal, within: 00:08}
+  - {kind: missing_doc, priority: normal, within: "00:08"}
   trust: {sender_level: verified}
   quarantine: [corrupted_scan_01.pdf]
   outbox: []

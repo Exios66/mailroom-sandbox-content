@@ -1,21 +1,24 @@
 name: S2_daily_cap_tier_switch
+title: Free account daily cap reached; skips to the paid tier in cost order
 seed: 2302
 profile: smoke
 gen: scripted
 transports: [sim]
-title: "Free account daily cap reached; skips to the paid tier in cost order"
+status: draft
 tags: [self-test, generation, tier-switch, assert-paid-tier-in-cost-order]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_tricounty_real
-      channel: email
-      claimed_from: kalvarado@tricountytitle.sandbox.invalid
-      auth: {spf: pass, dkim: pass, dmarc: pass}
-    fault: free_daily_cap_reached
+- at: "00:02"
+  client:
+    persona: p_tricounty_real
+    channel: email
+    claimed_from: kalvarado@tricountytitle.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: routine_status_check
+    vars: {subject_line: S2 sandbox self-test, note: Routine message used by a sandbox self-test.}
+  fault: free_daily_cap_reached
 expect:
   intent: unrelated
   signals:
-    - {kind: fyi, priority: normal, within: 00:02}
+  - {kind: fyi, priority: normal, within: "00:02"}
   outbox: []
   invariants: [audit_chain_ok]

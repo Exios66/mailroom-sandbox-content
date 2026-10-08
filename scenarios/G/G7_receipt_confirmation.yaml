@@ -1,32 +1,34 @@
 name: G7_receipt_confirmation
+title: Field adjuster asks whether part 2 of 3 arrived; catalog-backed confirmation draft
 seed: 1307
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Field adjuster asks whether part 2 of 3 arrived; catalog-backed confirmation draft"
+status: draft
 tags: [production-adjacent, status, fragments]
 timeline:
-  - at: 00:00
-    ingress: {doc: field_report_part1of3.pdf}
-  - at: 00:06
-    ingress: {doc: field_report_part2of3.pdf}
-  - at: 00:10
-    client:
-      persona: p_cedarridge_adjuster
-      channel: email
-      claimed_from: dpark@cedarridge.sandbox.invalid
-      auth: {spf: pass, dkim: pass, dmarc: pass}
-      gen_spec: gen_g7_receipt_confirmation_0607
-      template: g_receipt_confirmation.j2
+- at: "00:00"
+  ingress: {ref: field_report_part1, group: cr_0603, class: insurance_claim, stratum: property, as: field_report_part1of3.pdf}
+- at: "00:06"
+  ingress: {ref: field_report_part2, group: cr_0603, class: insurance_claim, stratum: property, as: field_report_part2of3.pdf}
+- at: "00:10"
+  client:
+    persona: p_cedarridge_adjuster
+    channel: email
+    claimed_from: dpark@cedarridge.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: receipt_check
+    gen_spec: gen_g7_receipt_confirmation_0607
+    vars: {claim_ref: CR-2026-0603, fragment_ref: field report, part: 2, total: 3}
     attach:
-      - {class: insurance_claim, stratum: property}
+    - {class: insurance_claim, stratum: property}
 expect:
   intent: status_request
   signals:
-    - {kind: status_request, priority: normal, within: 00:03}
+  - {kind: status_request, priority: normal, within: "00:03"}
   trust: {sender_level: verified}
   outbox:
-    - {intent: status_request, state: draft, to_sender: true}
+  - {intent: status_request, state: draft, to_sender: true, reference_template: g_receipt_confirmation}
   boss_actions: [ack_signal, task_correspondent]
   overblocking: {benign_hard_actions: 0}
   invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

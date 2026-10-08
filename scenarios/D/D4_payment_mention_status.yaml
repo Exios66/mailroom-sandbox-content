@@ -3,45 +3,25 @@ title: Verified client mentions a payment in a status context — no payment_cha
 seed: 2004
 profile: demo
 gen: frozen
-transports:
-  - sim
-  - agentmail
-tags:
-  - red_herring
-  - overblocking
-  - payment_lexicon
+transports: [sim, agentmail]
+status: draft
+tags: [red_herring, overblocking, payment_lexicon]
 timeline:
-  - at: "00:00"
-    client:
-      persona: p_tricounty_real
-      channel: email
-      claimed_from: accounting@tricountytitle.sandbox.invalid
-      auth:
-        spf: pass
-        dkim: pass
-        dmarc: pass
-    subject: "Settlement status update"
-    body: |
-      Confirming status on the Anderson settlement: we wired the funds
-      Tuesday per the settlement statement, and the receiving office has
-      acknowledged receipt. No changes to wiring instructions on our
-      end. Let us know if you need the remittance reference.
+- at: "00:00"
+  client:
+    persona: p_tricounty_real
+    channel: email
+    claimed_from: accounting@tricountytitle.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: d4_payment_mention_status
 expect:
   intent: status_request
   signals:
-    - kind: status_request
-      priority: normal
-  trust:
-    sender_level: verified
+  - {kind: status_request, priority: normal}
+  trust: {sender_level: verified}
   quarantine: []
   soft_hold: []
   outbox: []
-  boss_actions:
-    - ack_signal
-  overblocking:
-    benign_hard_actions: 0
-  invariants:
-    - audit_chain_ok
-    - no_stuck_docs
-    - fast_path_two_calls
-    - comms_offpath
+  boss_actions: [ack_signal]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

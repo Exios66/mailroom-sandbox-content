@@ -1,21 +1,24 @@
 name: S1_free_pool_429_rotation
+title: Free model returns 429/5xx repeatedly; rotates within the free pool
 seed: 2301
 profile: smoke
 gen: scripted
 transports: [sim]
-title: "Free model returns 429/5xx repeatedly; rotates within the free pool"
+status: draft
 tags: [self-test, generation, free-pool, assert-no-paid-call-before-free-attempts-exhausted]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_tricounty_real
-      channel: email
-      claimed_from: kalvarado@tricountytitle.sandbox.invalid
-      auth: {spf: pass, dkim: pass, dmarc: pass}
-    fault: free_pool_429_storm
+- at: "00:02"
+  client:
+    persona: p_tricounty_real
+    channel: email
+    claimed_from: kalvarado@tricountytitle.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: routine_status_check
+    vars: {subject_line: S1 sandbox self-test, note: Routine message used by a sandbox self-test.}
+  fault: free_pool_429_storm
 expect:
   intent: unrelated
   signals:
-    - {kind: fyi, priority: normal, within: 00:02}
+  - {kind: fyi, priority: normal, within: "00:02"}
   outbox: []
   invariants: [audit_chain_ok]

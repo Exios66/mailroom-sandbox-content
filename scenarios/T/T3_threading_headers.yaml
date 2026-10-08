@@ -1,26 +1,33 @@
 name: T3_threading_headers
+title: Threading headers (In-Reply-To, References) preserved across a reply
 seed: 2403
 profile: demo
 gen: scripted
 transports: [agentmail]
-title: "Threading headers (In-Reply-To, References) preserved across a reply"
+status: draft
 tags: [transport-conformance, real-mail, threading, assert-headers-preserved]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_tricounty_real
-      channel: email
-      claimed_from: kalvarado@tricountytitle.sandbox.invalid
-      auth: {spf: pass, dkim: pass, dmarc: pass}
-  - at: 00:05
-    client:
-      persona: p_tricounty_real
-      channel: email
-      claimed_from: kalvarado@tricountytitle.sandbox.invalid
-      auth: {spf: pass, dkim: pass, dmarc: pass}
+- at: "00:02"
+  client:
+    ref: msg_thread_root
+    persona: p_tricounty_real
+    channel: email
+    claimed_from: kalvarado@tricountytitle.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: routine_status_check
+    vars: {subject_line: T3 threading check, note: First message in the thread.}
+- at: "00:05"
+  client:
+    persona: p_tricounty_real
+    channel: email
+    claimed_from: kalvarado@tricountytitle.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    reply_to: msg_thread_root
+    template: routine_status_check
+    vars: {subject_line: 'Re: T3 threading check', note: Reply in the same thread.}
 expect:
   intent: general_question
   signals:
-    - {kind: new_info, priority: normal, within: 00:02}
+  - {kind: new_info, priority: normal, within: "00:02"}
   outbox: []
   invariants: [audit_chain_ok, comms_offpath]

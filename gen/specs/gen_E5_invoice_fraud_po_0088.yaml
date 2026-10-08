@@ -1,7 +1,7 @@
 # Generation spec: invoice fraud with a plausible PO number (addendum v2 §6.3)
 # Archetype E5: reference ownership check fails; possible_attack.
 id: gen_E5_invoice_fraud_po_0088
-persona: p_vendor_spam
+persona: p_tricounty_impostor
 target_client: brightwater
 archetype: E5
 attack_class: other

@@ -1,38 +1,48 @@
 name: A2_missing_document_followup
+title: Claimant follows up twice about a missing document, then supplies it; the loop closes
 seed: 1102
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Claimant follows up twice about a missing document, then supplies it; the loop closes"
+status: draft
 tags: [missing-doc, followup]
 timeline:
-  - at: 00:03
-    client:
-      persona: p_okafor_claimant
-      channel: email
-      claimed_from: aokafor@okaforfreight.sandbox.invalid
-  - at: 00:20
-    client:
-      persona: p_okafor_claimant
-      channel: email
-      claimed_from: aokafor@okaforfreight.sandbox.invalid
-  - at: 00:35
-    client:
-      persona: p_okafor_claimant
-      channel: email
-      claimed_from: aokafor@okaforfreight.sandbox.invalid
+- at: "00:03"
+  client:
+    ref: msg_followup_1
+    persona: p_okafor_claimant
+    channel: email
+    claimed_from: aokafor@okaforfreight.sandbox.invalid
+    template: missing_doc_followup
+    vars: {claim_ref: CL-558201, missing_item: the police report, followup_label: Question}
+- at: "00:20"
+  client:
+    ref: msg_followup_2
+    persona: p_okafor_claimant
+    channel: email
+    claimed_from: aokafor@okaforfreight.sandbox.invalid
+    template: missing_doc_followup
+    vars: {claim_ref: CL-558201, missing_item: the police report, followup_label: Second follow-up}
+- at: "00:35"
+  client:
+    persona: p_okafor_claimant
+    channel: email
+    claimed_from: aokafor@okaforfreight.sandbox.invalid
+    template: document_submission
+    vars: {document_title: the police report, matter_ref: claim CL-558201, note: This is the document
+        you asked for.}
     attach:
-      - {class: insurance_claim, stratum: auto}
+    - {class: insurance_claim, stratum: auto, ref: supplied_auto_claim_doc}
 expect:
   intent: document_submission
   signals:
-    - {kind: missing_doc, priority: normal, within: 00:06}
-    - {kind: new_info, priority: normal, within: 00:40}
+  - {kind: missing_doc, priority: normal, within: "00:06"}
+  - {kind: new_info, priority: normal, within: "00:40"}
   trust: {sender_level: verified}
   relations:
-    - {a: missing_doc_request, b: supplied_auto_claim_doc, kind: answers, min_conf: 0.9}
+  - {a: supplied_auto_claim_doc, b: msg_followup_1, kind: answers, min_conf: 0.8}
   outbox:
-    - {intent: document_submission, state: draft, to_sender: true}
+  - {intent: document_submission, state: draft, to_sender: true}
   boss_actions: [ack_signal, link_documents]
   overblocking: {benign_hard_actions: 0}
   invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

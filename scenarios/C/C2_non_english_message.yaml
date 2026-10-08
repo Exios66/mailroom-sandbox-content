@@ -1,20 +1,24 @@
 name: C2_non_english_message
+title: Spanish message from a pro-se policyholder; intent classified with English summary; human review
+  if low confidence
 seed: 1302
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Spanish message from a pro-se policyholder; intent classified with English summary; human review if low confidence"
+status: draft
 tags: [i18n, spanish]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_vega_prose
-      channel: email
-      claimed_from: marisol.vega@vega.sandbox.invalid
+- at: "00:02"
+  client:
+    persona: p_vega_prose
+    channel: email
+    claimed_from: marisol.vega@vega.sandbox.invalid
+    template: spanish_inquiry
+    vars: {claim_ref: VG-2026-0447}
 expect:
   intent: general_question
   signals:
-    - {kind: new_info, priority: normal, within: 00:08}
+  - {kind: new_info, priority: normal, within: "00:08"}
   trust: {sender_level: verified}
   outbox: []
   boss_actions: [request_human_review]

@@ -1,27 +1,33 @@
 name: B4_body_contradicts_attachment
+title: Loss date March 3 in body vs March 8 in the firm's letter; correction signal with both values cited
 seed: 1204
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Loss date March 3 in body vs March 8 in the firm's letter; correction signal with both values cited"
+status: draft
 tags: [contradiction, correction]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_okafor_claimant
-      channel: email
-      claimed_from: aokafor@okaforfreight.sandbox.invalid
+- at: "00:00"
+  ingress: {ref: firm_letter, file: okafor_claim_letter_cl558201.pdf}
+- at: "00:02"
+  client:
+    ref: msg_third_request
+    persona: p_okafor_claimant
+    channel: email
+    claimed_from: aokafor@okaforfreight.sandbox.invalid
+    template: claim_date_correction
+    vars: {claim_ref: CL-558201, stated_loss_date: March 3, letter_loss_date: March 8}
     attach:
-      - {file: inventory_final.csv}
+    - {file: inventory_final.csv}
 expect:
   intent: correction_or_amendment
   signals:
-    - {kind: correction, priority: high, within: 00:08}
+  - {kind: correction, priority: high, within: "00:08"}
   trust: {sender_level: verified}
   relations:
-    - {a: inventory_final.csv, b: firm_letter_loss_date_mar_8, kind: contradicts, min_conf: 0.9}
+  - {a: msg_third_request, b: firm_letter, kind: contradicts, min_conf: 0.8}
   outbox:
-    - {intent: correction_or_amendment, state: draft, to_sender: true}
+  - {intent: correction_or_amendment, state: draft, to_sender: true}
   boss_actions: [ack_signal, link_documents]
   overblocking: {benign_hard_actions: 0}
   invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

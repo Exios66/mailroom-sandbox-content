@@ -1,27 +1,31 @@
 name: A10_late_binding
+title: Email references a merger document before its ingress event; pending link resolved via link_documents
 seed: 1110
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Email references a merger document before its ingress event; pending link resolved via link_documents"
+status: draft
 tags: [late-binding, doc-relation]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_northstar_adviser
-      channel: email
-      claimed_from: jmercer@northstar-advisory.sandbox.invalid
-  - at: 00:09
-    ingress: {doc: merger_doc_late}
+- at: "00:02"
+  client:
+    ref: msg_heads_up
+    persona: p_northstar_adviser
+    channel: email
+    claimed_from: jlin@northstar-advisory.sandbox.invalid
+    template: late_binding_heads_up
+    vars: {document_title: the signed merger agreement, matter_ref: NA-2026-0144}
+- at: "00:09"
+  ingress: {ref: merger_doc_late, class: merger_agreement, stratum: all_cash, as: NA-2026-0144_merger_agreement.pdf}
 expect:
   intent: document_submission
   signals:
-    - {kind: doc_relation, priority: normal, within: 00:12}
+  - {kind: doc_relation, priority: normal, within: "00:12"}
   trust: {sender_level: verified}
   relations:
-    - {a: email_reference_to_merger_doc, b: merger_doc_late, kind: references, min_conf: 0.85}
+  - {a: msg_heads_up, b: merger_doc_late, kind: references, min_conf: 0.85}
   outbox:
-    - {intent: document_submission, state: draft, to_sender: true}
+  - {intent: document_submission, state: draft, to_sender: true}
   boss_actions: [ack_signal, link_documents]
   overblocking: {benign_hard_actions: 0}
   invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

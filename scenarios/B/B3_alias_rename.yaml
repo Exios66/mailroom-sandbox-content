@@ -1,29 +1,35 @@
 name: B3_alias_rename
+title: Unit 4B is 4C on the new lease; alias recorded, new lease supersedes last week's, COI off-taxonomy
+  reported
 seed: 1203
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Unit 4B is 4C on the new lease; alias recorded, new lease supersedes last week's, COI off-taxonomy reported"
+status: draft
 tags: [alias, supersession]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_brightwater_pm
-      channel: email
-      claimed_from: treyes@brightwaterpg.sandbox.invalid
+- at: "00:00"
+  ingress: {ref: lease_v1_unit_4b, file: lease_v1_unit4b.pdf}
+- at: "00:02"
+  client:
+    persona: p_brightwater_pm
+    channel: email
+    claimed_from: treyes@brightwaterpg.sandbox.invalid
+    template: alias_rename_lease
+    vars: {old_unit: 4B, new_unit: 4C}
     attach:
-      - {file: lease_img_4471.pdf}
-      - {file: coi_unit4c.pdf, in_taxonomy: false}
+    - {file: lease_img_4471.pdf, ref: lease_new}
+    - {file: coi_unit4c.pdf, in_taxonomy: false}
 expect:
   intent: document_submission
   signals:
-    - {kind: doc_relation, priority: normal, within: 00:08}
-    - {kind: new_info, priority: normal, within: 00:08}
+  - {kind: doc_relation, priority: normal, within: "00:08"}
+  - {kind: new_info, priority: normal, within: "00:08"}
   trust: {sender_level: verified}
   relations:
-    - {a: lease_v1_unit_4b, b: lease_img_4471.pdf, kind: supersedes, min_conf: 0.9}
+  - {a: lease_new, b: lease_v1_unit_4b, kind: supersedes, min_conf: 0.7}
   outbox:
-    - {intent: document_submission, state: draft, to_sender: true}
+  - {intent: document_submission, state: draft, to_sender: true}
   boss_actions: [ack_signal, link_documents, annotate_document]
   overblocking: {benign_hard_actions: 0}
   invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

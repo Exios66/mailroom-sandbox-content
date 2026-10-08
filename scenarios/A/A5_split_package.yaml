@@ -1,35 +1,40 @@
 name: A5_split_package
+title: Claim package split across two emails four minutes apart; the second completes the set
 seed: 1105
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Claim package split across two emails four minutes apart; the second completes the set"
+status: draft
 tags: [split-package, completes]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_cedarridge_adjuster
-      channel: email
-      claimed_from: bstone@cedarridge.sandbox.invalid
+- at: "00:02"
+  client:
+    persona: p_cedarridge_adjuster
+    channel: email
+    claimed_from: dpark@cedarridge.sandbox.invalid
+    template: split_package_part
+    vars: {claim_ref: CR-2026-0577, part: 1, total: 2}
     attach:
-      - {class: insurance_claim, stratum: property}
-  - at: 00:06
-    client:
-      persona: p_cedarridge_adjuster
-      channel: email
-      claimed_from: bstone@cedarridge.sandbox.invalid
+    - {class: insurance_claim, stratum: property, ref: claim_package_part_1, group: cr_0577}
+- at: "00:06"
+  client:
+    persona: p_cedarridge_adjuster
+    channel: email
+    claimed_from: dpark@cedarridge.sandbox.invalid
+    template: split_package_part
+    vars: {claim_ref: CR-2026-0577, part: 2, total: 2}
     attach:
-      - {class: insurance_claim, stratum: auto}
+    - {class: insurance_claim, stratum: auto, ref: claim_package_part_2, group: cr_0577}
 expect:
   intent: document_submission
   signals:
-    - {kind: new_info, priority: normal, within: 00:06}
-    - {kind: doc_relation, priority: normal, within: 00:10}
+  - {kind: new_info, priority: normal, within: "00:06"}
+  - {kind: doc_relation, priority: normal, within: "00:10"}
   trust: {sender_level: verified}
   relations:
-    - {a: claim_package_part_1, b: claim_package_part_2, kind: completes, min_conf: 0.9}
+  - {a: claim_package_part_2, b: claim_package_part_1, kind: completes, min_conf: 0.8}
   outbox:
-    - {intent: document_submission, state: draft, to_sender: true}
+  - {intent: document_submission, state: draft, to_sender: true}
   boss_actions: [ack_signal, link_documents]
   overblocking: {benign_hard_actions: 0}
   invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

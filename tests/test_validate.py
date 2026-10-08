@@ -111,15 +111,15 @@ class ContentFixture(unittest.TestCase):
 
     def seed_scenario(self):
         self.scenario = {
-            "schema": "mailroom.scenario/v2", "name": "A1_status",
+            "name": "A1_status", "title": "Status check",
             "seed": 1, "profile": "smoke", "gen": "scripted",
             "transports": ["sim"],
             "timeline": [{"at": "00:01", "client": {
-                "persona": "p_cedar", "gen_spec": "gen_status",
-                "template": "status.j2",
+                "persona": "p_cedar", "channel": "email",
+                "gen_spec": "gen_status", "template": "status",
                 "claimed_from": "avery@cedar.sandbox.invalid",
-                "auth": {"dkim": "pass"}},
-                "attach": [{"file": "lease.txt"}]}],
+                "auth": {"dkim": "pass"},
+                "attach": [{"file": "lease.txt"}]}}],
             "expect": {"intent": "status_request", "signals": [
                 {"kind": "status_request", "priority": "normal"}],
                 "trust": {"sender_level": "verified"},
@@ -129,8 +129,9 @@ class ContentFixture(unittest.TestCase):
                                "a": "lease.txt", "b": "lease.txt"}]},
         }
         self.write_yaml("scenarios/A/A1_status.yaml", self.scenario)
-        self.write_yaml("gen/specs/status.yaml", {"id": "gen_status"})
-        self.write("gen/templates/status.j2", "Status, please.")
+        self.write_yaml("gen/specs/status.yaml",
+                        {"id": "gen_status", "persona": "p_cedar"})
+        self.write("gen/templates/status.j2", "Subject: Status, please.\n")
         self.write_csv("attachments/manifest.csv", [{"file": "lease.txt"}])
 
 
@@ -426,10 +427,10 @@ class ScenarioTests(ContentFixture):
         scenario["expect"]["quarantine"] = ["lease.txt"]
         _, report = self.check_scenario(scenario)
         self.assert_clean(report)
-        scenario["timeline"][0]["attach"] = []
+        scenario["timeline"][0]["client"]["attach"] = []
         _, report = self.check_scenario(scenario)
         self.assert_error(report, "is not attached anywhere in the timeline")
-        scenario["timeline"][0]["attach"] = [{"file": "lease.txt"}]
+        scenario["timeline"][0]["client"]["attach"] = [{"file": "lease.txt"}]
         self.write_csv("attachments/manifest.csv", [])
         _, report = self.check_scenario(scenario)
         self.assert_error(report, "expect.quarantine 'lease.txt' not in attachments/manifest.csv")
@@ -447,7 +448,7 @@ class ScenarioTests(ContentFixture):
                 _, report = self.check_scenario(scenario)
                 self.assert_error(report, error)
         scenario = copy.deepcopy(self.scenario)
-        scenario["timeline"][0]["attach"] = [{"file": "missing.pdf"}]
+        scenario["timeline"][0]["client"]["attach"] = [{"file": "missing.pdf"}]
         _, report = self.check_scenario(scenario)
         self.assert_error(report, "not in attachments/manifest.csv")
 
@@ -1063,15 +1064,15 @@ class OperationsContractTests(ContentFixture):
 
 class DerivedOutputTests(ContentFixture):
     def test_coverage_deduplicates_and_sorts_only_positive_known_strata(self):
-        self.write_csv("taxonomy/strata.csv", [{"class": "contract", "stratum": "lease"}])
+        self.write_csv("taxonomy/strata.csv", [{"class": "contract", "stratum": "lease", "in_ground_truth": "true"}])
         mixes = [{"client_id": client, "class": "contract", "stratum": "lease", "weight": weight}
                  for client, weight in (("z", "1"), ("a", "0.5"), ("z", "1"),
                                         ("zero", "0"), ("negative", "-1"), ("empty", ""), ("invalid", "oops"))]
         mixes.append({"client_id": "unknown", "class": "contract", "stratum": "other", "weight": "1"})
-        event = {"attach": [{"class": "contract", "stratum": "lease"}]}
+        event = {"client": {"attach": [{"class": "contract", "stratum": "lease"}]}}
         scenarios = {"A2_status": {"timeline": [event, event]},
                      "A1_status": {"timeline": [event]},
-                     "A3_empty": {"timeline": [{"attach": None}]}}
+                     "A3_empty": {"timeline": [{"client": {"attach": None}}]}}
         self.write_csv("attachments/manifest.csv", [
             {"attachment_id": aid, "class": "contract", "stratum": "lease", "in_taxonomy": included}
             for aid, included in (("att_0002", "true"), ("att_0001", "true"),
@@ -1081,13 +1082,15 @@ class DerivedOutputTests(ContentFixture):
         self.assertEqual(coverage, {"contract/lease": {
             "clients": ["a", "z"], "scenarios": ["A1_status", "A2_status"],
             "attachments": ["att_0001", "att_0002"]}})
-        self.assertIn("1/1 strata", report.infos[0])
+        self.assertIn("1/1 ground-truth strata", report.infos[0])
 
     def test_coverage_gaps_warn_without_failing(self):
         self.write_csv("taxonomy/strata.csv", [
-            {"class": "contract", "stratum": name} for name in ("empty", "client", "scenario")])
+            {"class": "contract", "stratum": name, "in_ground_truth": "true"}
+            for name in ("empty", "client", "scenario")])
         mixes = [{"client_id": "cedar", "class": "contract", "stratum": "client", "weight": "1"}]
-        scenarios = {"A1_status": {"timeline": [{"attach": [{"class": "contract", "stratum": "scenario"}]}]}}
+        scenarios = {"A1_status": {"timeline": [{"client": {"attach": [
+            {"class": "contract", "stratum": "scenario"}]}}]}}
         _, report = self.check(validate.coverage_report, mixes, scenarios)
         self.assertTrue(report.ok())
         self.assertEqual(report.warnings, [
@@ -1162,7 +1165,8 @@ class MainTests(ContentFixture):
         self.seed_scenario()
         # This scenario only needs a template; no generation spec or attachment.
         del self.scenario["timeline"][0]["client"]["gen_spec"]
-        del self.scenario["timeline"][0]["attach"]
+        del self.scenario["timeline"][0]["client"]["attach"]
+        del self.scenario["expect"]["relations"]
         (self.root / "gen/specs/status.yaml").unlink()
         self.write_yaml("scenarios/A/A1_status.yaml", self.scenario)
         self.write_csv("attachments/manifest.csv", [])
@@ -1209,7 +1213,8 @@ class MainTests(ContentFixture):
 
     def test_warnings_do_not_fail_and_output_is_capped_at_forty(self):
         self.write_csv("taxonomy/strata.csv", [
-            {"class": "contract", "stratum": f"unused_{number}"} for number in range(42)])
+            {"class": "contract", "stratum": f"unused_{number}", "in_ground_truth": "true"}
+            for number in range(42)])
         status, output = self.run_main()
         self.assertEqual(status, 0, output)
         self.assertIn("errors: 0, warnings: 42", output)

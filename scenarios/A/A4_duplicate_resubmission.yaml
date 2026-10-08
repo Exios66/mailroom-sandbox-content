@@ -1,33 +1,38 @@
 name: A4_duplicate_resubmission
+title: Same merger document content resent with an identical hash; flagged duplicate, no re-processing
 seed: 1104
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Same merger document content resent with an identical hash; flagged duplicate, no re-processing"
+status: draft
 tags: [duplicate]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_northstar_adviser
-      channel: email
-      claimed_from: jmercer@northstar-advisory.sandbox.invalid
+- at: "00:02"
+  client:
+    persona: p_northstar_adviser
+    channel: email
+    claimed_from: jlin@northstar-advisory.sandbox.invalid
+    template: document_submission
+    vars: {document_title: the merger agreement, matter_ref: NA-2026-0131, note: Execution version.}
     attach:
-      - {class: merger_agreement, stratum: all_cash}
-  - at: 00:11
-    client:
-      persona: p_northstar_adviser
-      channel: email
-      claimed_from: jmercer@northstar-advisory.sandbox.invalid
+    - {class: merger_agreement, stratum: all_cash, ref: merger_doc_first_send}
+- at: "00:11"
+  client:
+    persona: p_northstar_adviser
+    channel: email
+    claimed_from: jlin@northstar-advisory.sandbox.invalid
+    template: resend_submission
+    vars: {document_title: the merger agreement, matter_ref: NA-2026-0131}
     attach:
-      - {class: merger_agreement, stratum: all_cash}
+    - {ref: merger_doc_resend, same_as: merger_doc_first_send}
 expect:
   intent: duplicate_submission
   signals:
-    - {kind: new_info, priority: normal, within: 00:06}
-    - {kind: doc_relation, priority: normal, within: 00:14}
+  - {kind: new_info, priority: normal, within: "00:06"}
+  - {kind: doc_relation, priority: normal, within: "00:14"}
   trust: {sender_level: verified}
   relations:
-    - {a: merger_doc_first_send, b: merger_doc_resend, kind: duplicates, min_conf: 0.99}
+  - {a: merger_doc_resend, b: merger_doc_first_send, kind: duplicates, min_conf: 0.95}
   outbox: []
   boss_actions: [dismiss_signal, link_documents]
   overblocking: {benign_hard_actions: 0}

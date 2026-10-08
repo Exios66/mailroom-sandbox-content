@@ -1,16 +1,16 @@
 name: S8_prod_gmail_refusal
+title: Production Gmail token path reachable at startup; sandbox refuses to start
 seed: 2308
 profile: smoke
 gen: scripted
 transports: [sim]
-title: "Production Gmail token path reachable at startup; sandbox refuses to start"
+status: draft
 tags: [self-test, startup-guard, gmail, assert-refuses-to-start]
 timeline:
-  - at: 00:00
-    fault: production_gmail_token_path_reachable_at_startup
+- {at: "00:00", fault: production_gmail_token_path_reachable_at_startup}
 expect:
   intent: unrelated
   signals:
-    - {kind: fyi, priority: critical, within: 00:01}
+  - {kind: fyi, priority: critical, within: "00:01"}
   outbox: []
   invariants: [audit_chain_ok]

@@ -1,26 +1,30 @@
 name: G6_reextraction_after_amendment
+title: After an amendment lands, counsel asks to re-run extraction for key dates; Boss Desk never reprocesses
+  documents itself
 seed: 1306
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "After an amendment lands, counsel asks to re-run extraction for key dates; Boss Desk never reprocesses documents itself"
+status: draft
 tags: [production-adjacent, extraction, human-decision]
 timeline:
-  - at: 00:00
-    ingress: {doc: services_agreement_amended.pdf}
-  - at: 00:04
-    client:
-      persona: p_harlow_counsel
-      channel: email
-      claimed_from: dwhitcomb@harlowpryce.sandbox.invalid
-      auth: {spf: pass, dkim: pass, dmarc: pass}
-      gen_spec: gen_g6_reextraction_0606
+- at: "00:00"
+  ingress: {ref: services_agreement_amended, class: contract, stratum: consulting, as: services_agreement_amended.pdf}
+- at: "00:04"
+  client:
+    persona: p_harlow_counsel
+    channel: email
+    claimed_from: dwhitcomb@harlowpryce.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: reextraction_request
+    gen_spec: gen_g6_reextraction_0606
+    vars: {document_title: the consulting agreement, matter_ref: HP-2026-0402}
     attach:
-      - {class: contract, stratum: consulting}
+    - {class: contract, stratum: consulting}
 expect:
   intent: correction_or_amendment
   signals:
-    - {kind: new_info, priority: normal, within: 00:05}
+  - {kind: new_info, priority: normal, within: "00:05"}
   trust: {sender_level: verified}
   outbox: []
   boss_actions: [request_human_review]
