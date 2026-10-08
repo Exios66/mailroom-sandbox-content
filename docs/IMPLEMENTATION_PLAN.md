@@ -150,3 +150,31 @@ docs/IMPLEMENTATION_PLAN.md  # this file
 | Dataset access (B1) | Owner will allow `huggingface.co` in the cloud environment network policy. Phase 3 (WP 3.1/3.2) runs in a session where that is in effect; `tools/build_attachments.py` is written now. |
 | Schemas | Build the helper repo out fully here: `schemas/` in this repo is the enforced contract (CD8). M0 adopts it; drift checks come later. |
 | Scope | Phase 1 + Phase 2 in this session. PR #1 merged to `main` before work began, so Phase 1 lands as a follow-up branch instead of on PR #1. |
+
+---
+
+## 8. Status (2026-10-08, end of session)
+
+| Phase / WP | State | Notes |
+|---|---|---|
+| 1.1 strata generated | done | 56 catalog / 54 ground truth; `strata-drift` CI job |
+| 1.2 client mixes | done | all 54 ground-truth strata reachable |
+| 1.3 scenario v2 shape | done | plus CD18 (template on every message) and refs/endpoints (AM2); found and fixed reversed relations, unbound ingress docs, 96 body-less messages |
+| 1.4 manifest | done | off-taxonomy kinds; 4 new synthetic fixtures |
+| 1.5–1.6 validator + tests | done | all schemas enforced, ID ranges, 117 tests |
+| 1.7 docs, revision pin | done | CONTENT_SPEC rewritten; `ed7576b6` |
+| 1.8 tag | **not done** | 0.1.0 merged untagged; release 0.5.0 after this PR merges (`git tag v0.5.0`) |
+| 2.1–2.2 coverage | done | A13–A17 generated; `--strict-coverage` in CI |
+| 2.3 templates/personas | done | every message renders under StrictUndefined |
+| 2.4 B/C/D review | done (agent) | `status: review`; promotion to `frozen` needs a human reviewer |
+| 2.5 smoke export | done | 6 scenarios, 6 docs, ~30 KB |
+| 3.1 dataset join | tooling done | run `tools/build_attachments.py --hf --counts --select 3` where huggingface.co is allowed |
+| 3.2 relation truth from dataset | open | needs 3.1; verify the dataset's relationship vocabulary first |
+| 3.3 frozen emails | open | needs M9 + OpenRouter key; 32 scenarios await gen specs (C7) |
+| 3.4–3.6 | open | |
+
+Additional decision taken during implementation:
+
+| ID | Decision |
+|---|---|
+| CD18 | Every client message names a `template` (scripted body and fallback); `gen_spec` is optional. Templates render `Subject:` first; variables come from `vars` plus the standard sender context (CONTENT_SPEC §4.3). Correspondent reply shapes live in `gen/templates/replies/`. |

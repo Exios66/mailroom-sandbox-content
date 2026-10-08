@@ -21,18 +21,20 @@ Release history lives in [`CHANGELOG.md`](CHANGELOG.md).
 | `clients/` | Client registry sources: `clients.csv`, `client_contacts.csv`, `client_domains.csv`, `client_doc_mix.csv` |
 | `personas/` | `personas.csv` plus `behavior/<persona_id>.yaml` persona behavior files |
 | `scenarios/` | One YAML per scenario under `<Series>/` (series `A`–`G`, `S`, `T`); `scenarios_index.csv` is generated |
-| `gen/` | Generation specs (`specs/*.yaml`) and templates (`templates/`); `gen_specs_index.csv` is generated |
+| `gen/` | Generation specs (`specs/*.yaml`), inbound message templates (`templates/*.j2`, every scenario message renders from one) and expected Correspondent replies (`templates/replies/`) |
 | `emails/` | `emails_index.csv`, frozen bodies (`frozen/<series>.jsonl`), hand-written anchors (`handwritten/*.md`) |
 | `attachments/` | `manifest.csv` plus `synthetic/`, `offtaxonomy/`, `adversarial/` fixture files |
 | `relations/` | `relations_truth.csv`, `dataset_relation_map.csv` |
 | `adversary/` | Sandbox-only attack fixtures: `lookalike_domains.csv`, `impostor_personas.csv`. **Never compiled into the registry.** |
 | `email/` | Email infrastructure config: sender pool, overlay contract, AgentMail, Gmail sandbox, recipient policy, ingress metering policy, scheduled-send contract |
 | `protocol/` | Correspondent↔Boss interaction protocol, delegation matrix, and metered-operations runtime contract (ingress metering, scheduled sending, doom-loop guards, separate-process topology) |
-| `taxonomy/` | `strata.csv` (document classes × strata); `coverage.csv` is generated |
-| `smoke/` | Smoke-set fixtures (the smallest runnable pack) |
-| `dist/` | Generated at validation time (`registry.yaml`); gitignored, never committed |
-| `tools/` | `validate.py` (content CI), `content.sh` (thin local shims), `brand_allowlist.txt` (leak-scan allowlist) |
-| `.github/workflows/` | `content-ci.yml` (PR/main validation), `release.yml` (tag → tarball + GitHub release) |
+| `taxonomy/` | `strata.csv` (**generated** from mailroom-reloaded's subclass catalogue by `tools/sync_strata.py`), `strata.source.json` (its provenance), `offtaxonomy.csv` (off-taxonomy kinds), `migrations/` (audit trail of stratum renames) |
+| `smoke/` | The pinned smoke subset; `tools/export_smoke.py` exports it for `sandbox/fixtures/smoke/` ([smoke/README.md](smoke/README.md)) |
+| `ids/` | `ranges.yaml`: ID blocks per workstream so parallel agents never collide |
+| `dist/` | Generated at validation time (`registry.yaml`); gitignored, shipped inside the release bundle |
+| `tools/` | `validate.py` (content CI), `sync_strata.py`, `gen_coverage_scenarios.py`, `export_smoke.py`, `build_attachments.py` (dataset join), `make_fixture_pdf.py`, `content.sh` (local shims); see CONTENT_SPEC §10 |
+| `docs/` | `IMPLEMENTATION_PLAN.md`: audit, design decisions (CD1–CD18) and phases for this repo |
+| `.github/workflows/` | `content-ci.yml` (validator, unit tests, generated-file checks, strata drift), `release.yml` (tag → tarball + GitHub release) |
 
 ## How mailroom-reloaded consumes this repo
 
@@ -61,10 +63,13 @@ fails the build if any adversary material leaks in.
 1. Land content changes on `main` (content-ci green).
 2. Bump `version` in `content.json` (semver) in its own PR.
 3. Push a tag `vX.Y.Z`. That is the only trigger for a release.
-4. `.github/workflows/release.yml` runs `tools/validate.py`; on success it
-   builds `mailroom-sandbox-content-<tag>.tar.zst` (excluding `dist/`, `.git`,
-   `.github`), writes `SHA256SUMS` over the tarball and `content.json`, and
-   creates a GitHub release attaching all three.
+4. `.github/workflows/release.yml` checks the tag equals `content.json`
+   version and runs `tools/validate.py --strict-coverage` (which compiles
+   `dist/registry.yaml`); on success it builds
+   `mailroom-sandbox-content-<tag>.tar.zst` (including the compiled
+   registry; excluding `.git`, `.github`), writes `SHA256SUMS` over the
+   tarball and `content.json`, and creates a GitHub release attaching all
+   three.
 5. Consumers move with `mailroom sandbox content bump --tag vX.Y.Z` in
    mailroom-reloaded, which refreshes `sandbox/content.lock`.
 
@@ -73,10 +78,14 @@ fails the build if any adversary material leaks in.
 - **One agent owns one series.** Pick up a series directory under
   `scenarios/` and own its scenarios end to end (spec → timeline → frozen
   emails → attachments). Coordinate cross-series changes in the PR.
-- **Validate before you PR.** Run `python3 tools/validate.py` from the repo
-  root, or `tools/content.sh validate` if you don't have mailroom-reloaded
-  installed. content-ci runs the same validator: ERRORs fail the build,
-  WARNs don't.
+- **Validate before you PR.** `pip install pyyaml jsonschema jinja2`, then
+  from the repo root run `python3 tools/validate.py --strict-coverage` and
+  `python3 -m unittest discover -s tests -p 'test_*.py'`. content-ci runs
+  the same: ERRORs fail the build, WARNs don't.
+- **Never hand-edit generated files** (`taxonomy/strata.csv`, the
+  `A13`–`A17` coverage scenarios, `scenarios_index.csv`, the smoke
+  `documents` block). Re-run their generator; CI diffs them.
+- **Mint IDs inside your block** in `ids/ranges.yaml`.
 - Read [`CONTENT_SPEC.md`](CONTENT_SPEC.md) before adding files — ID
   conventions, formats, and the registry/adversary separation are enforced
   by CI, not by convention.
