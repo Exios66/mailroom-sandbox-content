@@ -5,5 +5,72 @@
     "src/mailroom_reloaded/scoring/corpus.py": "b5ec80a51e63a33db6e1dd9cb3e543ea92ce6d2b42589cecb7d704c427474479"
   },
   "ref": "v0.2.0",
-  "repo": "Exios66/mailroom-reloaded"
+  "repo": "Exios66/mailroom-reloaded",
+  "surface_map": {
+    "contract": {
+      "Affiliate_Agreements": "affiliate",
+      "Agency Agreements": "agency",
+      "Co_Branding": "co_branding",
+      "Collaboration": "collaboration",
+      "Consulting Agreements": "consulting",
+      "Development": "development",
+      "Distributor": "distributor",
+      "Endorsement": "endorsement",
+      "Franchise": "franchise",
+      "Hosting": "hosting",
+      "IP": "ip",
+      "Joint Venture": "joint_venture",
+      "Joint Venture _ Filing": "joint_venture",
+      "License_Agreements": "license",
+      "Maintenance": "maintenance",
+      "Manufacturing": "manufacturing",
+      "Marketing": "marketing",
+      "Non_Compete_Non_Solicit": "non_compete_no_solicit",
+      "Outsourcing": "outsourcing",
+      "Promotion": "promotion",
+      "Reseller": "reseller",
+      "Service": "service",
+      "Sponsorship": "sponsorship",
+      "Strategic Alliance": "strategic_alliance",
+      "Supply": "supply",
+      "Transportation": "transportation"
+    },
+    "corporate_record": {
+      "articles_of_incorporation": "articles_of_incorporation",
+      "board_resolution": "board_resolution",
+      "bylaws": "bylaws",
+      "charter_amendment": "charter_amendment",
+      "indenture": "indenture",
+      "officer_certificate": "officer_certificate",
+      "other": "other",
+      "powers_of_attorney": "powers_of_attorney",
+      "rights_instrument": "rights_instrument",
+      "subsidiary_list": "subsidiary_list"
+    },
+    "correspondence": {
+      "attorney_demand": "attorney_demand",
+      "demand": "demand",
+      "email": "email",
+      "letter": "letter",
+      "meeting_request": "meeting_request",
+      "memo": "memo",
+      "notice": "notice",
+      "press_release": "press_release"
+    },
+    "insurance_claim": {
+      "auto": "auto",
+      "carrier": "carrier",
+      "inpatient": "inpatient",
+      "outpatient": "outpatient",
+      "pde": "pde",
+      "property": "property"
+    },
+    "merger_agreement": {
+      "all_cash": "all_cash",
+      "all_stock": "all_stock",
+      "mixed_cash_stock": "mixed_cash_stock",
+      "mixed_cash_stock_election": "mixed_cash_stock_election",
+      "other": "other"
+    }
+  }
 }

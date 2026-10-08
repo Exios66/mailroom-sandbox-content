@@ -65,6 +65,12 @@ def _eval(expr: ast.expr, names: dict) -> object:
 
 def load_catalog(src: Path) -> tuple[dict, dict]:
     """Return (live_catalog, ground_truth_keys) as {class: [stratum, ...]}."""
+    live, gt, _surfaces = load_catalog_with_surfaces(src)
+    return live, gt
+
+
+def load_catalog_with_surfaces(src: Path) -> tuple[dict, dict, dict]:
+    """Also return {class: {raw dataset surface: canonical stratum}}."""
     cfg = _assignments(src / CONFIG)
     subtypes = ast.literal_eval(cfg["CONTRACT_SUBTYPES"])
     contract_keys = [s["key"] for s in subtypes]
@@ -92,17 +98,20 @@ def load_catalog(src: Path) -> tuple[dict, dict]:
         raise SystemExit(f"cannot normalize contract surface {surface!r}")
 
     gt: dict[str, list[str]] = {}
+    surface_map: dict[str, dict[str, str]] = {}
     for cls in CLASS_ORDER:
         keys = []
+        surface_map[cls] = {}
         for surface in surfaces.get(cls, ()):
             k = norm_contract(surface) if cls == "contract" else surface
             if k not in live.get(cls, ()):
                 raise SystemExit(f"{cls}: ground-truth surface {surface!r} "
                                  f"-> {k!r} is not in the live catalog")
+            surface_map[cls][surface] = k
             if k not in keys:
                 keys.append(k)
         gt[cls] = keys
-    return {c: list(live[c]) for c in CLASS_ORDER}, gt
+    return {c: list(live[c]) for c in CLASS_ORDER}, gt, surface_map
 
 
 def build_rows(live: dict, gt: dict, old_rows: dict) -> list[dict]:
@@ -140,7 +149,7 @@ def _git(src: Path, *args: str) -> str:
         return ""
 
 
-def source_record(src: Path, ref: str | None) -> dict:
+def source_record(src: Path, ref: str | None, surface_map: dict) -> dict:
     def sha(rel: str) -> str:
         return hashlib.sha256((src / rel).read_bytes()).hexdigest()
     return {
@@ -148,6 +157,9 @@ def source_record(src: Path, ref: str | None) -> dict:
         "ref": ref or _git(src, "describe", "--tags", "--always"),
         "commit": _git(src, "rev-parse", "HEAD"),
         "files": {CORPUS: sha(CORPUS), CONFIG: sha(CONFIG)},
+        # raw dataset expected_subclass surface -> canonical stratum; lets
+        # tools/build_attachments.py normalize labels without a checkout
+        "surface_map": surface_map,
     }
 
 
@@ -170,7 +182,7 @@ def main(argv: list[str] | None = None) -> int:
                 if (r.get("rows") or "").strip().isdigit():
                     old_rows[(r["class"], r["stratum"])] = r["rows"].strip()
 
-    live, gt = load_catalog(src)
+    live, gt, surface_map = load_catalog_with_surfaces(src)
     text = render(build_rows(live, gt, old_rows))
     if args.check:
         current = out.read_text(encoding="utf-8") if out.exists() else ""
@@ -183,7 +195,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     out.write_text(text, encoding="utf-8")
     (root / "taxonomy" / "strata.source.json").write_text(
-        json.dumps(source_record(src, args.ref), indent=2, sort_keys=True) + "\n",
+        json.dumps(source_record(src, args.ref, surface_map), indent=2,
+                   sort_keys=True) + "\n",
         encoding="utf-8")
     n_gt = sum(len(v) for v in gt.values())
     n_live = sum(len(v) for v in live.values())

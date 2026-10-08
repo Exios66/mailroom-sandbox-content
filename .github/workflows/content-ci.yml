@@ -20,8 +20,14 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install pyyaml jsonschema jinja2
-      - name: Run content validator
-        run: python3 tools/validate.py
+      - name: Run content validator (coverage gaps are errors, addendum §2.4)
+        run: python3 tools/validate.py --strict-coverage
+      - name: Generated files are current
+        run: |
+          python3 tools/gen_coverage_scenarios.py --check
+          python3 tools/validate.py --generate-indexes > /dev/null
+          git diff --exit-code -- scenarios/scenarios_index.csv
+          python3 tools/export_smoke.py --check
       - name: Run unit tests
         run: python3 -m unittest discover -s tests -p 'test_*.py'
 

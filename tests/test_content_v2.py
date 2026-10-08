@@ -359,7 +359,147 @@ class FixturePdf(unittest.TestCase):
                          hashlib.sha256(committed).hexdigest())
 
 
+class SmokeExport(unittest.TestCase):
+    def test_export_is_current_pinned_and_within_budget(self):
+        from tools import export_smoke
+        subprocess.run([sys.executable, str(REPO_ROOT / "tools/validate.py")],
+                       capture_output=True, cwd=REPO_ROOT, check=False)
+        files = export_smoke.build(REPO_ROOT)
+        manifest = __import__("json").loads(files["manifest.json"])
+        self.assertLessEqual(manifest["total_bytes"], 2 * 1024 * 1024)
+        self.assertEqual(manifest["dataset_revision"], "ed7576b6")
+        for rel, data in files.items():
+            if rel.startswith("scenarios/"):
+                text = data.decode()
+                self.assertNotIn("stratum:", text.split("expect:")[0],
+                                 f"{rel} still draws from the dataset")
+        for rel in manifest["files"]:
+            self.assertIn(rel, files)
+
+    def test_unresolved_draw_and_stale_set_fail(self):
+        import shutil
+        from tempfile import TemporaryDirectory
+        from tools import export_smoke
+        with TemporaryDirectory() as t:
+            root = Path(t) / "c"
+            shutil.copytree(REPO_ROOT, root, ignore=shutil.ignore_patterns(".git", "release"))
+            text = (root / "smoke/smoke_set.yaml").read_text()
+            (root / "smoke/smoke_set.yaml").write_text(
+                text.replace("  - {class: corporate_record, stratum: officer_certificate, "
+                             "file: officer_certificate_tc1190.pdf}\n", ""))
+            with self.assertRaisesRegex(export_smoke.SmokeError, "has no stand-in"):
+                export_smoke.build(root)
+            (root / "smoke/smoke_set.yaml").write_text(text.replace(
+                "file: coi_unit4c.pdf, doc_id", "file: coi_unit4c.pdf, doc_id_x"))
+            with self.assertRaisesRegex(export_smoke.SmokeError, "stale"):
+                export_smoke.build(root)
+
+
+class CoverageScenarios(unittest.TestCase):
+    def test_generated_scenarios_are_current(self):
+        from tools import gen_coverage_scenarios
+        self.assertEqual(gen_coverage_scenarios.main(["--check"]), 0)
+
+    def test_every_ground_truth_stratum_is_walked_once(self):
+        from tools import gen_coverage_scenarios
+        built = gen_coverage_scenarios.build(REPO_ROOT)
+        walked = {(d["doc_type"], d["subclass"])
+                  for sc in built.values() for d in sc["expect"]["docs"].values()}
+        import csv
+        with open(REPO_ROOT / "taxonomy/strata.csv", newline="") as f:
+            gt = {(r["class"], r["stratum"]) for r in csv.DictReader(f)
+                  if r["in_ground_truth"] == "true"}
+        self.assertEqual(walked, gt)
+
+
+class BuildAttachments(unittest.TestCase):
+    def make_root(self, tmp: Path) -> Path:
+        import shutil
+        root = tmp / "c"
+        for rel in ("content.json", "taxonomy/strata.csv", "taxonomy/strata.source.json",
+                    "clients/client_doc_mix.csv", "attachments/manifest.csv"):
+            (root / rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(REPO_ROOT / rel, root / rel)
+        return root
+
+    def ground_truth(self, tmp: Path) -> Path:
+        import json
+        rows = [
+            {"filename": "lic_a.txt", "expected": "contract",
+             "expected_subclass": "License_Agreements", "split": "train",
+             "content_sha256": "aa", "doc_text": "NEVER READ", "subject_matter": "NEVER"},
+            {"filename": "lic_b.txt", "expected": "contract",
+             "expected_subclass": "License_Agreements", "split": "train",
+             "content_sha256": "bb"},
+            {"filename": "lic_test.txt", "expected": "contract",
+             "expected_subclass": "License_Agreements", "split": "test",
+             "content_sha256": "cc"},
+            {"filename": "auto_a.txt", "expected": "insurance_claim",
+             "expected_subclass": "auto", "split": "train", "content_sha256": "dd"},
+        ]
+        p = tmp / "gt.jsonl"
+        p.write_text("\n".join(json.dumps(r) for r in rows))
+        return p
+
+    def test_counts_train_only_and_select_is_stable(self):
+        from tempfile import TemporaryDirectory
+        from tools import build_attachments
+        with TemporaryDirectory() as t:
+            tmp = Path(t)
+            root, gt = self.make_root(tmp), self.ground_truth(tmp)
+            argv = ["--ground-truth", str(gt), "--root", str(root), "--counts", "--select", "1"]
+            self.assertEqual(build_attachments.main(argv), 0)
+            strata = (root / "taxonomy/strata.csv").read_text()
+            self.assertIn("contract,license,true,true,2,active", strata)
+            self.assertIn("insurance_claim,auto,true,true,1,active", strata)
+            manifest = (root / "attachments/manifest.csv").read_text()
+            self.assertNotIn("lic_test.txt", manifest)
+            self.assertNotIn("NEVER", manifest + strata)
+            self.assertIn("att_1000,", manifest)
+            first = manifest
+            self.assertEqual(build_attachments.main(argv), 0)
+            self.assertEqual((root / "attachments/manifest.csv").read_text(), first)
+            report = validate.Report()
+            validate.check_id_ranges(root, report)
+            self.assertEqual([e for e in report.errors if "att_" in e], [])
+
+
 class RealContent(unittest.TestCase):
+    def test_every_scenario_message_renders(self):
+        import csv
+        import jinja2
+        import yaml
+        env = jinja2.Environment(loader=jinja2.FileSystemLoader(REPO_ROOT / "gen/templates"),
+                                 undefined=jinja2.StrictUndefined)
+        with open(REPO_ROOT / "personas/personas.csv", newline="") as f:
+            personas = {r["persona_id"]: r for r in csv.DictReader(f)}
+        with open(REPO_ROOT / "clients/client_contacts.csv", newline="") as f:
+            contacts = {r["contact_id"]: r for r in csv.DictReader(f)}
+        rendered = 0
+        for path in sorted((REPO_ROOT / "scenarios").glob("*/*.yaml")):
+            sc = yaml.safe_load(path.read_text())
+            for ev in sc["timeline"]:
+                c = ev.get("client")
+                if not c:
+                    continue
+                contact = contacts.get(personas[c["persona"]]["contact_id"], {})
+                names = [a.get("as") or a.get("file") or "document.pdf"
+                         for a in c.get("attach", [])]
+                ctx = {"sender_email": c.get("claimed_from", ""),
+                       "client_display_name": "Client",
+                       "attachment_name": names[0] if names else "",
+                       "attachment_names": names}
+                if contact:
+                    ctx.update(sender_name=contact["full_name"],
+                               sender_first_name=contact["full_name"].split()[0],
+                               sender_title=contact["role"])
+                ctx.update(c.get("vars") or {})
+                text = env.get_template(f"{c['template']}.j2").render(**ctx)
+                first = text.lstrip().splitlines()[0]
+                self.assertTrue(first.startswith("Subject:"), f"{path.name}: {first!r}")
+                rendered += 1
+        self.assertGreater(rendered, 150)
+
     def test_validator_passes_on_the_content_pack(self):
         out = subprocess.run([sys.executable, str(REPO_ROOT / "tools/validate.py")],
                              capture_output=True, text=True, cwd=REPO_ROOT)
