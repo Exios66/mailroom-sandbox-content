@@ -37,7 +37,10 @@ if [ "$PUSH" = 1 ]; then
         gh release create "$TAG" "release/mailroom-sandbox-content-$TAG.tar.zst" \
             release/SHA256SUMS release/content.json \
             --title "mailroom-sandbox-content $TAG" \
-            --notes "Content bundle $TAG. Verify with \`sha256sum -c SHA256SUMS\`; pin in mailroom-reloaded via sandbox/content.lock (repo, tag, commit, bundle sha256)."
+            --notes "Content bundle $TAG. Verify with \`sha256sum -c SHA256SUMS\`; pin in mailroom-reloaded via sandbox/content.lock (repo, tag, commit, bundle sha256)." || {
+            echo "gh release create failed; the tag $TAG is already pushed." >&2
+            echo "retry only the release: gh release create $TAG release/* --title ..." >&2
+            exit 1; }
     else
         echo "gh not available or not logged in: create the GitHub release for $TAG"
         echo "by hand and attach the three files in release/."

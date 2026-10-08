@@ -33,7 +33,7 @@ EV = {
  ("C1_forward_chain",0): dict(template="forward_chain", vars=dict(subject_core=f"claim {CL} paperwork", question="See below - is this still what you need?", quoted_history="Original request for the bill of lading and photos, forwarded twice with notes from the yard manager.")),
  ("C2_non_english_message",0): dict(template="spanish_inquiry", vars=dict(claim_ref="VG-2026-0447")),
  ("C3_password_zip",0): dict(template="password_archive_submission", from_="dpark@cedarridge.sandbox.invalid", ref="msg_protected_bundle", vars=dict(claim_ref="CR-2026-0590")),
- ("C3_password_zip",1): dict(template="archive_password_followup", from_="dpark@cedarridge.sandbox.invalid", ref="msg_password", vars=dict(claim_ref="CR-2026-0590", archive_password="sandbox-pw-0590")),
+ ("C3_password_zip",1): dict(template="archive_password_followup", from_="dpark@cedarridge.sandbox.invalid", ref="msg_password", vars=dict(claim_ref="CR-2026-0590", archive_password="sandbox-archive-key-0590")),
  ("C4_corrupted_pdf",0): dict(template="informal_photo_submission", vars=dict(subject_line="scan", note="here's the scan from the site")),
  ("C5_misleading_filename",0): dict(template="document_submission", from_="agarcia@prairielabs.sandbox.invalid", vars=dict(document_title="invoice.pdf", matter_ref="the reseller deal", note="It's the signed agreement, sorry about the filename."), att={0: dict(**{"as": "invoice.pdf"})}),
  ("C6_conflicting_instructions",0): dict(template="closing_instruction", ref="msg_instruction_a", vars=dict(matter_ref="TC-2026-0912", instruction="Please hold the closing documents until the lender confirms funding.")),

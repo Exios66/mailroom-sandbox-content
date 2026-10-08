@@ -147,9 +147,12 @@ def build(root: Path) -> dict[str, bytes]:
         out[f"docs/{f}"] = data
     for t in sorted(templates):
         out[f"templates/{t}.j2"] = (root / "gen/templates" / f"{t}.j2").read_bytes()
-    rows = [r for r in _csv(root / "personas/personas.csv") if r["persona_id"] in persona_ids]
+    all_rows = _csv(root / "personas/personas.csv")
+    if not all_rows:
+        raise SmokeError("personas/personas.csv is empty")
+    rows = [r for r in all_rows if r["persona_id"] in persona_ids]
     buf = io.StringIO()
-    w = csv.DictWriter(buf, fieldnames=list(rows[0].keys()), lineterminator="\n")
+    w = csv.DictWriter(buf, fieldnames=list(all_rows[0].keys()), lineterminator="\n")
     w.writeheader()
     w.writerows(rows)
     out["personas/personas.csv"] = buf.getvalue().encode("utf-8")

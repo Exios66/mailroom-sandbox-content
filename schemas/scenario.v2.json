@@ -5,6 +5,7 @@
  "description": "Scenario file format v2 (addendum v2 \u00a74.8). One YAML file per scenario under scenarios/<Series>/.",
  "properties": {
   "expect": {
+   "additionalProperties": false,
    "properties": {
     "boss_actions": {
      "items": {
@@ -91,6 +92,7 @@
      "type": "array"
     },
     "overblocking": {
+     "additionalProperties": false,
      "description": "For benign messages / benign companions: expected hard actions (usually 0)",
      "properties": {
       "benign_hard_actions": {
@@ -149,6 +151,7 @@
     },
     "signals": {
      "items": {
+      "additionalProperties": false,
       "properties": {
        "attack_class": {
         "enum": [
@@ -206,6 +209,7 @@
      "type": "array"
     },
     "trust": {
+     "additionalProperties": false,
      "properties": {
       "sender_level": {
        "enum": [

@@ -172,9 +172,9 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     if not args.counts and not args.select:
         ap.error("nothing to do: pass --counts and/or --select N")
-    revision = json.loads((args.root / "content.json").read_text())["dataset_revision"]
+    revision = json.loads((args.root / "content.json").read_text(encoding="utf-8"))["dataset_revision"]
     surface_map = json.loads(
-        (args.root / "taxonomy" / "strata.source.json").read_text())["surface_map"]
+        (args.root / "taxonomy" / "strata.source.json").read_text(encoding="utf-8"))["surface_map"]
     raw = _load_hf(revision) if args.hf else _read_rows(args.ground_truth)
     rows = normalize(raw, surface_map)
     if args.counts:

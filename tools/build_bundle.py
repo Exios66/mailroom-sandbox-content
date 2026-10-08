@@ -12,8 +12,8 @@ dist/registry.yaml; entries are sorted, with fixed mtime, owner and modes.
 The same commit always yields the same sha256, which is what
 mailroom-reloaded pins in sandbox/content.lock.
 
-Requires the ``zstandard`` Python module (pip install zstandard) or the
-``zstd`` binary. Run tools/validate.py first so dist/registry.yaml is fresh;
+Requires the ``zstandard`` Python module (pip install zstandard); the zstd
+binary is not used because its bytes can differ. Run tools/validate.py first so dist/registry.yaml is fresh;
 tools/release.sh does both.
 
   python3 tools/build_bundle.py [--out release]
@@ -32,7 +32,7 @@ import tarfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-EXCLUDE_PREFIXES = (".github/", ".githooks/", "release/")
+EXCLUDE_PREFIXES = (".github/", ".githooks/", "release/", ".cache/")
 MTIME = 1767225600  # 2026-01-01T00:00:00Z: fixed so bundles are reproducible
 
 
@@ -59,15 +59,14 @@ def build_tar(root: Path, files: list[str]) -> bytes:
 
 
 def zstd(data: bytes) -> bytes:
+    """One compressor path only: the zstd binary and the module can emit
+    different bytes, which would change the sha256 pinned in content.lock."""
     try:
         import zstandard
-        return zstandard.ZstdCompressor(level=19).compress(data)
     except ImportError:
-        if shutil.which("zstd") is None:
-            raise SystemExit("need the zstandard module (pip install zstandard) "
-                             "or the zstd binary")
-        return subprocess.run(["zstd", "-19", "-q", "-c"], input=data, check=True,
-                              capture_output=True).stdout
+        raise SystemExit("need the zstandard module (pip install zstandard)")
+    return zstandard.ZstdCompressor(level=19, threads=0,
+                                    write_content_size=True).compress(data)
 
 
 def main(argv: list[str] | None = None) -> int:
