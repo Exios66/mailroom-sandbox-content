@@ -15,7 +15,7 @@ timeline:
     client:
       persona: p_stateca_regulator
       channel: email
-      claimed_from: notices@stateca-regulator.sandbox.invalid
+      claimed_from: rpatel@stateca.sandbox.invalid
       auth:
         spf: pass
         dkim: pass

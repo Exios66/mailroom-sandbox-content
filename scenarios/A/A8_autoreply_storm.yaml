@@ -10,12 +10,12 @@ timeline:
     client:
       persona: p_lakeshore_biller
       channel: email
-      claimed_from: nbilling@lakeshoremed.sandbox.invalid
+      claimed_from: nbilling@lakeshorebilling.sandbox.invalid
   - at: 00:07
     client:
       persona: p_lakeshore_biller
       channel: email
-      claimed_from: nbilling@lakeshoremed.sandbox.invalid
+      claimed_from: nbilling@lakeshorebilling.sandbox.invalid
 expect:
   intent: auto_reply
   signals:

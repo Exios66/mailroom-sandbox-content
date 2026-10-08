@@ -12,20 +12,22 @@ timeline:
       channel: email
       claimed_from: kalvarado@tricounty-title.sandbox.invalid
       auth: {spf: fail, dkim: none, dmarc: fail}
-      attach:
-        - {file: qr_code_credential_harvest.png, in_taxonomy: false}
+    attach:
+      - {file: qr_code_credential_harvest.png, in_taxonomy: false}
   - at: 00:09
     client:
       persona: p_tricounty_real
       channel: email
       claimed_from: kalvarado@tricountytitle.sandbox.invalid
       auth: {spf: pass, dkim: pass, dmarc: pass}
-      attach:
-        - {class: corporate_record, stratum: officer_certificate, in_taxonomy: true}
+    attach:
+      - {class: corporate_record, stratum: officer_certificate, in_taxonomy: 
+          true}
 expect:
   intent: spam_or_phishing
   signals:
-    - {kind: possible_attack, attack_class: malicious_attachment, priority: critical, within: 00:01}
+    - {kind: possible_attack, attack_class: malicious_attachment, priority: 
+        critical, within: 00:01}
   trust: {sender_level: hostile}
   quarantine: [qr_code_credential_harvest.png]
   outbox: []

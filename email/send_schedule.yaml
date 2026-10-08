@@ -62,9 +62,12 @@ doom_loop_prevention:
     halt_action: stop_scheduler_emit_ops_circuit_open_require_human_reset
     auto_reset: false                 # a human clears it; the loop never restarts itself
 
-  # 3. Idempotency — the same send can never double-fire.
+  # 3. Idempotency — the same send can never double-fire, and two
+  #    distinct approved sends are never conflated.
   idempotency:
-    key: sha256(thread_id + content_hash)     # required on every send
+    key: sha256(outbound_message_id + content_hash)  # required on every send
+    outbound_message_id: stable ID assigned at draft approval; retries of the
+                         same approved draft reuse it, a new draft gets a new one
     duplicate_window_hours: 24                # replays inside the window are dropped
     replay_audit_event: send.duplicate_dropped
 

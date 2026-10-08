@@ -48,8 +48,18 @@ persona `^p_[a-z0-9_]+$`, spec `^gen_[a-zA-Z0-9_]+$`, email
 
 ## 3. Scenario series (addendum v2 §3)
 
-Eight series directories under `scenarios/`: `A`, `B`, `C`, `D`, `E`, `F`,
-`S`, `T`. One agent owns one series end to end.
+Nine series directories under `scenarios/`: `A`, `B`, `C`, `D`, `E`, `F`,
+`G`, `S`, `T`. One agent owns one series end to end.
+
+- **G-series is production-adjacent.** It covers realistic external
+  communications the Correspondent handles in production-adjacent
+  operation: frustrated processing-status requests, document-entity
+  extraction requests and corrections, bulk status and summary requests,
+  re-extraction after amendment, receipt confirmations, forwarded-chain
+  timelines, expedite requests, client-stated court deadlines, access-scope
+  questions, and repeat questions. All G scenarios are benign
+  (`overblocking.benign_hard_actions: 0`); extraction corrections produce
+  `contradicts` relations and are never auto-linked.
 
 - **E-series is identity-dependent.** It covers lookalike / impostor /
   credential scenarios (e.g. `E1_lookalike_wire_change`). E-series scenarios

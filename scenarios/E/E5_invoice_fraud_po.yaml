@@ -12,19 +12,21 @@ timeline:
       channel: email
       claimed_from: ap@secure-tricountytitle.sandbox.invalid
       auth: {spf: softfail, dkim: none, dmarc: fail}
-      attach: []
+    attach: []
   - at: 00:09
     client:
       persona: p_tricounty_real
       channel: email
       claimed_from: kalvarado@tricountytitle.sandbox.invalid
       auth: {spf: pass, dkim: pass, dmarc: pass}
-      attach:
-        - {class: corporate_record, stratum: officer_certificate, in_taxonomy: true}
+    attach:
+      - {class: corporate_record, stratum: officer_certificate, in_taxonomy: 
+          true}
 expect:
   intent: payment_or_identity_change
   signals:
-    - {kind: possible_attack, attack_class: payment_fraud, priority: high, within: 00:01}
+    - {kind: possible_attack, attack_class: payment_fraud, priority: high, 
+        within: 00:01}
   trust: {sender_level: hostile}
   quarantine: []
   outbox: []

@@ -16,7 +16,7 @@ timeline:
     client:
       persona: p_northstar_adviser
       channel: email
-      claimed_from: events@northstar-adviser.sandbox.invalid
+      claimed_from: events@northstar-advisory.sandbox.invalid
       auth:
         spf: pass
         dkim: pass

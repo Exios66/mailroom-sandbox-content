@@ -4,7 +4,8 @@ profile: demo
 gen: scripted
 transports: [agentmail]
 title: "Attachment round trip: sizes, MIME types, filenames with odd characters"
-tags: [transport-conformance, real-mail, attachments, assert-size-mime-filename-fidelity]
+tags: [transport-conformance, real-mail, attachments, 
+      assert-size-mime-filename-fidelity]
 timeline:
   - at: 00:02
     client:
@@ -12,9 +13,10 @@ timeline:
       channel: email
       claimed_from: kalvarado@tricountytitle.sandbox.invalid
       auth: {spf: pass, dkim: pass, dmarc: pass}
-      attach:
-        - {class: corporate_record, stratum: officer_certificate, in_taxonomy: true}
-        - {class: contract, stratum: agreement_date, in_taxonomy: true}
+    attach:
+      - {class: corporate_record, stratum: officer_certificate, in_taxonomy: 
+          true}
+      - {class: contract, stratum: agreement_date, in_taxonomy: true}
 expect:
   intent: document_submission
   signals:

@@ -10,7 +10,7 @@ timeline:
     client:
       persona: p_vega_prose
       channel: email
-      claimed_from: mvega@mailbox.sandbox.invalid
+      claimed_from: marisol.vega@vega.sandbox.invalid
 expect:
   intent: general_question
   signals:

@@ -30,8 +30,9 @@ jobs:
           tar --exclude=dist --exclude=.git --exclude=.github \
               -I zstd -cf "dist/${TARBALL}" .
           ( cd dist && sha256sum "${TARBALL}" > SHA256SUMS )
-          # content.json checksum recorded alongside the bundle
-          ( cd dist && sha256sum ../content.json >> SHA256SUMS )
+          # content.json checksum recorded alongside the bundle; hash from the
+          # repo root so the manifest holds the bare filename consumers verify
+          sha256sum content.json >> dist/SHA256SUMS
           ls -la dist/
       - name: Create GitHub release
         env:

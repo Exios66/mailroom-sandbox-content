@@ -12,18 +12,19 @@ timeline:
       channel: email
       claimed_from: subpoena-desk@process-service.sandbox.invalid
       auth: {spf: fail, dkim: none, dmarc: fail}
-      attach: []
+    attach: []
   - at: 00:09
     client:
       persona: p_stateca_regulator
       channel: email
       claimed_from: notices@stateca-regulator.sandbox.invalid
       auth: {spf: pass, dkim: pass, dmarc: pass}
-      attach: []
+    attach: []
 expect:
   intent: legal_notice
   signals:
-    - {kind: possible_attack, attack_class: impersonation, priority: critical, within: 00:01}
+    - {kind: possible_attack, attack_class: impersonation, priority: critical, 
+        within: 00:01}
   trust: {sender_level: hostile}
   quarantine: []
   outbox: []

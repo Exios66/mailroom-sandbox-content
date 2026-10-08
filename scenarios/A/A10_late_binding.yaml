@@ -10,7 +10,7 @@ timeline:
     client:
       persona: p_northstar_adviser
       channel: email
-      claimed_from: jmercer@northstaradvisory.sandbox.invalid
+      claimed_from: jmercer@northstar-advisory.sandbox.invalid
   - at: 00:09
     ingress: {doc: merger_doc_late}
 expect:

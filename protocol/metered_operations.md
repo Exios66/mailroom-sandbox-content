@@ -36,9 +36,13 @@ The inbox is the one edge with a *triage* capacity, not just a queue
 capacity: **120 admissions/hour, 30 concurrent open threads**. A new
 thread past 30 waits in `comms/pending/`; a thread waiting more than 4
 simulated hours raises `inbox.starvation` to the Boss Desk. Safety-critical
-items and legal notices bypass the FIFO wait but still count against the
-hourly cap — urgency never becomes a metering loophole, and one noisy
-sender is throttled at 12 admissions/hour.
+items and legal notices bypass the FIFO wait — and **12 of the 120 hourly
+admissions are reserved for them**, so ordinary traffic (capped at 108/hr)
+can never starve a legal notice out of its signal/action SLA. If the
+reserve itself is spent, a bounded audited escape hatch admits up to 5
+more priority items/hour (`inbox.priority_over_cap`). Urgency never
+becomes a metering loophole, and one noisy sender is throttled at
+12 admissions/hour.
 
 ### Why token buckets, and why shared
 
@@ -87,8 +91,12 @@ structurally impossible; any one of them stops the loop alone:
 2. **Circuit breaker** — 5 consecutive send failures, or volume at 3× the
    trailing baseline, opens the circuit: the scheduler stops, emits
    `ops.circuit_open`, and requires a **human** reset. It never restarts itself.
-3. **Idempotency** — every send carries `sha256(thread_id + content_hash)`;
-   replays inside 24h are dropped and audited (`send.duplicate_dropped`).
+3. **Idempotency** — every send carries `sha256(outbound_message_id +
+   content_hash)`, where the outbound message ID is the stable identity
+   assigned at draft approval. Retries of the same approved draft reuse
+   the ID (true replays are dropped and audited); a genuinely new reply —
+   even with identical text — gets a new ID and is never conflated with
+   an earlier send. Replays inside 24h are dropped (`send.duplicate_dropped`).
 4. **Reply-depth cap** — 6 replies per thread; the 7th needs Boss Desk
    approval. Auto-replies and bounces never get answers (log only).
 5. **No self-triggering** — sends can't enqueue sends; the scheduler can't

@@ -16,7 +16,7 @@ timeline:
     client:
       persona: p_brightwater_pm
       channel: email
-      claimed_from: news@brightwater-pm.sandbox.invalid
+      claimed_from: news@brightwaterpg.sandbox.invalid
       auth:
         spf: pass
         dkim: pass

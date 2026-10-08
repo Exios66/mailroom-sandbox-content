@@ -22,12 +22,18 @@ series owners will fill in.
   Also compiles `dist/registry.yaml` and can generate `scenarios_index.csv`
   and the coverage map.
 - **Scenario series skeletons**: `scenarios/` directories for series
-  `A`–`F`, `S`, `T` (no scenarios yet); `gen/specs` and `gen/templates`
-  skeletons; `emails/frozen` and `emails/handwritten` skeletons.
-- **Registry + smoke skeletons**: `clients/`, `personas/` (with
-  `behavior/`), `relations/`, `adversary/`, `attachments/`
-  (`synthetic/`, `offtaxonomy/`, `adversarial/`), `email/`, and `smoke/`
-  directory skeletons with no rows yet.
+  `A`–`G`, `S`, `T` (83 scenarios landed: A:12, B:8, C:11, D:6, E:13, F:5,
+  G:12, S:10, T:6); `gen/specs` (40 generation specs) and `gen/templates`
+  skeletons; `emails/frozen` (scripted frozen renders) and
+  `emails/handwritten` (7 worked-example anchors).
+- **Registry + smoke skeletons**: `clients/` (10 clients, 12 contacts,
+  registered domains, doc mixes), `personas/` (14 personas with
+  `behavior/` state machines), `relations/` (8 ground-truth relations),
+  `adversary/` (lookalikes, impostors, 7-class attack catalogue),
+  `attachments/` (13 synthetic/off-taxonomy/inert fixtures with sha256
+  manifest), `email/` (AgentMail sender pool, overlay contract, Gmail
+  sandbox config, recipient policy, ingress policy, send schedule), and
+  `smoke/` (6-scenario, 13-document smoke set).
 - **Docs + CI seed**: `README.md`, `CONTENT_SPEC.md`, `CODEOWNERS`,
   `content-ci.yml` (validate on PR and main pushes), `release.yml`
   (tag → tarball + SHA256SUMS + GitHub release), and `tools/content.sh`

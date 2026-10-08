@@ -30,12 +30,13 @@ timeline:
       channel: email
       claimed_from: aokafor@okaforfreight.sandbox.invalid
       auth: {spf: pass, dkim: pass, dmarc: pass}
-      attach:
-        - {class: insurance_claim, stratum: property, in_taxonomy: true}
+    attach:
+      - {class: insurance_claim, stratum: property, in_taxonomy: true}
 expect:
   intent: payment_or_identity_change
   signals:
-    - {kind: possible_attack, attack_class: payment_fraud, priority: critical, within: 00:01}
+    - {kind: possible_attack, attack_class: payment_fraud, priority: critical, 
+        within: 00:01}
   trust: {sender_level: hostile}
   quarantine: []
   outbox: []

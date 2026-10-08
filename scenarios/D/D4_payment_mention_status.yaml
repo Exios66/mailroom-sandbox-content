@@ -15,7 +15,7 @@ timeline:
     client:
       persona: p_tricounty_real
       channel: email
-      claimed_from: accounting@tricounty.sandbox.invalid
+      claimed_from: accounting@tricountytitle.sandbox.invalid
       auth:
         spf: pass
         dkim: pass

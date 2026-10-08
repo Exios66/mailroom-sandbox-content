@@ -49,6 +49,14 @@ correspondent_inbox:
   priority_bypass:                 # these skip the fifo wait, still counted in the hourly cap
     - safety_critical
     - legal_notice
+  priority_reserve_per_hour: 12    # of the 120, 12 are reserved for safety_critical /
+                                  # legal_notice. Ordinary traffic is capped at 108/hr,
+                                  # so a burst of routine mail can never starve a
+                                  # legal notice out of its signal/action SLA.
+  priority_over_cap:               # bounded, audited escape hatch if the reserve is spent
+    allowed: true
+    max_extra_per_hour: 5
+    audit_event: inbox.priority_over_cap
   starvation_guard: >
     A thread waiting in comms/pending/ longer than 4 simulated hours is
     escalated to the Boss Desk as inbox_starvation rather than left to rot.

@@ -16,7 +16,7 @@ timeline:
     client:
       persona: p_harlow_counsel
       channel: email
-      claimed_from: counsel@harlow-counsel.sandbox.invalid
+      claimed_from: counsel@harlowpryce.sandbox.invalid
       auth:
         spf: pass
         dkim: pass

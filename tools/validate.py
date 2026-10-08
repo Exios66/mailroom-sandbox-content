@@ -145,6 +145,15 @@ def load_yaml(path: Path):
         return yaml.safe_load(f)
 
 
+def parse_weight(raw) -> float | None:
+    """Parse a mix weight without raising; None means unparseable.
+    check_clients reports the bad row; downstream users skip it."""
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return None
+
+
 # ---------------------------------------------------------------- checks
 
 def check_ops_contracts(root: Path, rep: Report) -> None:
@@ -153,6 +162,7 @@ def check_ops_contracts(root: Path, rep: Report) -> None:
     specs = {
         "email/ingress_policy.yaml": "mailroom.ingress_policy/v1",
         "email/send_schedule.yaml": "mailroom.send_schedule/v1",
+        "email/recipient_policy.yaml": "mailroom.recipient_policy/v1",
     }
     for rel, want_schema in specs.items():
         p = root / rel
@@ -169,6 +179,28 @@ def check_ops_contracts(root: Path, rep: Report) -> None:
             continue
         if data.get("schema") != want_schema:
             rep.error(f"{rel}: schema={data.get('schema')!r}, want {want_schema!r}")
+
+    # Recipient policy shape ------------------------------------------
+    p = root / "email/recipient_policy.yaml"
+    if p.exists():
+        try:
+            rp = load_yaml(p)
+        except Exception:  # noqa: BLE001 - already reported above
+            rp = None
+        if isinstance(rp, dict):
+            for profile in ("closed", "egress"):
+                prof = rp.get(profile) or {}
+                recips = prof.get("allowed_recipients")
+                if not isinstance(recips, list) or not recips:
+                    rep.error(f"recipient_policy: {profile}.allowed_recipients "
+                              f"must be a non-empty list")
+                elif not all(isinstance(r, str) for r in recips):
+                    rep.error(f"recipient_policy: {profile}.allowed_recipients "
+                              f"entries must be strings")
+            ext = rp.get("external_inbound") or {}
+            if not isinstance(ext.get("allowed"), bool):
+                rep.error("recipient_policy: external_inbound.allowed must be "
+                          "a boolean")
 
     # Ingress policy shape -------------------------------------------
     p = root / "email/ingress_policy.yaml"
@@ -195,6 +227,14 @@ def check_ops_contracts(root: Path, rep: Report) -> None:
                 if not isinstance(v, int) or v <= 0:
                     rep.error(f"ingress_policy: correspondent_inbox.{k} "
                               f"must be a positive int")
+            reserve = inbox.get("priority_reserve_per_hour", 0)
+            cap = inbox.get("max_admissions_per_hour", 0)
+            if not isinstance(reserve, int) or reserve < 0:
+                rep.error("ingress_policy: correspondent_inbox."
+                          "priority_reserve_per_hour must be a non-negative int")
+            elif isinstance(cap, int) and reserve >= cap:
+                rep.error("ingress_policy: priority_reserve_per_hour must be "
+                          "less than max_admissions_per_hour")
             qs = pol.get("queues") or {}
             for qn, q in qs.items():
                 if not isinstance(q, dict):
@@ -253,6 +293,12 @@ def check_ops_contracts(root: Path, rep: Report) -> None:
                 rep.error("send_schedule: max_reply_depth_per_thread must be set")
             if doom.get("no_auto_reply_to_auto_reply") is not True:
                 rep.error("send_schedule: no_auto_reply_to_auto_reply must be true")
+            idem = doom.get("idempotency") or {}
+            key = str(idem.get("key", ""))
+            if "outbound_message_id" not in key:
+                rep.error("send_schedule: doom_loop_prevention.idempotency.key "
+                          "must include the outbound message identity so "
+                          "distinct approved sends are never conflated")
             if doom.get("sends_may_not_enqueue_sends") is not True:
                 rep.error("send_schedule: sends_may_not_enqueue_sends must be true")
 
@@ -363,8 +409,10 @@ def check_clients(root: Path, rep: Report) -> tuple[dict, dict, dict, dict]:
                       f"{m['client_id']!r}")
             continue
         try:
-            weights[m["client_id"]] = weights.get(m["client_id"], 0.0) + float(
-                m["weight"])
+            w = parse_weight(m["weight"])
+            if w is None:
+                raise ValueError(m["weight"])
+            weights[m["client_id"]] = weights.get(m["client_id"], 0.0) + w
         except ValueError:
             rep.error(f"client_doc_mix.csv: bad weight {m['weight']!r}")
     for cid, total in weights.items():
@@ -412,7 +460,8 @@ def check_personas(root: Path, clients: dict, contacts: dict,
     return personas
 
 
-def check_scenarios(root: Path, personas: dict, rep: Report) -> tuple[dict, dict]:
+def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
+                    rep: Report) -> tuple[dict, dict]:
     scenarios: dict[str, dict] = {}
     by_series: dict[str, list[str]] = {}
     spec_ids: set[str] = set()
@@ -523,6 +572,23 @@ def check_scenarios(root: Path, personas: dict, rep: Report) -> tuple[dict, dict
             trust = exp.get("trust", {})
             if trust and trust.get("sender_level") not in TRUST_LEVELS:
                 rep.error(f"{name}: bad trust.sender_level")
+            # a "verified" sender must write from a domain registered to the
+            # persona's client; anything else is a spoof and must not be
+            # asserted as verified.
+            if trust.get("sender_level") == "verified":
+                for i, ev in enumerate(tl):
+                    cl = ev.get("client") or {}
+                    pid = cl.get("persona", "")
+                    cf = cl.get("claimed_from", "")
+                    if not pid or not cf:
+                        continue
+                    cid = (personas.get(pid) or {}).get("client_id", "")
+                    dom = cf.split("@")[-1].lower()
+                    registered = domains_by_client.get(cid, set())
+                    if dom not in registered:
+                        rep.error(f"{name} timeline[{i}]: claimed_from domain "
+                                  f"{dom!r} is not registered for client "
+                                  f"{cid!r} but trust.sender_level is verified")
             for b in exp.get("boss_actions", []) or []:
                 if b not in BOSS_ACTIONS:
                     rep.error(f"{name}: bad boss_action {b!r}")
@@ -532,6 +598,19 @@ def check_scenarios(root: Path, personas: dict, rep: Report) -> tuple[dict, dict
             for rel in exp.get("relations", []) or []:
                 if rel.get("kind") not in RELATION_KINDS:
                     rep.error(f"{name}: bad relation kind {rel.get('kind')!r}")
+            # quarantine targets must bind to a file actually attached in the
+            # timeline (and present in the manifest); otherwise the harness
+            # cannot deterministically assert the quarantine.
+            attached_here = {a.get("file") for ev in tl
+                             for a in ev.get("attach", []) or []
+                             if a.get("file")}
+            for q in exp.get("quarantine", []) or []:
+                if q not in attached_here:
+                    rep.error(f"{name}: expect.quarantine {q!r} is not "
+                              f"attached anywhere in the timeline")
+                elif q not in attach_files:
+                    rep.error(f"{name}: expect.quarantine {q!r} not in "
+                              f"attachments/manifest.csv")
     return scenarios, by_series
 
 
@@ -745,10 +824,12 @@ def compile_registry(root: Path, clients: dict, contacts: dict,
     man = root / "clients" / "client_doc_mix.csv"
     if man.exists():
         for m in read_csv(man):
+            w = parse_weight(m["weight"])
+            if w is None:
+                continue  # already reported as an error by check_clients
             mix_by_client.setdefault(m["client_id"], {})
             mix_by_client[m["client_id"]][m["class"]] = \
-                mix_by_client[m["client_id"]].get(m["class"], 0.0) + float(
-                    m["weight"])
+                mix_by_client[m["client_id"]].get(m["class"], 0.0) + w
     for cid, c in clients.items():
         reg["clients"][cid] = {
             "display_name": c["display_name"],
@@ -866,7 +947,8 @@ def coverage_report(root: Path, mixes: list[dict], scenarios: dict,
                                            "attachments": set()}
     for m in mixes:
         key = (m["class"], m["stratum"])
-        if key in cov and float(m.get("weight", 0) or 0) > 0:
+        w = parse_weight(m.get("weight", 0) or 0)
+        if key in cov and w is not None and w > 0:
             cov[key]["clients"].add(m["client_id"])
     for name, sc in scenarios.items():
         for ev in sc.get("timeline", []) or []:
@@ -943,8 +1025,13 @@ def main() -> int:
     check_content_json(root, rep)
     check_ops_contracts(root, rep)
     clients, contacts, domains, mixes = check_clients(root, rep)
+    domains_by_client: dict[str, set] = {}
+    for d in domains:
+        domains_by_client.setdefault(d["client_id"], set()).add(
+            d["domain"].lower())
     personas = check_personas(root, clients, contacts, rep)
-    scenarios, by_series = check_scenarios(root, personas, rep)
+    scenarios, by_series = check_scenarios(root, personas,
+                                             domains_by_client, rep)
     check_gen_specs(root, personas, rep)
     check_emails(root, rep)
     check_attachments(root, rep)

@@ -3,7 +3,8 @@ seed: 2219
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Verified sender submits a document class far outside its mix (unexplained anomaly)"
+title: "Verified sender submits a document class far outside its mix (unexplained
+  anomaly)"
 tags: [adversarial, out-of-profile, verified-sender, explained-vs-unexplained]
 timeline:
   - at: 00:02
@@ -12,16 +13,17 @@ timeline:
       channel: email
       claimed_from: kalvarado@tricountytitle.sandbox.invalid
       auth: {spf: pass, dkim: pass, dmarc: pass}
-      attach:
-        - {class: insurance_claim, stratum: inpatient, in_taxonomy: true}
+    attach:
+      - {class: insurance_claim, stratum: inpatient, in_taxonomy: true}
   - at: 00:09
     client:
       persona: p_tricounty_real
       channel: email
       claimed_from: kalvarado@tricountytitle.sandbox.invalid
       auth: {spf: pass, dkim: pass, dmarc: pass}
-      attach:
-        - {class: corporate_record, stratum: officer_certificate, in_taxonomy: true}
+    attach:
+      - {class: corporate_record, stratum: officer_certificate, in_taxonomy: 
+          true}
 expect:
   intent: document_submission
   signals:

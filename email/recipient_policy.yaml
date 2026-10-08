@@ -16,7 +16,8 @@ egress:
   allowed_recipients:
     - generated AgentMail sandbox inboxes (the sender pool + Correspondent inbox)
     - the designated sandbox Gmail address (MAILROOM_SANDBOX_GMAIL_ADDRESS)
-    - virtual *.sandbox.invalid addresses WITH an overlay route record
+    - >-
+      virtual *.sandbox.invalid addresses WITH an overlay route record
       (overlay/contract.md): a draft to a routed virtual address is delivered
       to the mapped sender inbox; a virtual address with NO route fails closed.
   default_action: >
@@ -26,7 +27,8 @@ egress:
 external_inbound:
   # Real people writing to the sandbox inbox from the outside.
   allowed: true
-  tagging: origin: external
+  tagging:
+    origin: external
   handling: >
     Treated as untrusted input under the same rules as generated mail, but
     EXCLUDED from scored runs because it has no ground truth.
