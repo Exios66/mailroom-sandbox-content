@@ -600,6 +600,8 @@ def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
             # asserted as verified.
             if trust.get("sender_level") == "verified":
                 for i, ev in enumerate(tl):
+                    if not isinstance(ev, dict):
+                        continue  # already reported as "event needs 'at'"
                     cl = ev.get("client") or {}
                     pid = cl.get("persona", "")
                     cf = cl.get("claimed_from", "")
@@ -629,6 +631,8 @@ def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
             # cannot deterministically assert the quarantine.
             attached_here = set()
             for ev in tl:
+                if not isinstance(ev, dict):
+                    continue  # already reported as "event needs 'at'"
                 for a in ev.get("attach", []) or []:
                     if isinstance(a, dict) and a.get("file"):
                         attached_here.add(a["file"])
