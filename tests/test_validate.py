@@ -34,11 +34,15 @@ class ContentFixture(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
         self.write("schemas/content_files.json", json.dumps(CSV_SCHEMA))
-        # check_scenarios validates against the real scenario schema; the
-        # fixture root must carry it like a real content pack does.
-        self.write("schemas/scenario.v2.json",
-                   (REPO_ROOT / "schemas/scenario.v2.json").read_text(
-                       encoding="utf-8"))
+        # The validator checks content against the real JSON Schemas and ID
+        # range allocation; the fixture root carries them like a real pack.
+        for name in ("scenario.v2.json", "gen_spec.v1.json",
+                     "persona_behavior.v1.json", "overlay.v1.json",
+                     "registry.v1.json"):
+            self.write(f"schemas/{name}",
+                       (REPO_ROOT / "schemas" / name).read_text(encoding="utf-8"))
+        self.write("ids/ranges.yaml",
+                   (REPO_ROOT / "ids/ranges.yaml").read_text(encoding="utf-8"))
 
     def write(self, relative, text):
         path = self.root / relative
@@ -104,7 +108,7 @@ class ContentFixture(unittest.TestCase):
             "persona_id": "p_cedar", "client_id": "cedar",
             "contact_id": "cedar_avery", "behavior_file": "behavior/cedar.yaml",
         }
-        self.behavior = {"persona_id": "p_cedar", "escalation": [],
+        self.behavior = {"persona_id": "p_cedar", "escalation": {"patience_sim_min": 60, "steps": []},
                          "attachment_habits": {}}
         self.write_csv("personas/personas.csv", [self.persona])
         self.write_yaml("personas/behavior/cedar.yaml", self.behavior)

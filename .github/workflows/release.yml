@@ -18,22 +18,31 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install dependencies
-        run: pip install pyyaml jsonschema
-      - name: Validate content
-        run: python3 tools/validate.py
+        run: pip install pyyaml jsonschema jinja2
+      - name: Tag must match content.json version
+        run: |
+          set -eu
+          WANT="v$(python3 -c 'import json;print(json.load(open("content.json"))["version"])')"
+          test "${GITHUB_REF_NAME}" = "${WANT}" || {
+            echo "tag ${GITHUB_REF_NAME} != content.json version ${WANT}" >&2; exit 1; }
+      - name: Validate content (compiles dist/registry.yaml)
+        run: python3 tools/validate.py --strict-coverage
       - name: Build tarball and checksums
         run: |
           set -eu
           TAG="${GITHUB_REF_NAME}"
           TARBALL="mailroom-sandbox-content-${TAG}.tar.zst"
-          mkdir -p dist
-          tar --exclude=dist --exclude=.git --exclude=.github \
-              -I zstd -cf "dist/${TARBALL}" .
-          ( cd dist && sha256sum "${TARBALL}" > SHA256SUMS )
+          mkdir -p release
+          # dist/registry.yaml (compiled by the validator) ships in the bundle:
+          # it is what the Correspondent reads (addendum §12.4).
+          test -s dist/registry.yaml
+          tar --exclude=./release --exclude=./.git --exclude=./.github \
+              --exclude='__pycache__' -I zstd -cf "release/${TARBALL}" .
+          ( cd release && sha256sum "${TARBALL}" > SHA256SUMS )
           # content.json checksum recorded alongside the bundle; hash from the
           # repo root so the manifest holds the bare filename consumers verify
-          sha256sum content.json >> dist/SHA256SUMS
-          ls -la dist/
+          sha256sum content.json >> release/SHA256SUMS
+          ls -la release/
       - name: Create GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -42,6 +51,6 @@ jobs:
           TAG="${GITHUB_REF_NAME}"
           TARBALL="mailroom-sandbox-content-${TAG}.tar.zst"
           gh release create "${TAG}" \
-            "dist/${TARBALL}" dist/SHA256SUMS content.json \
+            "release/${TARBALL}" release/SHA256SUMS content.json \
             --title "mailroom-sandbox-content ${TAG}" \
             --notes "Content bundle ${TAG}. Validator passed on the tag commit. Verify SHA256SUMS before consuming; pin in mailroom-reloaded via \`sandbox/content.lock\` (repo, tag, commit, bundle sha256)."

@@ -1,0 +1,370 @@
+"""Tests for the scenario v2 rules, contract schemas, ID ranges and the
+strata / fixture tooling. Fixtures never modify the content pack.
+
+Run from the repo root:
+    python3 -m unittest discover -s tests -p 'test_*.py'
+"""
+
+import copy
+import hashlib
+import subprocess
+import sys
+import unittest
+from pathlib import Path
+
+from tests.test_validate import REPO_ROOT, ContentFixture
+from tools import make_fixture_pdf, sync_strata, validate
+
+
+class ScenarioV2Rules(ContentFixture):
+    def setUp(self):
+        super().setUp()
+        self.seed_scenario()
+        self.write_csv("taxonomy/strata.csv", [
+            {"class": "contract", "stratum": "license", "in_ground_truth": "true"},
+            {"class": "corporate_record", "stratum": "certificate_of_formation",
+             "in_ground_truth": "false"}])
+        self.write_csv("taxonomy/offtaxonomy.csv", [{"kind": "wire_instructions"}])
+        self.personas = {"p_cedar": {"client_id": "cedar", "contact_id": "cedar_avery"},
+                         "p_bad": {"client_id": "_adversary", "contact_id": "_none"}}
+
+    def check_scenario(self, scenario):
+        self.write_yaml("scenarios/A/A1_status.yaml", scenario)
+        return self.check(validate.check_scenarios, self.personas,
+                          {"cedar": {"cedar.sandbox.invalid"}})
+
+    def client(self, scenario, index=0):
+        return scenario["timeline"][index]["client"]
+
+    def test_seed_scenario_is_clean(self):
+        _, report = self.check_scenario(self.scenario)
+        self.assert_clean(report)
+
+    def test_client_message_needs_a_template(self):
+        scenario = copy.deepcopy(self.scenario)
+        del self.client(scenario)["template"]
+        _, report = self.check_scenario(scenario)
+        self.assert_error(report, "needs a template")
+
+    def test_template_variables_must_be_supplied(self):
+        self.write("gen/templates/status.j2",
+                   "Subject: {{ matter_ref }}\n\nHi, {{ sender_name }}\n")
+        _, report = self.check_scenario(self.scenario)
+        self.assert_error(report, "needs vars ['matter_ref']")
+        scenario = copy.deepcopy(self.scenario)
+        self.client(scenario)["vars"] = {"matter_ref": "CD-1"}
+        _, report = self.check_scenario(scenario)
+        self.assert_clean(report)
+
+    def test_adversary_persona_must_supply_contact_context(self):
+        self.write("gen/templates/status.j2", "Subject: hi\n\n{{ sender_name }}\n")
+        self.write_yaml("gen/specs/status.yaml", {"id": "gen_status", "persona": "p_bad"})
+        scenario = copy.deepcopy(self.scenario)
+        self.client(scenario)["persona"] = "p_bad"
+        scenario["expect"]["trust"]["sender_level"] = "hostile"
+        _, report = self.check_scenario(scenario)
+        self.assert_error(report, "needs vars ['sender_name']")
+        self.client(scenario)["vars"] = {"sender_name": "Spoofed Name"}
+        _, report = self.check_scenario(scenario)
+        self.assertTrue(report.ok(), report.errors)
+
+    def test_template_needs_subject_line_and_valid_syntax(self):
+        self.write("gen/templates/status.j2", "Hello\n")
+        _, report = self.check_scenario(self.scenario)
+        self.assert_error(report, "first rendered line must be 'Subject: ...'")
+        self.write("gen/templates/status.j2", "Subject: {{ broken \n")
+        _, report = self.check_scenario(self.scenario)
+        self.assert_error(report, "template syntax error")
+
+    def test_strata_must_exist_and_be_drawable(self):
+        cases = [({"class": "contract", "stratum": "license"}, None),
+                 ({"class": "off_taxonomy", "stratum": "wire_instructions"}, None),
+                 ({"class": "contract", "stratum": "parties"}, "unknown stratum contract/parties"),
+                 ({"class": "corporate_record", "stratum": "certificate_of_formation"},
+                  "catalog_only")]
+        for spec, error in cases:
+            with self.subTest(spec=spec):
+                scenario = copy.deepcopy(self.scenario)
+                self.client(scenario)["attach"] = [spec]
+                del scenario["expect"]["relations"]
+                _, report = self.check_scenario(scenario)
+                if error:
+                    self.assert_error(report, error)
+                else:
+                    self.assertTrue(report.ok(), report.errors)
+
+    def test_refs_same_as_and_reply_to(self):
+        scenario = copy.deepcopy(self.scenario)
+        first = scenario["timeline"][0]
+        first["client"]["ref"] = "msg_one"
+        first["client"]["attach"] = [{"file": "lease.txt", "ref": "doc_one"}]
+        second = copy.deepcopy(first)
+        second["at"] = "00:05"
+        second["client"]["ref"] = "msg_two"
+        second["client"]["reply_to"] = "msg_one"
+        second["client"]["attach"] = [{"ref": "doc_two", "same_as": "doc_one"}]
+        scenario["timeline"].append(second)
+        scenario["expect"]["relations"] = [
+            {"a": "doc_two", "b": "doc_one", "kind": "duplicates"}]
+        _, report = self.check_scenario(scenario)
+        self.assertTrue(report.ok(), report.errors)
+
+        broken = copy.deepcopy(scenario)
+        broken["timeline"][1]["client"]["ref"] = "msg_one"
+        _, report = self.check_scenario(broken)
+        self.assert_error(report, "duplicate ref 'msg_one'")
+
+        broken = copy.deepcopy(scenario)
+        broken["timeline"][1]["client"]["attach"][0]["same_as"] = "doc_later"
+        _, report = self.check_scenario(broken)
+        self.assert_error(report, "same_as 'doc_later' is not an earlier document ref")
+
+        broken = copy.deepcopy(scenario)
+        broken["timeline"][1]["client"]["reply_to"] = "msg_missing"
+        _, report = self.check_scenario(broken)
+        self.assert_error(report, "reply_to 'msg_missing' is not an earlier message ref")
+
+    def test_ingress_documents_bind_refs(self):
+        scenario = copy.deepcopy(self.scenario)
+        scenario["timeline"].insert(0, {"at": "00:00", "ingress": {
+            "ref": "filed", "class": "contract", "stratum": "license", "as": "filed.pdf"}})
+        scenario["expect"]["relations"] = [{"a": "lease.txt", "b": "filed", "kind": "amends"}]
+        _, report = self.check_scenario(scenario)
+        self.assertTrue(report.ok(), report.errors)
+        scenario["timeline"][0]["ingress"] = {"doc": "free_text_name"}
+        _, report = self.check_scenario(scenario)
+        self.assert_error(report, "schema violation at timeline.0.ingress")
+
+    def test_expectation_endpoints_must_resolve(self):
+        scenario = copy.deepcopy(self.scenario)
+        scenario["expect"]["relations"] = [
+            {"a": "matter:CD-1", "b": "matter:CD-2", "kind": "references"}]
+        _, report = self.check_scenario(scenario)
+        self.assert_clean(report)
+        for key, value, error in (
+                ("relations", [{"a": "free_text", "b": "lease.txt", "kind": "references"}],
+                 "expect.relations[0].a 'free_text'"),
+                ("quarantine", ["nowhere.pdf"], "expect.quarantine 'nowhere.pdf'"),
+                ("soft_hold", ["nowhere.pdf"], "expect.soft_hold 'nowhere.pdf'"),
+                ("docs", {"nowhere": {"state": "withdrawn"}}, "expect.docs key 'nowhere'")):
+            with self.subTest(key=key):
+                broken = copy.deepcopy(self.scenario)
+                broken["expect"][key] = value
+                _, report = self.check_scenario(broken)
+                self.assert_error(report, error)
+
+    def test_reference_template_must_exist(self):
+        scenario = copy.deepcopy(self.scenario)
+        scenario["expect"]["outbox"] = [{"state": "draft", "reference_template": "ack"}]
+        _, report = self.check_scenario(scenario)
+        self.assert_error(report, "reference_template 'ack' not in gen/templates/replies/")
+        self.write("gen/templates/replies/ack.j2", "Subject: Re: ack\n")
+        _, report = self.check_scenario(scenario)
+        self.assert_clean(report)
+
+    def test_fault_vocabulary_is_closed(self):
+        scenario = copy.deepcopy(self.scenario)
+        scenario["timeline"][0]["fault"] = "duplicate_delivery"
+        _, report = self.check_scenario(scenario)
+        self.assert_clean(report)
+        scenario["timeline"][0]["fault"] = "make_it_weird"
+        _, report = self.check_scenario(scenario)
+        self.assert_error(report, "schema violation at timeline.0.fault")
+
+    def test_client_and_ingress_never_share_an_event(self):
+        scenario = copy.deepcopy(self.scenario)
+        scenario["timeline"][0]["ingress"] = {"file": "lease.txt"}
+        _, report = self.check_scenario(scenario)
+        self.assert_error(report, "schema violation at timeline.0")
+
+    def test_frozen_without_specs_is_one_summary_warning(self):
+        scenario = copy.deepcopy(self.scenario)
+        scenario["gen"] = "frozen"
+        del self.client(scenario)["gen_spec"]
+        _, report = self.check_scenario(scenario)
+        self.assertTrue(report.ok(), report.errors)
+        self.assertEqual(len(report.warnings), 1)
+        self.assertIn("1 scenarios target gen frozen/live/loop", report.warnings[0])
+
+
+class CoverageStrictness(ContentFixture):
+    def test_strict_coverage_turns_gaps_into_errors(self):
+        self.write_csv("taxonomy/strata.csv", [
+            {"class": "contract", "stratum": "license", "in_ground_truth": "true"},
+            {"class": "corporate_record", "stratum": "certificate_of_formation",
+             "in_ground_truth": "false"}])
+        _, report = self.check(validate.coverage_report, [], {})
+        self.assertTrue(report.ok())
+        self.assertEqual(report.warnings, ["coverage: contract/license has no client + scenario"])
+        report = validate.Report()
+        validate.coverage_report(self.root, [], {}, report, strict=True)
+        self.assertEqual(report.errors, ["coverage: contract/license has no client + scenario"])
+
+    def test_pinned_files_count_toward_their_manifest_stratum(self):
+        self.write_csv("taxonomy/strata.csv", [
+            {"class": "contract", "stratum": "license", "in_ground_truth": "true"}])
+        self.write_csv("attachments/manifest.csv", [
+            {"attachment_id": "att_0001", "file": "a.pdf", "class": "contract",
+             "stratum": "license", "in_taxonomy": "true"}])
+        mixes = [{"client_id": "cedar", "class": "contract", "stratum": "license", "weight": "1"}]
+        scenarios = {"A1_x": {"timeline": [{"at": "00:00", "ingress": {"file": "a.pdf"}}]}}
+        coverage, report = self.check(validate.coverage_report, mixes, scenarios)
+        self.assert_clean(report)
+        self.assertEqual(coverage["contract/license"]["scenarios"], ["A1_x"])
+
+
+class ContractSchemas(ContentFixture):
+    def test_gen_specs_behaviors_overlay_and_registry_are_schema_checked(self):
+        self.write_yaml("gen/specs/bad.yaml", {"id": "gen_bad_0001"})
+        self.write_yaml("personas/behavior/bad.yaml", {"persona_id": "p_bad"})
+        self.write("email/overlay/example.jsonl",
+                   '{"v": 1, "kind": "message", "persona_id": "p_leak"}\n')
+        report = validate.Report()
+        validate.check_contract_schemas(self.root, {"version": 1, "clients": {},
+                                                    "labels": ["impostor"]}, report)
+        joined = "\n".join(report.errors)
+        for where in ("gen/specs/bad.yaml", "personas/behavior/bad.yaml",
+                      "email/overlay/example.jsonl:1", "dist/registry.yaml"):
+            self.assertIn(where, joined)
+
+
+class IdRanges(ContentFixture):
+    def test_ids_must_fall_inside_an_allocated_block(self):
+        self.write_csv("attachments/manifest.csv", [
+            {"attachment_id": "att_0001"}, {"attachment_id": "att_0500"},
+            {"attachment_id": "att_0001"}])
+        self.write_yaml("gen/specs/ok.yaml", {"id": "gen_E1_wire_0042"})
+        report = validate.Report()
+        validate.check_id_ranges(self.root, report)
+        self.assertIn("attachments/manifest.csv: att_0500 is outside every attachments "
+                      "block in ids/ranges.yaml", report.errors)
+        self.assertTrue(any("duplicate id att_0001" in e for e in report.errors))
+        self.assertEqual(len(report.errors), 2, report.errors)
+
+    def test_overlapping_blocks_are_rejected(self):
+        self.write_yaml("ids/ranges.yaml", {
+            "schema": "mailroom.id_ranges/v1",
+            "relations": [{"owner": "a", "lo": 1, "hi": 10},
+                          {"owner": "b", "lo": 10, "hi": 20}]})
+        report = validate.Report()
+        validate.check_id_ranges(self.root, report)
+        self.assertIn("ids/ranges.yaml relations: a and b overlap", report.errors)
+
+    def test_real_content_ids_are_in_range(self):
+        report = validate.Report()
+        validate.check_id_ranges(REPO_ROOT, report)
+        self.assertEqual(report.errors, [])
+
+
+FAKE_CONFIG = '''
+CONTRACT_SUBTYPES: list[dict[str, str]] = [
+    {"key": "license", "label": "License Agreement", "description": "x"},
+    {"key": "joint_venture", "label": "Joint Venture Agreement", "description": "x"},
+]
+MAUD_CONSIDERATION_TYPES: list[str] = ["all_cash", "other"]
+SUBTYPE_ALIASES: dict[str, str] = {"license_agreements": "license",
+                                   "joint_venture_filing": "joint_venture"}
+'''
+FAKE_CORPUS = '''
+from .config import CONTRACT_SUBTYPE_KEYS
+DOC_TYPE_SUBCLASSES: dict[str, tuple[str, ...]] = {
+    "contract": tuple(CONTRACT_SUBTYPE_KEYS),
+    "merger_agreement": tuple(MAUD_CONSIDERATION_TYPES),
+    "corporate_record": ("bylaws", "certificate_of_formation"),
+    "correspondence": ("email", "other"),
+    "insurance_claim": ("auto",),
+}
+CORPUS_SUBCLASS_SURFACES: dict[str, tuple[str, ...]] = {
+    "contract": ("License_Agreements", "Joint Venture _ Filing", "Joint Venture"),
+    "merger_agreement": ("all_cash", "other"),
+    "corporate_record": ("bylaws",),
+    "correspondence": ("email",),
+    "insurance_claim": ("auto",),
+}
+'''
+
+
+class SyncStrata(unittest.TestCase):
+    def make_checkout(self, tmp: Path) -> Path:
+        src = tmp / "mailroom-reloaded"
+        pkg = src / "src/mailroom_reloaded/scoring"
+        pkg.mkdir(parents=True)
+        (pkg / "config.py").write_text(FAKE_CONFIG, encoding="utf-8")
+        (pkg / "corpus.py").write_text(FAKE_CORPUS, encoding="utf-8")
+        return src
+
+    def test_roster_flags_and_check_mode(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as t:
+            tmp = Path(t)
+            src = self.make_checkout(tmp)
+            root = tmp / "content"
+            (root / "taxonomy").mkdir(parents=True)
+            self.assertEqual(sync_strata.main(["--from", str(src), "--root", str(root),
+                                               "--ref", "vtest"]), 0)
+            rows = (root / "taxonomy/strata.csv").read_text().splitlines()
+            self.assertEqual(rows[0], ",".join(sync_strata.HEADER))
+            self.assertIn("contract,joint_venture,true,true,,rows_unverified", rows)
+            self.assertIn("corporate_record,certificate_of_formation,false,true,,catalog_only",
+                          rows)
+            self.assertIn("correspondence,other,false,true,,catalog_only", rows)
+            self.assertEqual(sync_strata.main(["--from", str(src), "--root", str(root),
+                                               "--check"]), 0)
+            # a dataset scan fills rows; regeneration keeps them and marks active
+            text = (root / "taxonomy/strata.csv").read_text().replace(
+                "insurance_claim,auto,true,true,,rows_unverified",
+                "insurance_claim,auto,true,true,200,rows_unverified")
+            (root / "taxonomy/strata.csv").write_text(text)
+            sync_strata.main(["--from", str(src), "--root", str(root)])
+            self.assertIn("insurance_claim,auto,true,true,200,active",
+                          (root / "taxonomy/strata.csv").read_text())
+            # a hand edit is drift
+            with open(root / "taxonomy/strata.csv", "a") as f:
+                f.write("contract,parties,true,true,,rows_unverified\n")
+            self.assertEqual(sync_strata.main(["--from", str(src), "--root", str(root),
+                                               "--check"]), 1)
+
+    def test_unknown_surface_fails_loudly(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as t:
+            src = self.make_checkout(Path(t))
+            corpus = src / "src/mailroom_reloaded/scoring/corpus.py"
+            head, surfaces = FAKE_CORPUS.split("CORPUS_SUBCLASS_SURFACES")
+            corpus.write_text(head + "CORPUS_SUBCLASS_SURFACES" + surfaces.replace(
+                '"insurance_claim": ("auto",)', '"insurance_claim": ("marine",)'))
+            with self.assertRaises(SystemExit):
+                sync_strata.load_catalog(src)
+
+
+class FixturePdf(unittest.TestCase):
+    def test_deterministic_and_inert(self):
+        a = make_fixture_pdf.build_pdf(["Title (v1)", "Body \\ text"])
+        b = make_fixture_pdf.build_pdf(["Title (v1)", "Body \\ text"])
+        self.assertEqual(a, b)
+        self.assertTrue(a.startswith(b"%PDF-1.4"))
+        self.assertIn(b"(Title \\(v1\\))", a)
+        for marker in validate.INERT_FORBIDDEN:
+            self.assertNotIn(marker, a)
+        start = int(a.rsplit(b"startxref\n", 1)[1].split(b"\n")[0])
+        self.assertTrue(a[start:].startswith(b"xref"))
+
+    def test_committed_fixtures_reproduce(self):
+        lines = ["Schedule C (v2)", "Asset Allocation Summary",
+                 "Parties: Northgate Logistics LLC (buyer) and Bluefield Supply Co. (seller).",
+                 "Matter: HP-2026-0417. Indemnification cap in section 4.2: $2,000,000.",
+                 "All figures herein are fictional and synthetic."]
+        data = make_fixture_pdf.build_pdf(lines)
+        committed = (REPO_ROOT / "attachments/synthetic/schedule_c_v2.pdf").read_bytes()
+        self.assertEqual(hashlib.sha256(data).hexdigest(),
+                         hashlib.sha256(committed).hexdigest())
+
+
+class RealContent(unittest.TestCase):
+    def test_validator_passes_on_the_content_pack(self):
+        out = subprocess.run([sys.executable, str(REPO_ROOT / "tools/validate.py")],
+                             capture_output=True, text=True, cwd=REPO_ROOT)
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+
+
+if __name__ == "__main__":
+    unittest.main()

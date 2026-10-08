@@ -19,8 +19,34 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install dependencies
-        run: pip install pyyaml jsonschema
+        run: pip install pyyaml jsonschema jinja2
       - name: Run content validator
         run: python3 tools/validate.py
       - name: Run unit tests
         run: python3 -m unittest discover -s tests -p 'test_*.py'
+
+  strata-drift:
+    # taxonomy/strata.csv is generated from mailroom-reloaded's subclass
+    # catalogue at the commit recorded in taxonomy/strata.source.json; a hand
+    # edit or a stale roster fails here (addendum §2.1).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Read pinned catalogue commit
+        id: pin
+        run: |
+          echo "commit=$(python3 -c 'import json;print(json.load(open("taxonomy/strata.source.json"))["commit"])')" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: Exios66/mailroom-reloaded
+          ref: ${{ steps.pin.outputs.commit }}
+          path: .mailroom-reloaded
+          persist-credentials: false
+          sparse-checkout: src/mailroom_reloaded/scoring
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check strata roster
+        run: python3 tools/sync_strata.py --from .mailroom-reloaded --check

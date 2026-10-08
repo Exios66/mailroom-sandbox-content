@@ -7,7 +7,7 @@ set -eu
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 
 usage() {
-    echo "usage: content.sh {validate|coverage --out PATH|indexes}" >&2
+    echo "usage: content.sh {validate|coverage --out PATH|indexes|strata --from CHECKOUT [--check]}" >&2
     echo "note: the real commands are \`mailroom sandbox content ...\`" >&2
     echo "      in the mailroom-reloaded repo." >&2
 }
@@ -26,6 +26,10 @@ case "${1:-}" in
         ;;
     indexes)
         exec python3 "$ROOT/tools/validate.py" --generate-indexes
+        ;;
+    strata)
+        shift
+        exec python3 "$ROOT/tools/sync_strata.py" "$@"
         ;;
     ""|-h|--help|help)
         usage

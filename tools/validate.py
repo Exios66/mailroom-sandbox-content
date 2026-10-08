@@ -665,7 +665,8 @@ def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
                               f"(scripted body and generation fallback)")
                 elif tp not in templates:
                     rep.error(f"{where}: unknown template {tp!r}")
-                elif template_vars is not None:
+                elif template_vars is not None and tp in template_vars:
+                    # (a template that failed to parse is already an error)
                     persona = personas.get(pid) or {}
                     standard = set(STANDARD_TEMPLATE_CONTEXT)
                     if persona.get("contact_id") in ("", "_none", None):
@@ -1105,6 +1106,121 @@ def leak_scan(root: Path, rep: Report) -> None:
                         break
 
 
+def schema_validator(root: Path, name: str, rep: Report):
+    """A Draft 2020-12 validator for schemas/<name>, or None (reported)."""
+    try:
+        from jsonschema import Draft202012Validator
+    except ImportError:
+        return None  # check_scenarios already warns once
+    try:
+        return Draft202012Validator(json.loads(
+            (root / "schemas" / name).read_text(encoding="utf-8")))
+    except Exception as e:  # noqa: BLE001 - bad schema file is a real error
+        rep.error(f"schemas/{name} unreadable: {e}")
+        return None
+
+
+def report_schema(validator, obj, where: str, rep: Report) -> None:
+    if validator is None:
+        return
+    for error in validator.iter_errors(obj):
+        path = ".".join(str(p) for p in error.absolute_path)
+        rep.error(f"{where}: schema violation at {path or '<root>'}: "
+                  f"{error.message[:160]}")
+
+
+def check_contract_schemas(root: Path, registry: dict | None,
+                           rep: Report) -> None:
+    """Every content file with a JSON Schema is validated against it (CD6)."""
+    v = schema_validator(root, "gen_spec.v1.json", rep)
+    for yf in sorted((root / "gen" / "specs").glob("*.yaml")):
+        try:
+            report_schema(v, load_yaml(yf), f"gen/specs/{yf.name}", rep)
+        except Exception:  # noqa: BLE001 - YAML errors reported elsewhere
+            pass
+    v = schema_validator(root, "persona_behavior.v1.json", rep)
+    for yf in sorted((root / "personas" / "behavior").glob("*.yaml")):
+        try:
+            report_schema(v, load_yaml(yf), f"personas/behavior/{yf.name}", rep)
+        except Exception:  # noqa: BLE001 - YAML errors reported elsewhere
+            pass
+    v = schema_validator(root, "overlay.v1.json", rep)
+    ov = root / "email" / "overlay" / "example.jsonl"
+    if ov.exists():
+        for ln, line in enumerate(ov.read_text(encoding="utf-8").splitlines(), 1):
+            if not line.strip():
+                continue
+            try:
+                obj = json.loads(line)
+            except json.JSONDecodeError as e:
+                rep.error(f"email/overlay/example.jsonl:{ln}: bad JSON: {e}")
+                continue
+            report_schema(v, obj, f"email/overlay/example.jsonl:{ln}", rep)
+    if registry is not None:
+        report_schema(schema_validator(root, "registry.v1.json", rep),
+                      registry, "dist/registry.yaml", rep)
+
+
+ID_RANGE_KINDS = {
+    # kind in ids/ranges.yaml -> (where the ids live, regex capturing nnnn)
+    "generation_specs": re.compile(r"^gen_.*_([0-9]{4})$"),
+    "emails": re.compile(r"^em_[A-Z]_([0-9]+)$"),
+    "attachments": re.compile(r"^att_([0-9]+)$"),
+    "relations": re.compile(r"^rel_([0-9]+)$"),
+}
+
+
+def collect_ids(root: Path) -> dict[str, list[tuple[str, str]]]:
+    """(id, where) per range kind, from every file that mints IDs."""
+    out: dict[str, list[tuple[str, str]]] = {k: [] for k in ID_RANGE_KINDS}
+    for yf in sorted((root / "gen" / "specs").glob("*.yaml")):
+        try:
+            out["generation_specs"].append((load_yaml(yf)["id"],
+                                            f"gen/specs/{yf.name}"))
+        except Exception:  # noqa: BLE001 - reported by check_gen_specs
+            pass
+    for kind, rel, col in (("emails", "emails/emails_index.csv", "email_id"),
+                           ("attachments", "attachments/manifest.csv",
+                            "attachment_id"),
+                           ("relations", "relations/relations_truth.csv",
+                            "relation_id")):
+        p = root / rel
+        if p.exists():
+            out[kind] += [(r.get(col, ""), rel) for r in read_csv(p)]
+    return out
+
+
+def check_id_ranges(root: Path, rep: Report) -> None:
+    p = root / "ids" / "ranges.yaml"
+    if not p.exists():
+        rep.error("ids/ranges.yaml missing (ID range allocation, §12.5)")
+        return
+    ranges = load_yaml(p) or {}
+    if ranges.get("schema") != "mailroom.id_ranges/v1":
+        rep.error("ids/ranges.yaml: schema must be mailroom.id_ranges/v1")
+    for kind, blocks in ranges.items():
+        if kind == "schema":
+            continue
+        spans = sorted((b["lo"], b["hi"], b["owner"]) for b in blocks or [])
+        for (lo1, hi1, o1), (lo2, _hi2, o2) in zip(spans, spans[1:]):
+            if lo2 <= hi1:
+                rep.error(f"ids/ranges.yaml {kind}: {o1} and {o2} overlap")
+    for kind, ids in collect_ids(root).items():
+        blocks = ranges.get(kind) or []
+        seen: dict[str, str] = {}
+        for ident, where in ids:
+            if ident in seen:
+                rep.error(f"{where}: duplicate id {ident} (also in {seen[ident]})")
+            seen[ident] = where
+            m = ID_RANGE_KINDS[kind].match(ident or "")
+            if not m:
+                continue  # malformed ids are reported by check_id
+            n = int(m.group(1))
+            if not any(b["lo"] <= n <= b["hi"] for b in blocks):
+                rep.error(f"{where}: {ident} is outside every {kind} block "
+                          f"in ids/ranges.yaml")
+
+
 def scenario_doc_specs(sc: dict):
     """Yield every document spec in a scenario: ingress docs and attachments."""
     for ev in sc.get("timeline", []) or []:
@@ -1225,8 +1341,12 @@ def main() -> int:
     check_attachments(root, rep)
     check_relations(root, rep)
     lookalikes, _impostors = check_adversary(root, rep)
+    registry = None
     if clients:
-        compile_registry(root, clients, contacts, domains, lookalikes, rep)
+        registry = compile_registry(root, clients, contacts, domains,
+                                    lookalikes, rep)
+    check_contract_schemas(root, registry, rep)
+    check_id_ranges(root, rep)
     leak_scan(root, rep)
     cov = coverage_report(root, mixes, scenarios, rep,
                           strict=args.strict_coverage)
