@@ -1,0 +1,26 @@
+# Generation spec: frustrated claimant, third angry follow-up about a delayed claim (series G)
+# Archetype G1: production-adjacent status complaint from a verified sender.
+id: gen_g1_frustrated_status_0601
+persona: p_okafor_claimant
+target_client: okafor
+archetype: G1
+goal: Write an angry but coherent third check-in from a stressed owner-operator whose auto claim has sat unprocessed for days, demanding to know where it stands.
+constraints:
+  must_include: [repeated_contact_frustration, claim_reference, demand_for_status]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: angry
+  length: "90-140 words"
+  language: en
+context:
+  claim_ref: CL-558201
+  sender_display_name: A. Okafor
+  claimed_from: aokafor@okaforfreight.sandbox.invalid
+  days_waiting: 6
+  contact_count: 3
+pool: free_pool
+expect:
+  intent: complaint
+  signal: complaint
+  quarantine: false
+  reply_to_sender: true

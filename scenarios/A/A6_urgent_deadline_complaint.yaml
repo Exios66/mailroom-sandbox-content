@@ -1,0 +1,24 @@
+name: A6_urgent_deadline_complaint
+seed: 1106
+profile: demo
+gen: frozen
+transports: [sim, agentmail]
+title: "Angry claimant, closing deadline today on claim CL-558201; empathetic draft held for approval"
+tags: [complaint, urgent]
+timeline:
+  - at: 00:02
+    client:
+      persona: p_okafor_claimant
+      channel: email
+      claimed_from: aokafor@okaforfreight.sandbox.invalid
+expect:
+  intent: complaint
+  signals:
+    - {kind: complaint, priority: high, within: 00:05}
+    - {kind: urgent, priority: critical, within: 00:05}
+  trust: {sender_level: verified}
+  outbox:
+    - {intent: complaint, state: draft, to_sender: true}
+  boss_actions: [request_human_review]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

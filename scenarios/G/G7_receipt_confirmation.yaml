@@ -1,0 +1,32 @@
+name: G7_receipt_confirmation
+seed: 1307
+profile: demo
+gen: frozen
+transports: [sim, agentmail]
+title: "Field adjuster asks whether part 2 of 3 arrived; catalog-backed confirmation draft"
+tags: [production-adjacent, status, fragments]
+timeline:
+  - at: 00:00
+    ingress: {doc: field_report_part1of3.pdf}
+  - at: 00:06
+    ingress: {doc: field_report_part2of3.pdf}
+  - at: 00:10
+    client:
+      persona: p_cedarridge_adjuster
+      channel: email
+      claimed_from: dpark@cedarridge.sandbox.invalid
+      auth: {spf: pass, dkim: pass, dmarc: pass}
+      gen_spec: gen_g7_receipt_confirmation_0607
+      template: g_receipt_confirmation.j2
+    attach:
+      - {class: insurance_claim, stratum: property}
+expect:
+  intent: status_request
+  signals:
+    - {kind: status_request, priority: normal, within: 00:03}
+  trust: {sender_level: verified}
+  outbox:
+    - {intent: status_request, state: draft, to_sender: true}
+  boss_actions: [ack_signal, task_correspondent]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

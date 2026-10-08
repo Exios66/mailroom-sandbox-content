@@ -1,0 +1,24 @@
+# Generation spec: closing officer asks to expedite before today's closing (series G)
+# Archetype G9: production-adjacent expedite request with a real deadline.
+id: gen_g9_expedite_request_0609
+persona: p_tricounty_real
+target_client: tricountytitle
+archetype: G9
+goal: Write a deadline-driven request from a closing officer asking the recipient to expedite processing of the closing package before today's closing.
+constraints:
+  must_include: [closing_reference, deadline_today, expedite_ask]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: deadline-driven
+  length: "80-130 words"
+  language: en
+context:
+  matter_ref: TC-2026-1184
+  sender_display_name: Kendra Alvarado
+  claimed_from: kalvarado@tricountytitle.sandbox.invalid
+pool: free_pool
+expect:
+  intent: urgent_deadline
+  signal: urgent
+  quarantine: false
+  reply_to_sender: true

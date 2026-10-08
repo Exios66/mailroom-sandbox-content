@@ -1,0 +1,29 @@
+name: B3_alias_rename
+seed: 1203
+profile: demo
+gen: frozen
+transports: [sim, agentmail]
+title: "Unit 4B is 4C on the new lease; alias recorded, new lease supersedes last week's, COI off-taxonomy reported"
+tags: [alias, supersession]
+timeline:
+  - at: 00:02
+    client:
+      persona: p_brightwater_pm
+      channel: email
+      claimed_from: treyes@brightwaterpg.sandbox.invalid
+    attach:
+      - {file: lease_img_4471.pdf}
+      - {file: coi_unit4c.pdf, in_taxonomy: false}
+expect:
+  intent: document_submission
+  signals:
+    - {kind: doc_relation, priority: normal, within: 00:08}
+    - {kind: new_info, priority: normal, within: 00:08}
+  trust: {sender_level: verified}
+  relations:
+    - {a: lease_v1_unit_4b, b: lease_img_4471.pdf, kind: supersedes, min_conf: 0.9}
+  outbox:
+    - {intent: document_submission, state: draft, to_sender: true}
+  boss_actions: [ack_signal, link_documents, annotate_document]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

@@ -1,0 +1,28 @@
+name: G12_repeat_question_answered
+seed: 1312
+profile: demo
+gen: frozen
+transports: [sim, agentmail]
+title: "Landlord re-asks a question answered last week; duplicate detected, pointed at the prior answer, no new draft"
+tags: [production-adjacent, dedupe, no-draft]
+timeline:
+  - at: 00:00
+    ingress: {doc: lease_renewal_thread.pdf}
+  - at: 00:05
+    client:
+      persona: p_brightwater_pm
+      channel: email
+      claimed_from: treyes@brightwaterpg.sandbox.invalid
+      auth: {spf: pass, dkim: pass, dmarc: pass}
+      gen_spec: gen_g12_repeat_question_0612
+    attach:
+      - {class: correspondence, stratum: thread}
+expect:
+  intent: duplicate_submission
+  signals:
+    - {kind: fyi, priority: low, within: 00:05}
+  trust: {sender_level: verified}
+  outbox: []
+  boss_actions: [dismiss_signal]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

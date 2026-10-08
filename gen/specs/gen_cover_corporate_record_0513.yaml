@@ -1,0 +1,26 @@
+# Generation spec: cover note conditioned on class and stratum, corporate_record class (addendum v2 §6.1, §6.3)
+id: gen_cover_corporate_record_0513
+persona: p_tricounty_real
+target_client: tricountytitle
+archetype: cover_corporate_record
+goal: Write a templated cover note submitting a corporate-record document, conditioned on its stratum.
+constraints:
+  must_include: [class_label, stratum_label, submission_purpose]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: templated
+  length: "50-90 words"
+  language: en
+context:
+  class: corporate_record
+  stratum: officer_certificate
+  matter_ref: TC-2026-1190
+  sender_name: Kendra Alvarado
+attachments:
+  - officer_certificate.pdf
+pool: free_pool
+expect:
+  intent: document_submission
+  signal: new_info
+  quarantine: false
+  reply_to_sender: true

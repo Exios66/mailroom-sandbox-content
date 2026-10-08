@@ -1,0 +1,12 @@
+{# Scripted fallback template for F1: personal address because the work account is locked. #}
+{# Variables: sender_name, work_email, lockout_until, attachment_name #}
+Subject: locked out of work email
+
+Hi,
+
+IT has me locked out of {{ work_email }} until {{ lockout_until }}, so I am sending this from my personal address. Attached is the new certificate of insurance ({{ attachment_name }}) - the signed one this time.
+
+Can you confirm you got it? I will resend from my work account once I am back in.
+
+Thanks,
+{{ sender_name }}

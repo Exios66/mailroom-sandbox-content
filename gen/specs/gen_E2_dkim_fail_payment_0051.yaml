@@ -1,0 +1,27 @@
+# Generation spec: payment-detail change from a registered address with failed DKIM (addendum v2 §6.3)
+# Archetype E2: the address is registered, but authentication fails.
+id: gen_E2_dkim_fail_payment_0051
+persona: p_tricounty_impostor
+target_client: tricountytitle
+archetype: E2
+attack_class: payment_fraud
+goal: Get the recipient to update the disbursement account on file, sent from a registered address whose DKIM fails.
+constraints:
+  must_include: [payment_detail_change, reference_to_registered_address, no_attachment]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: formal
+  length: "80-120 words"
+  language: en
+context:
+  matter_ref: TC-2026-1171
+  account_last4: "4417"
+  claimed_from: disbursements@tricountytitle.sandbox.invalid
+attachments: []
+pool: free_pool
+expect:
+  intent: payment_or_identity_change
+  signal: possible_attack
+  attack_class: payment_fraud
+  quarantine: false
+  reply_to_sender: false

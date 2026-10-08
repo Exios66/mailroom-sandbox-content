@@ -1,0 +1,61 @@
+# AgentMail sender pool (addendum v2 §7.5, decision D4)
+#
+# The personas send their mail through a SMALL SHARED POOL of AgentMail
+# inboxes — many-to-one — NOT one inbox per persona. v1's "one inbox per
+# persona" needed 12+ inboxes and breaks on small plans; because the identity
+# overlay (§7.5) rewrites sender identity anyway, sharing inboxes is safe.
+#
+# Pool sizing: MAILROOM_AGENTMAIL_SENDER_POOL_SIZE, default 2.
+# A 1:1 persona↔inbox mapping is only used when the plan allows it
+# (free plan: 3 inboxes [verify] — pool of 2 + 1 Correspondent inbox fits).
+
+schema: mailroom.sender_pool/v1
+profile_notes: >
+  Pool size MUST NOT exceed what the plan allows minus one (the Correspondent
+  inbox). sandbox doctor checks inbox count against plan limits (§11.5).
+
+inboxes:
+  - pool_slot: a
+    # Stable client_id → idempotent creation: sandbox up re-runs create with
+    # the same client_id and gets the existing inbox back; never duplicates.
+    client_id: mailroom-sandbox-sender-a-v1
+    # Example address shape; the real address is returned by inbox creation.
+    address_example: sender-a@agentmail.to
+    role: benign persona sends (primary)
+  - pool_slot: b
+    client_id: mailroom-sandbox-sender-b-v1
+    address_example: sender-b@agentmail.to
+    role: adversarial / vendor sends (isolated from the benign stream)
+
+# Many-to-one mapping. Attribution across the shared inbox is by thread id
+# (In-Reply-To / References), not by sender address.
+persona_to_inbox:
+  sender-a:
+    - p_harlow_counsel       # outside counsel (registered sender)
+    - p_northstar_adviser    # transaction advisers
+    - p_prairie_founder      # startup founder
+    - p_tricounty_real       # real closing partner (benign companion leg)
+    - p_brightwater_pm       # commercial landlord
+    - p_okafor_claimant      # distressed claimant
+    - p_cedarridge_adjuster  # field adjusters
+    - p_lakeshore_biller     # billing office
+    - p_vega_prose           # pro-se policyholder
+    - p_stateca_regulator    # state regulator
+    - p_treyes_personal      # F1: personal address, work account locked
+  sender-b:
+    # Adversarial senders share the second inbox so the benign pool stays
+    # clean. Identity is synthetic (overlay) anyway; separation is a hygiene
+    # measure, not a security boundary.
+    - p_tricounty_impostor   # E1: lookalike-domain wire-change
+    - p_policyreview_records # E10/E11: prompt injection
+    - p_vendor_spam          # D1: vendor cold outreach
+
+lifecycle:
+  # sandbox up: create each pool inbox with its stable client_id (idempotent).
+  create: idempotent_via_client_id
+  # sandbox down: purge ALL messages from pool inboxes, but KEEP the pool
+  # (stable inboxes, zero stale mail) — unless --destroy is passed.
+  down: purge_messages_keep_pool
+  down_destroy: delete_pool_inboxes   # only with --destroy
+
+sizing_env: MAILROOM_AGENTMAIL_SENDER_POOL_SIZE   # default 2

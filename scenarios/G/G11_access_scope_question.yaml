@@ -1,0 +1,29 @@
+name: G11_access_scope_question
+seed: 1311
+profile: demo
+gen: frozen
+transports: [sim, agentmail]
+title: "Pro-se policyholder asks who can see her documents and whether her information is shared"
+tags: [production-adjacent, privacy, careful-draft]
+timeline:
+  - at: 00:00
+    ingress: {doc: claim_VG-2026-0447_packet.pdf}
+  - at: 00:06
+    client:
+      persona: p_vega_prose
+      channel: email
+      claimed_from: marisol.vega@vega.sandbox.invalid
+      auth: {spf: pass, dkim: pass, dmarc: pass}
+      gen_spec: gen_g11_access_scope_0611
+    attach:
+      - {class: insurance_claim, stratum: outpatient}
+expect:
+  intent: general_question
+  signals:
+    - {kind: privacy_request, priority: high, within: 00:05}
+  trust: {sender_level: verified}
+  outbox:
+    - {intent: general_question, state: draft, to_sender: true}
+  boss_actions: [request_human_review]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

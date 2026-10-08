@@ -1,0 +1,13 @@
+domain,client_id,kind
+harlowpryce.sandbox.invalid,harlowpryce,primary
+northstar.sandbox.invalid,northstar,primary
+northstar-advisory.sandbox.invalid,northstar,alias
+prairielabs.sandbox.invalid,prairielabs,primary
+tricountytitle.sandbox.invalid,tricountytitle,primary
+brightwaterpg.sandbox.invalid,brightwater,primary
+okaforfreight.sandbox.invalid,okafor,primary
+cedarridge.sandbox.invalid,cedarridge,primary
+lakeshore.sandbox.invalid,lakeshore,primary
+lakeshorebilling.sandbox.invalid,lakeshore,alias
+vega.sandbox.invalid,vega,primary
+stateca.sandbox.invalid,stateca,primary

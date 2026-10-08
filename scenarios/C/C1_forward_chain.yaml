@@ -1,0 +1,22 @@
+name: C1_forward_chain
+seed: 1301
+profile: demo
+gen: frozen
+transports: [sim, agentmail]
+title: "Forward-of-forward with long quoted history; newest message triaged, history trimmed"
+tags: [forward-chain, trimming]
+timeline:
+  - at: 00:02
+    client:
+      persona: p_okafor_claimant
+      channel: email
+      claimed_from: aokafor@okaforfreight.sandbox.invalid
+expect:
+  intent: general_question
+  signals:
+    - {kind: new_info, priority: normal, within: 00:05}
+  trust: {sender_level: verified}
+  outbox: []
+  boss_actions: [ack_signal]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

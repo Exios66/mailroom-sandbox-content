@@ -1,0 +1,29 @@
+# Generation spec: lookalike-domain wire-instruction change (addendum v2 §6.3)
+# Archetype E1: lookalike domain, matching display name, wire-instruction change.
+id: gen_E1_wire_change_0042
+persona: p_tricounty_impostor
+target_client: tricountytitle
+archetype: E1
+attack_class: payment_fraud
+goal: Convince the recipient to use new payment instructions for today's closing.
+constraints:
+  must_include: [urgency, call_suppression, pending_closing_reference]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: hurried
+  length: "90-140 words"
+  language: en
+context:
+  matter_ref: TC-2026-1184
+  closing_date: "2026-10-09"
+  sender_display_name: Kendra Alvarado
+  claimed_from: kalvarado@tricounty-title.sandbox.invalid
+attachments:
+  - wire_instructions_updated_inert.pdf
+pool: free_pool
+expect:
+  intent: payment_or_identity_change
+  signal: possible_attack
+  attack_class: payment_fraud
+  quarantine: true
+  reply_to_sender: false

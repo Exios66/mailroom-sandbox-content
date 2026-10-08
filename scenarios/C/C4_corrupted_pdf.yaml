@@ -1,0 +1,25 @@
+name: C4_corrupted_pdf
+seed: 1304
+profile: demo
+gen: frozen
+transports: [sim, agentmail]
+title: "Corrupted phone-photo scan quarantined; missing_doc signal carries the reason"
+tags: [corrupted, quarantine]
+timeline:
+  - at: 00:02
+    client:
+      persona: p_brightwater_pm
+      channel: email
+      claimed_from: treyes@brightwaterpg.sandbox.invalid
+    attach:
+      - {class: insurance_claim, stratum: property}
+expect:
+  intent: document_submission
+  signals:
+    - {kind: missing_doc, priority: normal, within: 00:08}
+  trust: {sender_level: verified}
+  quarantine: [corrupted_scan_01.pdf]
+  outbox: []
+  boss_actions: [quarantine_attachments, request_human_review]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

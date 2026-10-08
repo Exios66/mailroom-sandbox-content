@@ -1,0 +1,26 @@
+# Generation spec: counsel asks to confirm extracted entities from an amendment (series G)
+# Archetype G2: production-adjacent entity-extraction verification request.
+id: gen_g2_entity_extraction_0602
+persona: p_harlow_counsel
+target_client: harlowpryce
+archetype: G2
+goal: Write a formal request from outside counsel asking the recipient to confirm the effective date, parties, and liability cap extracted from the Meridian amendment.
+constraints:
+  must_include: [matter_reference, named_fields_to_confirm, formal_register]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: formal
+  length: "90-140 words"
+  language: en
+context:
+  matter_ref: HP-2026-0417
+  document_title: Meridian amendment
+  fields: [effective_date, parties, liability_cap]
+  sender_display_name: D. Whitcomb
+  claimed_from: dwhitcomb@harlowpryce.sandbox.invalid
+pool: free_pool
+expect:
+  intent: general_question
+  signal: new_info
+  quarantine: false
+  reply_to_sender: true

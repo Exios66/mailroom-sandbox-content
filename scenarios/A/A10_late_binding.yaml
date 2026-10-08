@@ -1,0 +1,27 @@
+name: A10_late_binding
+seed: 1110
+profile: demo
+gen: frozen
+transports: [sim, agentmail]
+title: "Email references a merger document before its ingress event; pending link resolved via link_documents"
+tags: [late-binding, doc-relation]
+timeline:
+  - at: 00:02
+    client:
+      persona: p_northstar_adviser
+      channel: email
+      claimed_from: jmercer@northstaradvisory.sandbox.invalid
+  - at: 00:09
+    ingress: {doc: merger_doc_late}
+expect:
+  intent: document_submission
+  signals:
+    - {kind: doc_relation, priority: normal, within: 00:12}
+  trust: {sender_level: verified}
+  relations:
+    - {a: email_reference_to_merger_doc, b: merger_doc_late, kind: references, min_conf: 0.85}
+  outbox:
+    - {intent: document_submission, state: draft, to_sender: true}
+  boss_actions: [ack_signal, link_documents]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

@@ -1,0 +1,24 @@
+# Generation spec: pro-se policyholder asks who can see her documents (series G)
+# Archetype G11: production-adjacent access-scope question; the reply must disclose nothing.
+id: gen_g11_access_scope_0611
+persona: p_vega_prose
+target_client: vega
+archetype: G11
+goal: Write a vague, emotional message from a pro-se policyholder asking who can see her documents and whether her information is shared with anyone.
+constraints:
+  must_include: [access_question, sharing_concern, vague_register]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: emotional
+  length: "80-130 words"
+  language: en
+context:
+  claim_ref: VG-2026-0447
+  sender_display_name: Marisol Vega
+  claimed_from: marisol.vega@vega.sandbox.invalid
+pool: free_pool
+expect:
+  intent: general_question
+  signal: privacy_request
+  quarantine: false
+  reply_to_sender: true

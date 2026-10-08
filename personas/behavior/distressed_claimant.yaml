@@ -1,0 +1,28 @@
+persona_id: p_okafor_claimant
+tone: emotional
+register: stressed and urgent; repeated follow-up messages, long forwarded chains, ALL CAPS subjects, asks for facts to be corrected
+escalation:
+  patience_sim_min: 60
+  steps:
+    - after_sim_min: 60
+      action: polite_followup
+    - after_sim_min: 120
+      action: angry_escalation
+    - after_sim_min: 240
+      action: lawyer_threat
+attachment_habits:
+  formats: [pdf, xlsx, jpg]
+  naming: generic_filenames
+  fragmentation: split_across_messages
+notes: >
+  Insured policyholder at Okafor Freight Lines with an open claim. The
+  state machine runs polite -> angry -> lawyer threat ("my lawyer will be
+  contacting you") and forwards long email chains that split inventory
+  sheets and photos across messages. Asserts contradictory facts (loss was
+  March 3, not March 8) that the Correspondent must raise as corrections
+  against existing documents with both values cited. Tone handling and
+  litigation-threat routing are the test dimensions.
+reply_templates:
+  - "Subject: FWD: FWD: WHERE IS MY CLAIM — this is the third time writing. Claim CL-558201. My loss was March 3, NOT March 8 as your letter says."
+  - "Subject: Re: claim CL-558201 — I need an answer today. My lawyer will be contacting you."
+  - "Subject: inventory sheet — attaching the inventory list again, plus photos of the damage. Please confirm you got all of them."

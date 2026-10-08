@@ -1,0 +1,21 @@
+name: T4_auth_results_parsed
+seed: 2404
+profile: demo
+gen: scripted
+transports: [gmail]
+title: "Real SPF/DKIM/DMARC results parsed into auth (gmail leg)"
+tags: [transport-conformance, real-mail, auth-parsing, assert-genuine-auth]
+timeline:
+  - at: 00:02
+    client:
+      persona: p_tricounty_real
+      channel: email
+      claimed_from: kalvarado@tricountytitle.sandbox.invalid
+      auth: {spf: pass, dkim: pass, dmarc: pass}
+expect:
+  intent: general_question
+  signals:
+    - {kind: new_info, priority: normal, within: 00:02}
+  trust: {sender_level: verified}
+  outbox: []
+  invariants: [audit_chain_ok, comms_offpath]

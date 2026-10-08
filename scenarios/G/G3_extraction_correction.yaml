@@ -1,0 +1,30 @@
+name: G3_extraction_correction
+seed: 1303
+profile: demo
+gen: frozen
+transports: [sim, agentmail]
+title: "Transaction adviser says the extracted purchase price is wrong ($42M, not $24M); contradicts relation, both values cited"
+tags: [production-adjacent, extraction, correction]
+timeline:
+  - at: 00:00
+    ingress: {doc: all_cash_deal_memo.pdf}
+  - at: 00:06
+    client:
+      persona: p_northstar_adviser
+      channel: email
+      claimed_from: jlin@northstar.sandbox.invalid
+      auth: {spf: pass, dkim: pass, dmarc: pass}
+      gen_spec: gen_g3_extraction_correction_0603
+    attach:
+      - {class: merger_agreement, stratum: all_cash}
+expect:
+  intent: correction_or_amendment
+  signals:
+    - {kind: correction, priority: high, within: 00:03}
+  trust: {sender_level: verified}
+  relations:
+    - {a: extracted_purchase_price_24M, b: adviser_stated_42M, kind: contradicts, min_conf: 0.8}
+  outbox: []
+  boss_actions: [request_human_review, annotate_document]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

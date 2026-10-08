@@ -1,0 +1,25 @@
+# Generation spec: tone variant, long forwarded chain (addendum v2 §6.1, §6.3)
+# Newest message on top, quoted history below; the triage target is the newest message.
+id: gen_tone_forwarded_chain_0422
+persona: p_okafor_claimant
+target_client: okafor
+archetype: forwarded_chain
+goal: Forward a long quoted chain about a disputed claim fact, with the newest message carrying the complaint.
+constraints:
+  must_include: [forward_headers, quoted_history, newest_message_on_top]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: informal
+  length: "150-250 words"
+  language: en
+context:
+  claim_ref: CL-558201
+  chain_depth: 3
+  disputed_fact: loss date
+attachments: []
+pool: free_pool
+expect:
+  intent: complaint
+  signal: complaint
+  quarantine: false
+  reply_to_sender: true

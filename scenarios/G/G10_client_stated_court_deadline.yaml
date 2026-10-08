@@ -1,0 +1,28 @@
+name: G10_client_stated_court_deadline
+seed: 1310
+profile: demo
+gen: frozen
+transports: [sim, agentmail]
+title: "Claimant cites a court deadline requiring processing turnaround; critical urgency, no substantive reply"
+tags: [production-adjacent, legal, sla]
+timeline:
+  - at: 00:00
+    ingress: {doc: claim_CL-558201_supplement.pdf}
+  - at: 00:03
+    client:
+      persona: p_okafor_claimant
+      channel: email
+      claimed_from: aokafor@okaforfreight.sandbox.invalid
+      auth: {spf: pass, dkim: pass, dmarc: pass}
+      gen_spec: gen_g10_court_deadline_0610
+    attach:
+      - {class: insurance_claim, stratum: auto}
+expect:
+  intent: urgent_deadline
+  signals:
+    - {kind: urgent, priority: critical, within: 00:02}
+  trust: {sender_level: verified}
+  outbox: []
+  boss_actions: [request_human_review, raise_priority]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

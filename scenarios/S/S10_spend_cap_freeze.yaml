@@ -1,0 +1,21 @@
+name: S10_spend_cap_freeze
+seed: 2310
+profile: smoke
+gen: scripted
+transports: [sim]
+title: "Daily spend cap reached mid-run; only frozen or scripted content used"
+tags: [self-test, generation, spend-cap, assert-frozen-scripted-only]
+timeline:
+  - at: 00:02
+    client:
+      persona: p_tricounty_real
+      channel: email
+      claimed_from: kalvarado@tricountytitle.sandbox.invalid
+      auth: {spf: pass, dkim: pass, dmarc: pass}
+    fault: daily_spend_cap_reached_mid_run
+expect:
+  intent: unrelated
+  signals:
+    - {kind: fyi, priority: high, within: 00:02}
+  outbox: []
+  invariants: [audit_chain_ok]

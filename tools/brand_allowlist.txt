@@ -1,0 +1,19 @@
+# Brand allowlist for the content-CI leak scan
+# One lowercase substring per line. A mention of an allowlisted brand in body
+# text is not flagged. Client display names / domains are still checked
+# strictly (see tools/validate.py check_clients).
+
+# Dataset provenance names (factual, not brand collisions)
+enron
+cuad
+maud
+sec edgar
+cms
+# Model / provider names that appear in generation manifests
+openrouter
+agentmail
+# Documented allowlist hostnames (email/egress_routes.md, email/gmail_sandbox.yaml)
+gmail.googleapis.com
+oauth2.googleapis.com
+accounts.google.com
+pubsub.googleapis.com

@@ -1,0 +1,25 @@
+# Generation spec: tone variant, angry complaint (addendum v2 §6.1, §6.3)
+# A distressed-claimant complaint in an angry register; the label is known by construction.
+id: gen_tone_angry_complaint_0401
+persona: p_okafor_claimant
+target_client: okafor
+archetype: angry_complaint
+goal: Express an angry complaint about claim handling after repeated unanswered follow-ups.
+constraints:
+  must_include: [complaint_subject, emotional_language, specific_grievance]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: angry
+  length: "90-160 words"
+  language: en
+context:
+  claim_ref: CL-558201
+  grievance: third request, no adjuster callback
+  sender_name: Adaeze Okafor
+attachments: []
+pool: free_pool
+expect:
+  intent: complaint
+  signal: complaint
+  quarantine: false
+  reply_to_sender: true

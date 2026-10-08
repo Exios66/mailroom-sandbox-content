@@ -1,0 +1,23 @@
+# Generation spec: tone variant, pro-se policyholder note in Spanish (addendum v2 §6.1, §6.3)
+id: gen_tone_spanish_prose_0415
+persona: p_vega_prose
+target_client: vega
+archetype: spanish_prose_note
+goal: Send a pro-se policyholder note in Spanish asking about a claim.
+constraints:
+  must_include: [policyholder_question, spanish_prose]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: informal
+  length: "60-120 words"
+  language: es
+context:
+  policy_ref: PV-2026-3310
+  sender_name: Marisol Vega
+attachments: []
+pool: free_pool
+expect:
+  intent: general_question
+  signal: new_info
+  quarantine: false
+  reply_to_sender: true

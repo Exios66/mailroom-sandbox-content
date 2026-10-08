@@ -1,0 +1,116 @@
+# Model pool configuration for the generation layer (addendum v2 §6.4).
+# Free OpenRouter pool (discovered, scored, rotated) with a three-model paid fallback.
+# The pool itself is a runtime artifact: resolved at sandbox up, never hard-coded here
+# beyond the seed candidates and policy below.
+schema: mailroom.gen_pool/v1
+
+free_pool:
+  discovery:
+    source: openrouter_model_list
+    id_suffix: ":free"
+    output: text
+    min_context_tokens: 32768
+    router_fallback: openrouter/free   # last free option: the router picks from whatever is free
+    exclude_retiring_within_days: 90
+  # Seed candidates seen in September 2026 trackers. Expect churn; re-verify at sandbox up.
+  seed_candidates:
+    - nvidia/nemotron-3-ultra:free
+    - nvidia/nemotron-3.5-lightning:free
+    - openai/gpt-oss-120b:free
+    - openai/gpt-oss-20b:free
+    - qwen/qwen3-coder:free
+    - moonshotai/kimi-k2.6:free
+    - meta-llama/llama-3.3-70b-instruct:free
+  excluded_retiring:
+    # Listed as retiring by 2026-12-31; stay out of the pool. [verify] at sandbox up.
+    - poolside/laguna-models
+    - dots3-note-preview
+  account_limits:
+    rpm: 20                      # per account, not per model or key; purchases do not change it
+    rpd: 50                      # 1000/day after a one-time $10 credit purchase (uplift persists)
+    negative_balance_returns: 402  # even on free models
+    daily_reset_boundary: UTC    # implied, not documented [verify]
+  rate_bucket:                   # one shared token bucket per account
+    rpm: 18                      # headroom under the 20/min account cap
+    daily_rpd_source: key_info_endpoint_then_env
+    key_info_endpoint: /api/v1/key   # [verify]
+    env_fallback: MAILROOM_SANDBOX_GEN_FREE_RPD
+    count_failures_against_cap: true  # conservative: undocumented whether failures count
+  selection:
+    strategy: weighted_round_robin
+    health_score: [recent_success_rate, median_latency, refusal_rate]
+    pause_after_consecutive_failures: 3
+    pause_minutes: 10
+    retry_same_email_uses_different_model: true
+  retry:
+    free_attempts: 4             # FREE_ATTEMPTS; allowed range 3..4 (MAILROOM_SANDBOX_GEN_FREE_ATTEMPTS)
+    backoff: exponential_with_jitter
+    backoff_on: ["429", "5xx", timeout]
+    failure_is: ["429", "5xx", timeout, empty_output, refusal, format_error,
+                 unrepairable_lint_failure, failed_conformance_check]
+    daily_cap_short_circuit: true  # 429 meaning the daily cap -> skip to paid tier
+
+paid_tier:
+  attempts_per_model: 2          # MAILROOM_SANDBOX_GEN_PAID_ATTEMPTS
+  order: cost                    # cheapest by cost per conforming email, ties broken by reliability/vendor diversity
+  vendor_diversity: 3_different_makers
+  # Slots are vendor slots, not pins: sandbox models refresh re-resolves slugs and
+  # prices, re-runs the benchmark, and swaps a failing model for the next alternate.
+  slots:
+    - slot: 1
+      role: cheapest_structured_output_class
+      model: xiaomi/mimo-v2.6-flash
+      input_per_1m_usd: 0.14
+      output_per_1m_usd: 0.28
+      status: slug_and_price_confirmed_2026-10-08
+      notes: 1M context
+    - slot: 2
+      role: strong_value_second_vendor
+      model: deepseek-v4.1   # EXACT SLUG [verify] AT SANDBOX UP
+      input_per_1m_usd: 0.30
+      output_per_1m_usd: 1.20
+      status: price_plan_unverified_slug
+      notes: >
+        Trackers show $0.30/$1.20 via OpenRouter; v1's $0.15/$0.60 "off-peak" was
+        DeepSeek first-party time-of-day pricing, not corroborated for OpenRouter.
+        Previous DeepSeek V4 Flash lists at $0.14/$0.28 and enters the benchmark
+        as the cheaper sibling.
+    - slot: 3
+      role: third_vendor_for_diversity
+      model: z-ai/glm-5.3-flash   # EXACT SLUG [verify]; NOT RE-CHECKED
+      input_per_1m_usd: 0.15
+      output_per_1m_usd: 0.50
+      status: price_from_v1_unverified
+  alternates:                    # next in line if a slot fails the acceptance bar; NOT RE-CHECKED [verify]
+    - model: openai/gpt-6-luna
+      input_per_1m_usd: 0.10
+      output_per_1m_usd: 0.50
+    - model: meta/muse-spark-1.3-contributor
+      input_per_1m_usd: 0.10
+      output_per_1m_usd: 0.20
+  provider_policy:
+    provider.data_collection: deny   # [verify] where the route supports it; free calls cannot deny, hence the payload guard
+  cost_notes: >
+    At ~600 input / 250 output tokens per email: MiMo ~$0.00015, DeepSeek V4.1
+    ~$0.00048, GLM ~$0.00022; 1,000 emails ~$0.15-$0.48. Cap max_tokens and
+    request low/no reasoning where supported (hidden reasoning tokens bill as
+    output); keep a 4x margin against the daily cap.
+
+acceptance_bar:                  # before a model joins either tier; re-run on swap and monthly
+  benchmark_specs: 30
+  min_conformance: 0.90
+  min_lint_pass_after_rewriting: 0.95
+  max_refusals: 0.10
+
+fallback_path:                   # §6.4 retry policy, steps 1-7
+  on_total_failure:
+    record: generation_failed
+    substitute: scenario_scripted_template
+    flag: template_fallback
+  attempt_logging: [model, tier, latency, tokens, cost, failure_reason]
+  events: [generation.attempt, generation.fallback]
+
+caps:
+  daily_usd_cap: 1.00            # MAILROOM_SANDBOX_GEN_DAILY_USD_CAP
+  daily_call_cap: 2000           # MAILROOM_SANDBOX_GEN_MAX_CALLS
+  past_cap_behavior: frozen_or_scripted_only   # S10

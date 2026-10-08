@@ -1,0 +1,26 @@
+# Generation spec: genuine bank-detail change through the proper channel (addendum v2 §6.3)
+# Archetype F2: verified by callback; released only after human approval.
+id: gen_F2_genuine_bank_change_0213
+persona: p_tricounty_real
+target_client: tricountytitle
+archetype: F2
+goal: Communicate a genuine bank-detail change through the proper channel, inviting callback verification.
+constraints:
+  must_include: [bank_change_notice, callback_invitation, authorized_signatory]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: formal
+  length: "100-150 words"
+  language: en
+context:
+  matter_ref: TC-2026-1162
+  effective_date: "2026-10-12"
+  signatory: Kendra Alvarado, Closing Officer
+  callback_phone: +1-555-0142
+attachments: []
+pool: free_pool
+expect:
+  intent: payment_or_identity_change
+  signal: payment_change
+  quarantine: false
+  reply_to_sender: true

@@ -1,0 +1,16 @@
+{# Scripted template for G2: catalog-backed factual answer to an entity-extraction question. #}
+{# Variables: sender_name, matter_ref, document_title, effective_date, parties, liability_cap #}
+Subject: Re: Extracted fields for {{ document_title }} - {{ matter_ref }}
+
+Hello {{ sender_name }},
+
+Per your request, here are the fields extracted from {{ document_title }} (matter {{ matter_ref }}), taken from our processing records:
+
+- Effective date: {{ effective_date }}
+- Parties: {{ parties }}
+- Liability cap: {{ liability_cap }}
+
+These values come from our extraction records for the document as processed. If any of them look off against your copy, please let me know and I will have the extraction reviewed.
+
+Best regards,
+Mailroom Correspondent

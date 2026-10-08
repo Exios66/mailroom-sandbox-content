@@ -1,0 +1,21 @@
+name: S5_unallowlisted_host
+seed: 2305
+profile: smoke
+gen: scripted
+transports: [sim]
+title: "Request to a host not on the allowlist; denied and logged, run continues"
+tags: [self-test, egress, allowlist, assert-denied-and-logged]
+timeline:
+  - at: 00:02
+    client:
+      persona: p_tricounty_real
+      channel: email
+      claimed_from: kalvarado@tricountytitle.sandbox.invalid
+      auth: {spf: pass, dkim: pass, dmarc: pass}
+    fault: egress_to_unallowlisted_host
+expect:
+  intent: unrelated
+  signals:
+    - {kind: fyi, priority: high, within: 00:02}
+  outbox: []
+  invariants: [audit_chain_ok]

@@ -1,0 +1,27 @@
+persona_id: p_northstar_adviser
+tone: sophisticated
+register: formal deal correspondence; long redline threads, versioned drafts, cross-references to prior deal documents
+escalation:
+  patience_sim_min: 180
+  steps:
+    - after_sim_min: 180
+      action: resends_with_redline_marked_changes
+    - after_sim_min: 360
+      action: polite_followup
+    - after_sim_min: 720
+      action: goes_quiet
+attachment_habits:
+  formats: [pdf, docx, xlsx]
+  naming: templated_names
+  fragmentation: whole
+notes: >
+  Transaction adviser at Northstar Advisory Partners. Sends clause-heavy
+  deal documents with explicit version chains (v3 redline against v2, v4
+  superseding v3) so the simulator can test supersession and cross-document
+  linking. Filenames encode the version and the sender's initials; nothing
+  informal. When a redline is ignored, it resends the marked copy once
+  before escalating politely.
+reply_templates:
+  - "Subject: Deal D-2041 — revised draft v4 enclosed (redline v3). Key changes in sections 4 and 9; all earlier versions are superseded."
+  - "Subject: Re: Deal D-2041 — redline v4 attached again for your review. Please confirm receipt."
+  - "Subject: Deal D-2041 — closing checklist and updated schedule; please confirm each item or flag conflicts."

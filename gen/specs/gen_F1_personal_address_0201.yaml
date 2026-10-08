@@ -1,0 +1,26 @@
+# Generation spec: verified contact writes from a personal address because the work account is locked (addendum v2 §6.3)
+# Archetype F1: unverified but benign; attachment soft-held pending callback; neutral reply.
+id: gen_F1_personal_address_0201
+persona: p_treyes_personal
+target_client: brightwater
+archetype: F1
+goal: Submit a legitimate certificate of insurance from a personal address because the work account is locked out.
+constraints:
+  must_include: [lockout_explanation, attachment_reference, confirmation_request]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: informal
+  length: "70-110 words"
+  language: en
+context:
+  work_email: treyes@brightwaterpg.sandbox.invalid
+  lockout_until: Friday
+  unit_ref: 4C
+attachments:
+  - COI_Unit4C.pdf
+pool: free_pool
+expect:
+  intent: document_submission
+  signal: new_info
+  quarantine: false
+  reply_to_sender: true

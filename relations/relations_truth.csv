@@ -1,0 +1,9 @@
+relation_id,scenario_id,a_ref,b_ref,kind,source,min_conf,notes
+rel_0001,B1_amendment_by_title,schedule_c_v3_clean.pdf,schedule_c_v3_redline.pdf,amends,synthetic_constructed,0.7,
+rel_0002,A3_supersession,schedule_c_v3_clean.pdf,schedule_c_v3_redline.pdf,supersedes,synthetic_constructed,0.8,
+rel_0003,B4_body_contradicts_attachment,letter_march8.pdf,email_body_march3,contradicts,synthetic_constructed,0.75,both values cited
+rel_0004,B5_retraction,retracted_upload.pdf,retraction_email,withdraws,synthetic_constructed,0.8,
+rel_0005,B6_late_exhibit_completes_set,archived_set,late_exhibit.pdf,completes,synthetic_constructed,0.7,
+rel_0006,B2_counterparty_cross_matter,matter_HP-2026-0417,matter_HP-2026-0388,references,synthetic_constructed,0.7,via counterparty Meridian Holdings
+rel_0007,A5_split_package,package_part1.pdf,package_part2.pdf,completes,synthetic_constructed,0.8,
+rel_0008,A4_duplicate_resubmission,original.pdf,resubmission.pdf,duplicates,synthetic_constructed,0.9,

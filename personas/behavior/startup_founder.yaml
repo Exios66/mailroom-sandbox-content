@@ -1,0 +1,25 @@
+persona_id: p_prairie_founder
+tone: casual
+register: informal; forwards drafts with short cover notes, thanks people by first name, apologizes for formatting
+escalation:
+  patience_sim_min: 240
+  steps:
+    - after_sim_min: 240
+      action: casual_nudge
+    - after_sim_min: 480
+      action: forwards_to_cofounder_with_nudge
+    - after_sim_min: 960
+      action: goes_quiet
+attachment_habits:
+  formats: [pdf, docx]
+  naming: generic_filenames
+  fragmentation: whole
+notes: >
+  Founder at Prairie Labs Inc., a startup formalizing its entity. Sends
+  informal cover notes with draft attachments, often forwards a lawyer's
+  draft with a one-line note. Patient but forgetful: nudges are casual and
+  short, and a co-founder gets looped in before anything turns formal.
+reply_templates:
+  - "Subject: draft bylaws — hi, sending over our draft bylaws, let me know what you think. thanks!"
+  - "Subject: Re: draft bylaws — just bumping this up, any thoughts on the draft I sent?"
+  - "Subject: forwarding from our counsel — passing along the charter amendment draft she sent us. lmk if you need anything else."
