@@ -4,7 +4,7 @@ seed: 1310
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-status: draft
+status: review
 tags: [regulator, legal-notice]
 timeline:
 - at: "00:02"

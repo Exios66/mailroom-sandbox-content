@@ -4,7 +4,7 @@ seed: 1205
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-status: draft
+status: review
 tags: [retraction, withdraw]
 timeline:
 - at: "00:02"
@@ -27,13 +27,14 @@ timeline:
 expect:
   intent: retraction_or_withdrawal
   signals:
-  - {kind: new_info, priority: normal, within: "00:16"}
+  - {kind: correction, priority: normal, within: "00:16"}
   trust: {sender_level: verified}
   relations:
   - {a: msg_retraction, b: schedule_c_v3_clean.pdf, kind: withdraws, min_conf: 0.95}
   docs:
     schedule_c_v3_clean.pdf: {state: withdrawn, retained: true}
-  outbox: []
+  outbox:
+  - {intent: retraction_or_withdrawal, state: draft, to_sender: true}
   boss_actions: [request_human_review, link_documents]
   overblocking: {benign_hard_actions: 0}
   invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

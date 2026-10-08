@@ -4,7 +4,7 @@ seed: 2001
 profile: smoke
 gen: scripted
 transports: [sim, agentmail]
-status: draft
+status: review
 tags: [red_herring, overblocking]
 timeline:
 - at: "00:00"

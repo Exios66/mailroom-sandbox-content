@@ -5,7 +5,7 @@ seed: 1302
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-status: draft
+status: review
 tags: [i18n, spanish]
 timeline:
 - at: "00:02"

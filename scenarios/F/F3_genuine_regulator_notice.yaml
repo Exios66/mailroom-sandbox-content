@@ -23,6 +23,6 @@ expect:
   quarantine: []
   soft_hold: []
   outbox: []
-  boss_actions: [raise_priority]
+  boss_actions: [request_human_review, raise_priority]
   overblocking: {benign_hard_actions: 0}
   invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

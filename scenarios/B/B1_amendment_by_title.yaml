@@ -4,7 +4,7 @@ seed: 1201
 profile: smoke
 gen: scripted
 transports: [sim, agentmail]
-status: draft
+status: review
 tags: [smoke, amendment]
 timeline:
 - at: "00:00"

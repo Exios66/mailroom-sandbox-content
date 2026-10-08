@@ -4,7 +4,7 @@ seed: 2002
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-status: draft
+status: review
 tags: [red_herring, overblocking, prefiltered, no_llm_call]
 timeline:
 - at: "00:00"
