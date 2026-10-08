@@ -1,20 +1,24 @@
 name: C10_regulator_inquiry
+title: Regulator inquiry with a response window; critical, preservation hold recommended
 seed: 1310
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Regulator inquiry with a response window; critical, preservation hold recommended"
+status: review
 tags: [regulator, legal-notice]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_stateca_regulator
-      channel: email
-      claimed_from: rcalloway@stateca.sandbox.invalid
+- at: "00:02"
+  client:
+    persona: p_stateca_regulator
+    channel: email
+    claimed_from: rpatel@stateca.sandbox.invalid
+    template: regulator_notice
+    vars: {notice_ref: SCA-2026-0731, citation: Insurance Code s. 8-114 (records inquiry), respondent_name: the
+        firm, response_window_days: 14}
 expect:
   intent: legal_notice
   signals:
-    - {kind: legal_notice, priority: critical, within: 00:05}
+  - {kind: legal_notice, priority: critical, within: "00:05"}
   trust: {sender_level: verified}
   outbox: []
   boss_actions: [request_human_review]

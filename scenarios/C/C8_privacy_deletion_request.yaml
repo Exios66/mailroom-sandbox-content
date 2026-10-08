@@ -1,22 +1,26 @@
 name: C8_privacy_deletion_request
+title: Pro-se policyholder requests deletion of personal data; human review, nothing deleted or disclosed
 seed: 1308
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Pro-se policyholder requests deletion of personal data; human review, nothing deleted or disclosed"
+status: review
 tags: [privacy, deletion]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_vega_prose
-      channel: email
-      claimed_from: marisol.vega@vega.sandbox.invalid
+- at: "00:02"
+  client:
+    persona: p_vega_prose
+    channel: email
+    claimed_from: marisol.vega@vega.sandbox.invalid
+    template: privacy_deletion_request
+    vars: {claim_ref: VG-2026-0447}
 expect:
   intent: privacy_request
   signals:
-    - {kind: privacy_request, priority: high, within: 00:08}
+  - {kind: privacy_request, priority: high, within: "00:08"}
   trust: {sender_level: verified}
-  outbox: []
+  outbox:
+  - {intent: privacy_request, state: draft, to_sender: true}
   boss_actions: [request_human_review]
   overblocking: {benign_hard_actions: 0}
   invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

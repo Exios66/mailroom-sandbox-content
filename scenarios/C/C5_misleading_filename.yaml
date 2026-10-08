@@ -1,25 +1,29 @@
 name: C5_misleading_filename
+title: invoice.pdf is actually a contract; classified by content, filename ignored
 seed: 1305
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "invoice.pdf is actually a contract; classified by content, filename ignored"
+status: review
 tags: [filename-mismatch, content-classification]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_prairie_founder
-      channel: email
-      claimed_from: sfield@prairielabs.sandbox.invalid
+- at: "00:02"
+  client:
+    persona: p_prairie_founder
+    channel: email
+    claimed_from: agarcia@prairielabs.sandbox.invalid
+    template: document_submission
+    vars: {document_title: invoice.pdf, matter_ref: the reseller deal, note: 'It''s the signed agreement,
+        sorry about the filename.'}
     attach:
-      - {class: contract, stratum: revenue_profit_sharing}
+    - {class: contract, stratum: reseller, as: invoice.pdf}
 expect:
   intent: document_submission
   signals:
-    - {kind: new_info, priority: normal, within: 00:08}
+  - {kind: new_info, priority: normal, within: "00:08"}
   trust: {sender_level: verified}
   outbox:
-    - {intent: document_submission, state: draft, to_sender: true}
+  - {intent: document_submission, state: draft, to_sender: true}
   boss_actions: [ack_signal, link_documents]
   overblocking: {benign_hard_actions: 0}
   invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

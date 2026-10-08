@@ -1,31 +1,33 @@
 name: G1_frustrated_status_delay
+title: Frustrated claimant sends a third angry follow-up about a claim sitting unprocessed for days
 seed: 1301
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Frustrated claimant sends a third angry follow-up about a claim sitting unprocessed for days"
+status: draft
 tags: [production-adjacent, status, tone]
 timeline:
-  - at: 00:00
-    ingress: {doc: claim_CL-558201_packet.pdf}
-  - at: 00:03
-    client:
-      persona: p_okafor_claimant
-      channel: email
-      claimed_from: aokafor@okaforfreight.sandbox.invalid
-      auth: {spf: pass, dkim: pass, dmarc: pass}
-      gen_spec: gen_g1_frustrated_status_0601
-      template: g_status_update.j2
+- at: "00:00"
+  ingress: {ref: claim_packet, class: insurance_claim, stratum: auto, as: claim_CL-558201_packet.pdf}
+- at: "00:03"
+  client:
+    persona: p_okafor_claimant
+    channel: email
+    claimed_from: aokafor@okaforfreight.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: frustrated_status_followup
+    gen_spec: gen_g1_frustrated_status_0601
+    vars: {claim_ref: CL-558201, contact_count: third, days_waiting: 9}
     attach:
-      - {class: insurance_claim, stratum: auto}
+    - {class: insurance_claim, stratum: auto}
 expect:
   intent: complaint
   signals:
-    - {kind: complaint, priority: high, within: 00:02}
-    - {kind: urgent, priority: high, within: 00:02}
+  - {kind: complaint, priority: high, within: "00:02"}
+  - {kind: urgent, priority: high, within: "00:02"}
   trust: {sender_level: verified}
   outbox:
-    - {intent: complaint, state: draft, to_sender: true}
+  - {intent: complaint, state: draft, to_sender: true, reference_template: g_status_update}
   boss_actions: [request_human_review]
   overblocking: {benign_hard_actions: 0}
   invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

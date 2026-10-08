@@ -1,35 +1,40 @@
 name: A12_crash_restart
+title: Crash mid-triage at 00:06; resume with no duplicate signals; audit chain intact
 seed: 1112
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Crash mid-triage at 00:06; resume with no duplicate signals; audit chain intact"
+status: draft
 tags: [crash, resume]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_harlow_counsel
-      channel: email
-      claimed_from: dwhitcomb@harlowpryce.sandbox.invalid
+- at: "00:02"
+  client:
+    persona: p_harlow_counsel
+    channel: email
+    claimed_from: dwhitcomb@harlowpryce.sandbox.invalid
+    template: document_submission
+    vars: {document_title: the IP assignment, matter_ref: HP-2026-0421, note: Signed copy.}
     attach:
-      - {class: contract, stratum: parties}
-  - at: 00:06
-    fault: crash_mid_triage
-  - at: 00:09
-    client:
-      persona: p_harlow_counsel
-      channel: email
-      claimed_from: dwhitcomb@harlowpryce.sandbox.invalid
+    - {class: contract, stratum: ip}
+- {at: "00:06", fault: crash_mid_triage}
+- at: "00:09"
+  client:
+    persona: p_harlow_counsel
+    channel: email
+    claimed_from: dwhitcomb@harlowpryce.sandbox.invalid
+    template: document_submission
+    vars: {document_title: the development agreement, matter_ref: HP-2026-0421, note: Second document
+        for the same matter.}
     attach:
-      - {class: contract, stratum: effective_date}
+    - {class: contract, stratum: development}
 expect:
   intent: document_submission
   signals:
-    - {kind: new_info, priority: normal, within: 00:05}
-    - {kind: new_info, priority: normal, within: 00:12}
+  - {kind: new_info, priority: normal, within: "00:05"}
+  - {kind: new_info, priority: normal, within: "00:12"}
   trust: {sender_level: verified}
   outbox:
-    - {intent: document_submission, state: draft, to_sender: true}
+  - {intent: document_submission, state: draft, to_sender: true}
   boss_actions: [ack_signal]
   overblocking: {benign_hard_actions: 0}
   invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

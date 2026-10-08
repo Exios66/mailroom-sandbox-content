@@ -1,0 +1,7 @@
+# Synthetic fixture: the archive "password" in scenario C3 is a made-up value
+# for a fictional sender and protects nothing.
+version: 2
+secret:
+  ignored_paths:
+    - scenarios/C/C3_password_zip.yaml
+    - tools/migrations/scenarios_v2_map.py

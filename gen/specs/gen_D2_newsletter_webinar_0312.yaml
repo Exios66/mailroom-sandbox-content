@@ -1,7 +1,7 @@
 # Generation spec: newsletter or webinar invitation (addendum v2 §6.3)
 # Archetype D2: deterministic pre-filter, no LLM call.
 id: gen_D2_newsletter_webinar_0312
-persona: p_vendor_spam
+persona: p_brightwater_pm
 target_client: brightwater
 archetype: D2
 goal: Send a newsletter-style webinar invitation for the deterministic pre-filter.

@@ -1,20 +1,25 @@
 name: C1_forward_chain
+title: Forward-of-forward with long quoted history; newest message triaged, history trimmed
 seed: 1301
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Forward-of-forward with long quoted history; newest message triaged, history trimmed"
+status: review
 tags: [forward-chain, trimming]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_okafor_claimant
-      channel: email
-      claimed_from: aokafor@okaforfreight.sandbox.invalid
+- at: "00:02"
+  client:
+    persona: p_okafor_claimant
+    channel: email
+    claimed_from: aokafor@okaforfreight.sandbox.invalid
+    template: forward_chain
+    vars: {subject_core: claim CL-558201 paperwork, question: 'See below - is this still what you need?',
+      quoted_history: 'Original request for the bill of lading and photos, forwarded twice with notes
+        from the yard manager.'}
 expect:
   intent: general_question
   signals:
-    - {kind: new_info, priority: normal, within: 00:05}
+  - {kind: new_info, priority: normal, within: "00:05"}
   trust: {sender_level: verified}
   outbox: []
   boss_actions: [ack_signal]

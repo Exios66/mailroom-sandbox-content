@@ -1,7 +1,7 @@
 # Generation spec: macro-style document (inert) with an urgent pretext (addendum v2 §6.3)
 # Archetype E12: quarantined; never opened or rendered.
 id: gen_E12_macro_document_0155
-persona: p_vendor_spam
+persona: p_tricounty_impostor
 target_client: prairielabs
 archetype: E12
 attack_class: malicious_attachment

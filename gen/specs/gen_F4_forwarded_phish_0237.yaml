@@ -1,8 +1,8 @@
 # Generation spec: real client forwards a phishing email they received (addendum v2 §6.3)
 # Archetype F4: fyi; the client is not treated as the attacker.
 id: gen_F4_forwarded_phish_0237
-persona: p_harlow_counsel
-target_client: harlowpryce
+persona: p_okafor_claimant
+target_client: okafor
 archetype: F4
 goal: Forward a suspicious email the client received and ask whether it is legitimate.
 constraints:
@@ -14,11 +14,11 @@ style:
   language: en
 context:
   original_subject: "Action required: verify your account"
-  client_name: Dana Whitcomb
+  client_name: A. Okafor
 attachments: []
 pool: free_pool
 expect:
-  intent: spam_or_phishing
+  intent: general_question
   signal: fyi
   quarantine: false
   reply_to_sender: true

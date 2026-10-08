@@ -1,0 +1,29 @@
+# ID range allocation (addendum v2 §12.5). Parallel agents author IDs only
+# inside the block their workstream owns, so two PRs never mint the same
+# ID. content-ci rejects an ID outside every block. Add a block here (in its
+# own small PR) before minting IDs in a new range.
+schema: mailroom.id_ranges/v1
+generation_specs:            # gen_<archetype>_<nnnn>; nnnn is global across specs
+  - {owner: C6-E,       lo: 1,    hi: 199,  note: "E-series attacks"}
+  - {owner: C5-F,       lo: 200,  hi: 299,  note: "F-series hard negatives"}
+  - {owner: C5-D,       lo: 300,  hi: 399,  note: "D-series red herrings"}
+  - {owner: C7-tone,    lo: 400,  hi: 499,  note: "tone and language variants"}
+  - {owner: C7-cover,   lo: 500,  hi: 599,  note: "cover notes per class/stratum"}
+  - {owner: C6-G,       lo: 600,  hi: 699,  note: "G-series production-adjacent"}
+  - {owner: C4-A,       lo: 700,  hi: 799,  note: "A-series core scenarios"}
+  - {owner: C4-B,       lo: 800,  hi: 899,  note: "B-series context-bearing"}
+  - {owner: C4-C,       lo: 900,  hi: 999,  note: "C-series edge cases"}
+  - {owner: C6-ST,      lo: 1000, hi: 1099, note: "S and T series"}
+  - {owner: C7-coverage, lo: 1100, hi: 1499, note: "coverage-profile cover notes"}
+emails:                      # em_<Series>_<nnnn>; the series letter partitions by owner
+  - {owner: C8-handwritten, lo: 1,    hi: 99,   note: "scripted renders and hand-written anchors"}
+  - {owner: C8-frozen,      lo: 100,  hi: 9999, note: "frozen build output (generation layer)"}
+attachments:                 # att_<nnnn>
+  - {owner: C9-seed,        lo: 1,   hi: 99,   note: "v0.1 synthetic, off-taxonomy and adversarial fixtures"}
+  - {owner: C9-synthetic,   lo: 100, hi: 199,  note: "synthetic_constructed relation variants"}
+  - {owner: C9-adversarial, lo: 200, hi: 299,  note: "inert adversarial files"}
+  - {owner: C9-offtaxonomy, lo: 300, hi: 399,  note: "off-taxonomy synthetic documents"}
+  - {owner: C9-dataset,     lo: 1000, hi: 9999, note: "dataset-joined rows (tools/build_attachments.py)"}
+relations:                   # rel_<nnnn>
+  - {owner: C10-hand,    lo: 1,    hi: 999,  note: "hand-authored scenario relations"}
+  - {owner: C10-dataset, lo: 1000, hi: 9999, note: "derived from dataset relationships / bundles"}

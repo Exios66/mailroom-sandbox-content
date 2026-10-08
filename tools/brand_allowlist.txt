@@ -12,6 +12,8 @@ cms
 # Model / provider names that appear in generation manifests
 openrouter
 agentmail
+# OpenRouter model slugs (vendor/model ids in gen/pool.yaml), not brand prose
+nvidia/
 # Documented allowlist hostnames (email/egress_routes.md, email/gmail_sandbox.yaml)
 gmail.googleapis.com
 oauth2.googleapis.com

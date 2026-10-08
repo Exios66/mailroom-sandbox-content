@@ -1,26 +1,30 @@
 name: G12_repeat_question_answered
+title: Landlord re-asks a question answered last week; duplicate detected, pointed at the prior answer,
+  no new draft
 seed: 1312
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Landlord re-asks a question answered last week; duplicate detected, pointed at the prior answer, no new draft"
+status: draft
 tags: [production-adjacent, dedupe, no-draft]
 timeline:
-  - at: 00:00
-    ingress: {doc: lease_renewal_thread.pdf}
-  - at: 00:05
-    client:
-      persona: p_brightwater_pm
-      channel: email
-      claimed_from: treyes@brightwaterpg.sandbox.invalid
-      auth: {spf: pass, dkim: pass, dmarc: pass}
-      gen_spec: gen_g12_repeat_question_0612
+- at: "00:00"
+  ingress: {ref: lease_renewal_thread, class: correspondence, stratum: email, as: lease_renewal_thread.pdf}
+- at: "00:05"
+  client:
+    persona: p_brightwater_pm
+    channel: email
+    claimed_from: treyes@brightwaterpg.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: repeat_question
+    gen_spec: gen_g12_repeat_question_0612
+    vars: {unit_ref: unit 4C}
     attach:
-      - {class: correspondence, stratum: thread}
+    - {class: correspondence, stratum: email}
 expect:
   intent: duplicate_submission
   signals:
-    - {kind: fyi, priority: low, within: 00:05}
+  - {kind: fyi, priority: low, within: "00:05"}
   trust: {sender_level: verified}
   outbox: []
   boss_actions: [dismiss_signal]

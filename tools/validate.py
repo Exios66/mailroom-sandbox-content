@@ -70,6 +70,14 @@ PRIORITIES = {"low", "normal", "high", "critical"}
 TIERS = {"free", "paid", "scripted", "template", "handwritten"}
 AUTH_RESULTS = {"pass", "fail", "none", "softfail", "temperror", "permerror"}
 
+# Variables the sandbox runner supplies to every inbound template (CONTENT_SPEC
+# §4.1). CONTACT_CONTEXT comes from the persona's registered contact, so
+# adversary personas (no contact) must pass those through ``vars``.
+CONTACT_CONTEXT = {"sender_name", "sender_first_name", "sender_title"}
+STANDARD_TEMPLATE_CONTEXT = CONTACT_CONTEXT | {
+    "sender_email", "client_display_name", "attachment_name", "attachment_names",
+}
+
 ID_PATTERNS = {
     "client_id": re.compile(r"^[a-z0-9_]+$"),
     "persona_id": re.compile(r"^p_[a-z0-9_]+$"),
@@ -460,6 +468,49 @@ def check_personas(root: Path, clients: dict, contacts: dict,
     return personas
 
 
+def load_strata(root: Path) -> tuple[dict, set[tuple[str, str]]]:
+    """(strata rows keyed by (class, stratum), off-taxonomy (class, kind) pairs)."""
+    strata: dict[tuple[str, str], dict] = {}
+    p = root / "taxonomy" / "strata.csv"
+    if p.exists():
+        for r in read_csv(p):
+            strata[(r["class"], r["stratum"])] = r
+    off: set[tuple[str, str]] = set()
+    p = root / "taxonomy" / "offtaxonomy.csv"
+    if p.exists():
+        off = {("off_taxonomy", r["kind"]) for r in read_csv(p)}
+    return strata, off
+
+
+def template_variables(root: Path, rep: Report) -> dict[str, set[str]] | None:
+    """Undeclared variables per inbound template (None: jinja2 missing)."""
+    try:
+        import jinja2
+        import jinja2.meta
+    except ImportError:
+        rep.warn("jinja2 not installed; skipping template parse and variable "
+                 "checks (pip install jinja2)")
+        return None
+    env = jinja2.Environment()
+    out: dict[str, set[str]] = {}
+    tdir = root / "gen" / "templates"
+    for sub in ("", "replies"):
+        for tf in sorted((tdir / sub).glob("*.j2")):
+            rel = tf.relative_to(root)
+            try:
+                ast_ = env.parse(tf.read_text(encoding="utf-8"))
+            except jinja2.TemplateSyntaxError as e:
+                rep.error(f"{rel}: template syntax error: {e}")
+                continue
+            if not sub:
+                out[tf.stem] = set(jinja2.meta.find_undeclared_variables(ast_))
+                first = [ln for ln in tf.read_text(encoding="utf-8").splitlines()
+                         if ln.strip() and not ln.lstrip().startswith("{#")]
+                if not first or not first[0].startswith("Subject:"):
+                    rep.error(f"{rel}: first rendered line must be 'Subject: ...'")
+    return out
+
+
 def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
                     rep: Report) -> tuple[dict, dict]:
     scenarios: dict[str, dict] = {}
@@ -476,17 +527,22 @@ def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
                  "validation (pip install jsonschema)")
     except Exception as e:  # noqa: BLE001 - bad schema file is a real error
         rep.error(f"schemas/scenario.v2.json unreadable: {e}")
-    spec_ids: set[str] = set()
+    spec_personas: dict[str, str] = {}
     for spec_file in sorted((root / "gen" / "specs").glob("*.yaml")):
         try:
-            spec_ids.add(load_yaml(spec_file)["id"])
-        except Exception:  # noqa: BLE001
+            spec = load_yaml(spec_file)
+            spec_personas[spec["id"]] = spec.get("persona", "")
+        except Exception:  # noqa: BLE001 - reported by check_gen_specs
             pass
     attach_files = set()
     man = root / "attachments" / "manifest.csv"
     if man.exists():
         attach_files = {r["file"] for r in read_csv(man)}
-    templates = {p.name for p in (root / "gen" / "templates").glob("*")}
+    template_vars = template_variables(root, rep)
+    templates = {p.stem for p in (root / "gen" / "templates").glob("*.j2")}
+    replies = {p.stem for p in (root / "gen" / "templates" / "replies").glob("*.j2")}
+    strata, offtax = load_strata(root)
+    awaiting_specs: list[str] = []
 
     scen_dir = root / "scenarios"
     for series_dir in sorted(scen_dir.iterdir()):
@@ -542,6 +598,45 @@ def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
             if not isinstance(tl, list) or not tl:
                 rep.error(f"{name}: timeline must be a non-empty list")
                 continue
+            doc_refs: set[str] = set()
+            msg_refs: set[str] = set()
+            pinned_here: set[str] = set()
+
+            def bind_ref(ref, kind, where):
+                if not ref:
+                    return
+                if ref in doc_refs or ref in msg_refs:
+                    rep.error(f"{where}: duplicate ref {ref!r}")
+                (doc_refs if kind == "doc" else msg_refs).add(ref)
+
+            def check_doc(spec, where, allow_same_as):
+                if not isinstance(spec, dict):
+                    rep.error(f"{where}: must be a mapping")
+                    return
+                if spec.get("file"):
+                    pinned_here.add(spec["file"])
+                    if spec["file"] not in attach_files:
+                        rep.error(f"{where}: attachment file {spec['file']!r} "
+                                  f"not in attachments/manifest.csv")
+                cls, stratum = spec.get("class"), spec.get("stratum")
+                if cls and stratum:
+                    if (cls, stratum) in offtax:
+                        pass
+                    elif (cls, stratum) not in strata:
+                        rep.error(f"{where}: unknown stratum {cls}/{stratum} "
+                                  f"(taxonomy/strata.csv, offtaxonomy.csv)")
+                    elif strata[(cls, stratum)].get("in_ground_truth") != "true":
+                        rep.error(f"{where}: {cls}/{stratum} has no dataset "
+                                  f"rows (catalog_only); it cannot be drawn")
+                same = spec.get("same_as")
+                if same:
+                    if not allow_same_as:
+                        rep.error(f"{where}: same_as is only valid on attachments")
+                    elif same not in doc_refs:
+                        rep.error(f"{where}: same_as {same!r} is not an "
+                                  f"earlier document ref")
+                bind_ref(spec.get("ref"), "doc", where)
+
             for i, ev in enumerate(tl):
                 where = f"{name} timeline[{i}]"
                 if not isinstance(ev, dict) or "at" not in ev:
@@ -550,32 +645,58 @@ def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
                 if not re.fullmatch(r"[0-9]{2}:[0-9]{2}(:[0-9]{2})?",
                                     str(ev["at"])):
                     rep.error(f"{where}: bad at {ev['at']!r}")
+                if isinstance(ev.get("ingress"), dict):
+                    check_doc(ev["ingress"], f"{where} ingress", False)
                 cl = ev.get("client")
-                if cl:
-                    pid = cl.get("persona", "")
-                    if pid not in personas:
-                        rep.error(f"{where}: unknown persona {pid!r}")
-                    gs = cl.get("gen_spec")
-                    if gs and gs not in spec_ids:
-                        rep.error(f"{where}: unknown gen_spec {gs!r}")
-                    tp = cl.get("template")
-                    if tp and tp not in templates:
-                        rep.error(f"{where}: unknown template {tp!r}")
-                    cf = cl.get("claimed_from", "")
-                    if cf and not cf.endswith(".sandbox.invalid"):
-                        rep.error(f"{where}: claimed_from must be "
-                                  f"*.sandbox.invalid, got {cf!r}")
-                    auth = cl.get("auth", {})
-                    for k, v in auth.items():
-                        if v not in AUTH_RESULTS:
-                            rep.error(f"{where}: bad auth {k}={v!r}")
-                for i, a in enumerate(ev.get("attach", []) or []):
-                    if not isinstance(a, dict):
-                        rep.error(f"{where}: attach[{i}] must be a mapping")
-                        continue
-                    if a.get("file") and a["file"] not in attach_files:
-                        rep.error(f"{where}: attachment file {a['file']!r} "
-                                  f"not in attachments/manifest.csv")
+                if not isinstance(cl, dict):
+                    continue
+                pid = cl.get("persona", "")
+                if pid not in personas:
+                    rep.error(f"{where}: unknown persona {pid!r}")
+                gs = cl.get("gen_spec")
+                if gs and gs not in spec_personas:
+                    rep.error(f"{where}: unknown gen_spec {gs!r}")
+                elif gs and spec_personas[gs] != pid:
+                    rep.warn(f"{where}: gen_spec {gs} is written for persona "
+                             f"{spec_personas[gs]!r}, event uses {pid!r}")
+                tp = cl.get("template")
+                if not tp:
+                    rep.error(f"{where}: client message needs a template "
+                              f"(scripted body and generation fallback)")
+                elif tp not in templates:
+                    rep.error(f"{where}: unknown template {tp!r}")
+                elif template_vars is not None and tp in template_vars:
+                    # (a template that failed to parse is already an error)
+                    persona = personas.get(pid) or {}
+                    standard = set(STANDARD_TEMPLATE_CONTEXT)
+                    if persona.get("contact_id") in ("", "_none", None):
+                        standard -= CONTACT_CONTEXT
+                    supplied = standard | set((cl.get("vars") or {}).keys())
+                    missing = sorted(template_vars[tp] - supplied)
+                    if missing:
+                        rep.error(f"{where}: template {tp!r} needs vars "
+                                  f"{missing} (not supplied by vars or the "
+                                  f"standard context)")
+                cf = cl.get("claimed_from", "")
+                if cf and not cf.endswith(".sandbox.invalid"):
+                    rep.error(f"{where}: claimed_from must be "
+                              f"*.sandbox.invalid, got {cf!r}")
+                auth = cl.get("auth", {}) or {}
+                for k, v in auth.items():
+                    if v not in AUTH_RESULTS:
+                        rep.error(f"{where}: bad auth {k}={v!r}")
+                rt = cl.get("reply_to")
+                if rt and rt not in msg_refs:
+                    rep.error(f"{where}: reply_to {rt!r} is not an earlier "
+                              f"message ref")
+                for j, a in enumerate(cl.get("attach", []) or []):
+                    check_doc(a, f"{where} attach[{j}]", True)
+                bind_ref(cl.get("ref"), "msg", where)
+
+            if s.get("gen") in ("frozen", "live", "loop") and not any(
+                    isinstance(ev, dict) and (ev.get("client") or {}).get("gen_spec")
+                    for ev in tl):
+                awaiting_specs.append(name)
 
             exp = s.get("expect", {})
             if exp.get("intent") not in INTENTS:
@@ -592,7 +713,7 @@ def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
                     rep.error(f"{name}: possible_attack needs attack_class")
                 if sig.get("priority") not in PRIORITIES:
                     rep.error(f"{name}: bad priority {sig.get('priority')!r}")
-            trust = exp.get("trust", {})
+            trust = exp.get("trust", {}) or {}
             if trust and trust.get("sender_level") not in TRUST_LEVELS:
                 rep.error(f"{name}: bad trust.sender_level")
             # a "verified" sender must write from a domain registered to the
@@ -620,29 +741,48 @@ def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
             for inv in exp.get("invariants", []) or []:
                 if inv not in INVARIANTS:
                     rep.error(f"{name}: bad invariant {inv!r}")
+            for i, ob in enumerate(exp.get("outbox", []) or []):
+                rt = (ob or {}).get("reference_template") if isinstance(ob, dict) else None
+                if rt and rt not in replies:
+                    rep.error(f"{name}: expect.outbox[{i}].reference_template "
+                              f"{rt!r} not in gen/templates/replies/")
+            # Every expectation endpoint must bind to something the harness
+            # can resolve deterministically: a ref, a pinned file attached in
+            # this timeline, or (relations only) a matter id.
+            refs = doc_refs | msg_refs
+
+            def resolves(x, allow_matter=False):
+                if allow_matter and isinstance(x, str) and x.startswith("matter:"):
+                    return True
+                return x in refs or x in pinned_here
             for i, rel in enumerate(exp.get("relations", []) or []):
                 if not isinstance(rel, dict):
                     rep.error(f"{name}: expect.relations[{i}] must be a mapping")
                     continue
                 if rel.get("kind") not in RELATION_KINDS:
                     rep.error(f"{name}: bad relation kind {rel.get('kind')!r}")
-            # quarantine targets must bind to a file actually attached in the
-            # timeline (and present in the manifest); otherwise the harness
-            # cannot deterministically assert the quarantine.
-            attached_here = set()
-            for ev in tl:
-                if not isinstance(ev, dict):
-                    continue  # already reported as "event needs 'at'"
-                for a in ev.get("attach", []) or []:
-                    if isinstance(a, dict) and a.get("file"):
-                        attached_here.add(a["file"])
-            for q in exp.get("quarantine", []) or []:
-                if q not in attached_here:
-                    rep.error(f"{name}: expect.quarantine {q!r} is not "
-                              f"attached anywhere in the timeline")
-                elif q not in attach_files:
-                    rep.error(f"{name}: expect.quarantine {q!r} not in "
-                              f"attachments/manifest.csv")
+                for end in ("a", "b"):
+                    if not resolves(rel.get(end), allow_matter=True):
+                        rep.error(f"{name}: expect.relations[{i}].{end} "
+                                  f"{rel.get(end)!r} is not a ref, a pinned "
+                                  f"file in the timeline, or matter:<id>")
+            for lane in ("quarantine", "soft_hold"):
+                for q in exp.get(lane, []) or []:
+                    if q in pinned_here and q not in attach_files:
+                        rep.error(f"{name}: expect.{lane} {q!r} not in "
+                                  f"attachments/manifest.csv")
+                    elif not resolves(q):
+                        rep.error(f"{name}: expect.{lane} {q!r} is not "
+                                  f"attached anywhere in the timeline")
+            for key in (exp.get("docs") or {}):
+                if not resolves(key):
+                    rep.error(f"{name}: expect.docs key {key!r} is not a ref "
+                              f"or a pinned file in the timeline")
+    if awaiting_specs:
+        rep.warn(f"{len(awaiting_specs)} scenarios target gen frozen/live/loop "
+                 f"but no message names a gen_spec yet (rendered from templates "
+                 f"until C7 specs land): {', '.join(sorted(awaiting_specs)[:6])}"
+                 f"{' …' if len(awaiting_specs) > 6 else ''}")
     return scenarios, by_series
 
 
@@ -966,49 +1106,177 @@ def leak_scan(root: Path, rep: Report) -> None:
                         break
 
 
+def schema_validator(root: Path, name: str, rep: Report):
+    """A Draft 2020-12 validator for schemas/<name>, or None (reported)."""
+    try:
+        from jsonschema import Draft202012Validator
+    except ImportError:
+        return None  # check_scenarios already warns once
+    try:
+        return Draft202012Validator(json.loads(
+            (root / "schemas" / name).read_text(encoding="utf-8")))
+    except Exception as e:  # noqa: BLE001 - bad schema file is a real error
+        rep.error(f"schemas/{name} unreadable: {e}")
+        return None
+
+
+def report_schema(validator, obj, where: str, rep: Report) -> None:
+    if validator is None:
+        return
+    for error in validator.iter_errors(obj):
+        path = ".".join(str(p) for p in error.absolute_path)
+        rep.error(f"{where}: schema violation at {path or '<root>'}: "
+                  f"{error.message[:160]}")
+
+
+def check_contract_schemas(root: Path, registry: dict | None,
+                           rep: Report) -> None:
+    """Every content file with a JSON Schema is validated against it (CD6)."""
+    v = schema_validator(root, "gen_spec.v1.json", rep)
+    for yf in sorted((root / "gen" / "specs").glob("*.yaml")):
+        try:
+            report_schema(v, load_yaml(yf), f"gen/specs/{yf.name}", rep)
+        except Exception:  # noqa: BLE001 - YAML errors reported elsewhere
+            pass
+    v = schema_validator(root, "persona_behavior.v1.json", rep)
+    for yf in sorted((root / "personas" / "behavior").glob("*.yaml")):
+        try:
+            report_schema(v, load_yaml(yf), f"personas/behavior/{yf.name}", rep)
+        except Exception:  # noqa: BLE001 - YAML errors reported elsewhere
+            pass
+    v = schema_validator(root, "overlay.v1.json", rep)
+    ov = root / "email" / "overlay" / "example.jsonl"
+    if ov.exists():
+        for ln, line in enumerate(ov.read_text(encoding="utf-8").splitlines(), 1):
+            if not line.strip():
+                continue
+            try:
+                obj = json.loads(line)
+            except json.JSONDecodeError as e:
+                rep.error(f"email/overlay/example.jsonl:{ln}: bad JSON: {e}")
+                continue
+            report_schema(v, obj, f"email/overlay/example.jsonl:{ln}", rep)
+    if registry is not None:
+        report_schema(schema_validator(root, "registry.v1.json", rep),
+                      registry, "dist/registry.yaml", rep)
+
+
+ID_RANGE_KINDS = {
+    # kind in ids/ranges.yaml -> (where the ids live, regex capturing nnnn)
+    "generation_specs": re.compile(r"^gen_.*_([0-9]{4})$"),
+    "emails": re.compile(r"^em_[A-Z]_([0-9]+)$"),
+    "attachments": re.compile(r"^att_([0-9]+)$"),
+    "relations": re.compile(r"^rel_([0-9]+)$"),
+}
+
+
+def collect_ids(root: Path) -> dict[str, list[tuple[str, str]]]:
+    """(id, where) per range kind, from every file that mints IDs."""
+    out: dict[str, list[tuple[str, str]]] = {k: [] for k in ID_RANGE_KINDS}
+    for yf in sorted((root / "gen" / "specs").glob("*.yaml")):
+        try:
+            out["generation_specs"].append((load_yaml(yf)["id"],
+                                            f"gen/specs/{yf.name}"))
+        except Exception:  # noqa: BLE001 - reported by check_gen_specs
+            pass
+    for kind, rel, col in (("emails", "emails/emails_index.csv", "email_id"),
+                           ("attachments", "attachments/manifest.csv",
+                            "attachment_id"),
+                           ("relations", "relations/relations_truth.csv",
+                            "relation_id")):
+        p = root / rel
+        if p.exists():
+            out[kind] += [(r.get(col, ""), rel) for r in read_csv(p)]
+    return out
+
+
+def check_id_ranges(root: Path, rep: Report) -> None:
+    p = root / "ids" / "ranges.yaml"
+    if not p.exists():
+        rep.error("ids/ranges.yaml missing (ID range allocation, §12.5)")
+        return
+    ranges = load_yaml(p) or {}
+    if ranges.get("schema") != "mailroom.id_ranges/v1":
+        rep.error("ids/ranges.yaml: schema must be mailroom.id_ranges/v1")
+    for kind, blocks in ranges.items():
+        if kind == "schema":
+            continue
+        spans = sorted((b["lo"], b["hi"], b["owner"]) for b in blocks or [])
+        for (lo1, hi1, o1), (lo2, _hi2, o2) in zip(spans, spans[1:]):
+            if lo2 <= hi1:
+                rep.error(f"ids/ranges.yaml {kind}: {o1} and {o2} overlap")
+    for kind, ids in collect_ids(root).items():
+        blocks = ranges.get(kind) or []
+        seen: dict[str, str] = {}
+        for ident, where in ids:
+            if ident in seen:
+                rep.error(f"{where}: duplicate id {ident} (also in {seen[ident]})")
+            seen[ident] = where
+            m = ID_RANGE_KINDS[kind].match(ident or "")
+            if not m:
+                continue  # malformed ids are reported by check_id
+            n = int(m.group(1))
+            if not any(b["lo"] <= n <= b["hi"] for b in blocks):
+                rep.error(f"{where}: {ident} is outside every {kind} block "
+                          f"in ids/ranges.yaml")
+
+
+def scenario_doc_specs(sc: dict):
+    """Yield every document spec in a scenario: ingress docs and attachments."""
+    for ev in sc.get("timeline", []) or []:
+        if not isinstance(ev, dict):
+            continue
+        if isinstance(ev.get("ingress"), dict):
+            yield ev["ingress"]
+        for a in (ev.get("client") or {}).get("attach", []) or []:
+            if isinstance(a, dict):
+                yield a
+
+
 def coverage_report(root: Path, mixes: list[dict], scenarios: dict,
-                    rep: Report) -> dict:
-    strata_path = root / "taxonomy" / "strata.csv"
-    strata: list[dict] = []
-    if strata_path.exists():
-        strata = read_csv(strata_path)
+                    rep: Report, strict: bool = False) -> dict:
+    """Addendum §2.4: every ground-truth stratum needs at least one plausible
+    sender (client mix) and one scenario attachment spec. Catalog-only strata
+    have no dataset rows and are reported but never required. ``strict``
+    turns gaps into errors (the build-time test)."""
+    strata, _off = load_strata(root)
     cov: dict[tuple[str, str], dict] = {}
-    for s in strata:
-        cov[(s["class"], s["stratum"])] = {"clients": set(),
-                                           "scenarios": set(),
-                                           "attachments": set()}
+    for key, row in strata.items():
+        if row.get("in_ground_truth") == "true":
+            cov[key] = {"clients": set(), "scenarios": set(),
+                        "attachments": set()}
     for m in mixes:
         key = (m["class"], m["stratum"])
         w = parse_weight(m.get("weight", 0) or 0)
         if key in cov and w is not None and w > 0:
             cov[key]["clients"].add(m["client_id"])
-    for name, sc in scenarios.items():
-        for ev in sc.get("timeline", []) or []:
-            for a in ev.get("attach", []) or []:
-                if not isinstance(a, dict):
-                    continue
-                if a.get("class") and a.get("stratum"):
-                    key = (a["class"], a["stratum"])
-                    if key in cov:
-                        cov[key]["scenarios"].add(name)
+    pinned: dict[str, tuple[str, str]] = {}
     man = root / "attachments" / "manifest.csv"
     if man.exists():
         for r in read_csv(man):
             key = (r.get("class", ""), r.get("stratum", ""))
+            pinned[r["file"]] = key
             if key in cov and r.get("in_taxonomy") == "true":
                 cov[key]["attachments"].add(r["attachment_id"])
+    for name, sc in scenarios.items():
+        for spec in scenario_doc_specs(sc):
+            key = (spec.get("class"), spec.get("stratum"))
+            if spec.get("file") in pinned:
+                key = pinned[spec["file"]]
+            if key in cov:
+                cov[key]["scenarios"].add(name)
     uncovered = [k for k, v in cov.items()
                  if not v["clients"] or not v["scenarios"]]
+    report = rep.error if strict else rep.warn
     for cls, stratum in sorted(uncovered):
         v = cov[(cls, stratum)]
-        rep.warn(f"coverage: {cls}/{stratum} has no "
-                 f"{'client' if not v['clients'] else ''}"
-                 f"{' + ' if not v['clients'] and not v['scenarios'] else ''}"
-                 f"{'scenario' if not v['scenarios'] else ''}")
-    rep.info(f"coverage: {len(cov) - len(uncovered)}/{len(cov)} strata "
-             f"have a client and a scenario")
+        missing = [w for w, ok in (("client", v["clients"]),
+                                   ("scenario", v["scenarios"])) if not ok]
+        report(f"coverage: {cls}/{stratum} has no {' + '.join(missing)}")
+    rep.info(f"coverage: {len(cov) - len(uncovered)}/{len(cov)} ground-truth "
+             f"strata have a client and a scenario")
     return {f"{c}/{s}": {k: sorted(vv) for k, vv in v.items()}
-            for (c, s), v in cov.items()}
+            for (c, s), v in sorted(cov.items())}
 
 
 def generate_indexes(root: Path, scenarios: dict, by_series: dict,
@@ -1052,6 +1320,8 @@ def main() -> int:
                                           .parent))
     ap.add_argument("--generate-indexes", action="store_true")
     ap.add_argument("--coverage-out", default=None)
+    ap.add_argument("--strict-coverage", action="store_true",
+                    help="coverage gaps are errors (addendum §2.4)")
     args = ap.parse_args()
     root = Path(args.root)
     rep = Report()
@@ -1071,10 +1341,15 @@ def main() -> int:
     check_attachments(root, rep)
     check_relations(root, rep)
     lookalikes, _impostors = check_adversary(root, rep)
+    registry = None
     if clients:
-        compile_registry(root, clients, contacts, domains, lookalikes, rep)
+        registry = compile_registry(root, clients, contacts, domains,
+                                    lookalikes, rep)
+    check_contract_schemas(root, registry, rep)
+    check_id_ranges(root, rep)
     leak_scan(root, rep)
-    cov = coverage_report(root, mixes, scenarios, rep)
+    cov = coverage_report(root, mixes, scenarios, rep,
+                          strict=args.strict_coverage)
     if args.coverage_out:
         Path(args.coverage_out).write_text(json.dumps(cov, indent=2),
                                            encoding="utf-8")

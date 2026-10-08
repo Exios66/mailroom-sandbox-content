@@ -1,20 +1,24 @@
 name: C7_after_hours_legal_notice
+title: Deadline-bearing legal notice arrives after hours; urgent critical, no substantive reply
 seed: 1307
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Deadline-bearing legal notice arrives after hours; urgent critical, no substantive reply"
+status: review
 tags: [legal-notice, after-hours]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_stateca_regulator
-      channel: email
-      claimed_from: rcalloway@stateca.sandbox.invalid
+- at: "00:02"
+  client:
+    persona: p_stateca_regulator
+    channel: email
+    claimed_from: rpatel@stateca.sandbox.invalid
+    template: regulator_notice
+    vars: {notice_ref: SCA-2026-0718, citation: Consumer Protection Code s. 12-401, respondent_name: the
+        firm, response_window_days: 10}
 expect:
   intent: legal_notice
   signals:
-    - {kind: legal_notice, priority: critical, within: 00:05}
+  - {kind: legal_notice, priority: critical, within: "00:05"}
   trust: {sender_level: verified}
   outbox: []
   boss_actions: [request_human_review]

@@ -1,0 +1,24 @@
+# CodeRabbit review config. This repo has no hosted CI (GitHub Actions is
+# unavailable); checks run locally via tools/ci.sh, so review is the hosted gate.
+language: en-US
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!taxonomy/strata.csv"
+    - "!scenarios/scenarios_index.csv"
+    - "!smoke/smoke_set.yaml"
+    - "!**/A1[3-7]_coverage_*.yaml"
+  path_instructions:
+    - path: "schemas/**"
+      instructions: "These JSON Schemas are the enforced content contract. Check closed objects, enums and patterns for gaps."
+    - path: "tools/**"
+      instructions: "Local replacements for CI. Check determinism (bundle sha256 must be reproducible) and that no dataset text can reach the repo."
+    - path: "scenarios/**"
+      instructions: "Scenarios follow CONTENT_SPEC section 4. Check refs resolve and expectations are plausible."
+    - path: "gen/templates/**"
+      instructions: "Jinja templates must start with a Subject: line and use only documented context variables."

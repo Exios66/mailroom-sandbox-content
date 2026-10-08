@@ -1,31 +1,36 @@
 name: E2_registered_address_dkim_fail
+title: Registered address, payment-detail change, failed DKIM
 seed: 2208
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Registered address, payment-detail change, failed DKIM"
+status: draft
 tags: [adversarial, payment_fraud, auth-failure, dkim-fail]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_tricounty_impostor
-      channel: email
-      claimed_from: kalvarado@tricountytitle.sandbox.invalid
-      auth: {spf: pass, dkim: fail, dmarc: fail}
-    attach: []
-  - at: 00:09
-    client:
-      persona: p_tricounty_real
-      channel: email
-      claimed_from: kalvarado@tricountytitle.sandbox.invalid
-      auth: {spf: pass, dkim: pass, dmarc: pass}
+- at: "00:02"
+  client:
+    persona: p_tricounty_impostor
+    channel: email
+    claimed_from: kalvarado@tricountytitle.sandbox.invalid
+    auth: {spf: pass, dkim: fail, dmarc: fail}
+    template: dkim_fail_payment_change
+    gen_spec: gen_E2_dkim_fail_payment_0051
+    vars: {sender_name: Kendra Alvarado, sender_title: Closing Officer, matter_ref: TC-2026-1184, account_last4: '4417',
+      callback_phone: +1-555-0199}
+- at: "00:09"
+  client:
+    persona: p_tricounty_real
+    channel: email
+    claimed_from: kalvarado@tricountytitle.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: benign_closing_companion
+    vars: {document_title: Board resolution, matter_ref: TC-2026-1190}
     attach:
-      - {class: corporate_record, stratum: board_resolution, in_taxonomy: true}
+    - {class: corporate_record, stratum: board_resolution, in_taxonomy: true}
 expect:
   intent: payment_or_identity_change
   signals:
-    - {kind: possible_attack, attack_class: payment_fraud, priority: high, 
-        within: 00:01}
+  - {kind: possible_attack, attack_class: payment_fraud, priority: high, within: "00:01"}
   trust: {sender_level: suspicious}
   quarantine: []
   outbox: []

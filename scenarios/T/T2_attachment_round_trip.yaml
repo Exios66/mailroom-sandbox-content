@@ -1,25 +1,27 @@
 name: T2_attachment_round_trip
+title: 'Attachment round trip: sizes, MIME types, filenames with odd characters'
 seed: 2402
 profile: demo
 gen: scripted
 transports: [agentmail]
-title: "Attachment round trip: sizes, MIME types, filenames with odd characters"
-tags: [transport-conformance, real-mail, attachments, 
-      assert-size-mime-filename-fidelity]
+status: draft
+tags: [transport-conformance, real-mail, attachments, assert-size-mime-filename-fidelity]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_tricounty_real
-      channel: email
-      claimed_from: kalvarado@tricountytitle.sandbox.invalid
-      auth: {spf: pass, dkim: pass, dmarc: pass}
+- at: "00:02"
+  client:
+    persona: p_tricounty_real
+    channel: email
+    claimed_from: kalvarado@tricountytitle.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: benign_closing_companion
+    vars: {document_title: Closing documents, matter_ref: TC-2026-1190}
     attach:
-      - {class: corporate_record, stratum: officer_certificate, in_taxonomy: 
-          true}
-      - {class: contract, stratum: agreement_date, in_taxonomy: true}
+    - {class: corporate_record, stratum: officer_certificate, in_taxonomy: true, as: 'Officer Cert (final)
+        #2 – TC-1190.pdf'}
+    - {class: contract, stratum: service, in_taxonomy: true}
 expect:
   intent: document_submission
   signals:
-    - {kind: new_info, priority: normal, within: 00:02}
+  - {kind: new_info, priority: normal, within: "00:02"}
   outbox: []
   invariants: [audit_chain_ok, comms_offpath]

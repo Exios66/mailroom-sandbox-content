@@ -1,27 +1,29 @@
 name: A11_out_of_order_delivery
+title: Duplicate and out-of-order deliveries of the same message; idempotent single processing
 seed: 1111
 profile: demo
 gen: frozen
 transports: [sim, agentmail]
-title: "Duplicate and out-of-order deliveries of the same message; idempotent single processing"
+status: draft
 tags: [out-of-order, duplicate, idempotent]
 timeline:
-  - at: 00:02
-    client:
-      persona: p_tricounty_real
-      channel: email
-      claimed_from: kalvarado@tricountytitle.sandbox.invalid
+- at: "00:02"
+  client:
+    persona: p_tricounty_real
+    channel: email
+    claimed_from: kalvarado@tricountytitle.sandbox.invalid
+    template: benign_closing_companion
+    vars: {document_title: Board resolution, matter_ref: TC-2026-1190}
     attach:
-      - {class: corporate_record, stratum: board_resolution}
-  - at: 00:05
-    fault: duplicate_delivery
+    - {class: corporate_record, stratum: board_resolution}
+- {at: "00:05", fault: duplicate_delivery}
 expect:
   intent: document_submission
   signals:
-    - {kind: new_info, priority: normal, within: 00:08}
+  - {kind: new_info, priority: normal, within: "00:08"}
   trust: {sender_level: verified}
   outbox:
-    - {intent: document_submission, state: draft, to_sender: true}
+  - {intent: document_submission, state: draft, to_sender: true}
   boss_actions: [ack_signal, dismiss_signal]
   overblocking: {benign_hard_actions: 0}
   invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

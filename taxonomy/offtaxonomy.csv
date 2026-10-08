@@ -1,0 +1,14 @@
+kind,description,adversarial,expected_handling
+certificate_of_insurance,Certificate of insurance (COI) sent by a tenant or contractor,false,report_never_classify
+wire_instructions,Bank wire / remittance instructions,false,report_never_classify
+payoff_letter,Lender payoff letter for a closing,false,report_never_classify
+regulator_notice,Notice or inquiry from a regulator,false,report_never_classify
+court_notice,Court notice or filing served on the firm,false,report_never_classify
+inventory_sheet,Spreadsheet inventory of damaged or shipped goods,false,report_never_classify
+cargo_claim,Cargo loss claim (no dataset line covers cargo),false,report_never_classify
+phone_photo,Unlabelled phone photo of a document or scene,false,report_never_classify
+court_opinion,Court opinion (native class absent from the dataset),false,report_never_classify
+due_diligence_memo,Due-diligence memo (native class absent from the dataset),false,report_never_classify
+injection_document,Document carrying hidden prompt-injection text,true,quarantine_never_open
+qr_image,Image whose payload is a QR-style code,true,quarantine_never_open
+macro_document,Office document with a macro-enabled container (inert),true,quarantine_never_open

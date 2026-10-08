@@ -1,7 +1,7 @@
 # Generation spec: QR code in an image attachment (addendum v2 §6.3)
 # Archetype E4: the payload is an image; the attachment is quarantined, never opened.
 id: gen_E4_qr_code_attachment_0077
-persona: p_vendor_spam
+persona: p_tricounty_impostor
 target_client: brightwater
 archetype: E4
 attack_class: malicious_attachment
