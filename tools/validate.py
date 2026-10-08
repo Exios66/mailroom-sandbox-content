@@ -147,6 +147,116 @@ def load_yaml(path: Path):
 
 # ---------------------------------------------------------------- checks
 
+def check_ops_contracts(root: Path, rep: Report) -> None:
+    """Validate the metered-operations contracts: ingress policy and
+    send schedule. These are the anti-doom-loop, anti-overload configs."""
+    specs = {
+        "email/ingress_policy.yaml": "mailroom.ingress_policy/v1",
+        "email/send_schedule.yaml": "mailroom.send_schedule/v1",
+    }
+    for rel, want_schema in specs.items():
+        p = root / rel
+        if not p.exists():
+            rep.error(f"{rel} missing")
+            continue
+        try:
+            data = load_yaml(p)
+        except Exception as e:  # noqa: BLE001 - surface any YAML failure
+            rep.error(f"{rel} is not valid YAML: {e}")
+            continue
+        if not isinstance(data, dict):
+            rep.error(f"{rel}: top level must be a mapping")
+            continue
+        if data.get("schema") != want_schema:
+            rep.error(f"{rel}: schema={data.get('schema')!r}, want {want_schema!r}")
+
+    # Ingress policy shape -------------------------------------------
+    p = root / "email/ingress_policy.yaml"
+    if p.exists():
+        try:
+            pol = load_yaml(p)
+        except Exception:  # noqa: BLE001 - already reported above
+            pol = None
+        if isinstance(pol, dict):
+            for src in ("documents", "emails", "external_correspondence"):
+                s = (pol.get("sources") or {}).get(src) or {}
+                rate = s.get("rate") or {}
+                for k in ("max_items_per_minute", "burst"):
+                    v = rate.get(k)
+                    if not isinstance(v, int) or v <= 0:
+                        rep.error(f"ingress_policy: sources.{src}.rate.{k} "
+                                  f"must be a positive int")
+                if s.get("on_queue_full") not in ("shed_to_pending",):
+                    rep.error(f"ingress_policy: sources.{src}.on_queue_full "
+                              f"must be shed_to_pending (never silent drop)")
+            inbox = pol.get("correspondent_inbox") or {}
+            for k in ("max_admissions_per_hour", "max_concurrent_open_threads"):
+                v = inbox.get(k)
+                if not isinstance(v, int) or v <= 0:
+                    rep.error(f"ingress_policy: correspondent_inbox.{k} "
+                              f"must be a positive int")
+            qs = pol.get("queues") or {}
+            for qn, q in qs.items():
+                if not isinstance(q, dict):
+                    continue
+                if q.get("depth_max", 1) <= q.get("depth_warn", 0):
+                    rep.error(f"ingress_policy: queues.{qn}.depth_max must "
+                              f"exceed depth_warn")
+            bp = pol.get("backpressure") or {}
+            if bp.get("never_silently_drop") is not True:
+                rep.error("ingress_policy: backpressure.never_silently_drop "
+                          "must be true")
+
+    # Send schedule shape ---------------------------------------------
+    p = root / "email/send_schedule.yaml"
+    if p.exists():
+        try:
+            sch = load_yaml(p)
+        except Exception:  # noqa: BLE001 - already reported above
+            sch = None
+        if isinstance(sch, dict):
+            if "production" in (sch.get("active_profiles") or []):
+                rep.error("send_schedule: active_profiles must never include "
+                          "production")
+            models = sch.get("models") or {}
+            if models.get("tier") != "free_only":
+                rep.error("send_schedule: models.tier must be free_only")
+            if models.get("paid_tier_use") != "forbidden":
+                rep.error("send_schedule: models.paid_tier_use must be forbidden")
+            total_window = 0
+            for w in sch.get("schedule") or []:
+                cron = str(w.get("cron", ""))
+                if len(cron.split()) != 5:
+                    rep.error(f"send_schedule: window {w.get('name')!r} cron "
+                              f"must have 5 fields")
+                v = w.get("max_sends_per_window")
+                if not isinstance(v, int) or v <= 0:
+                    rep.error(f"send_schedule: window {w.get('name')!r} "
+                              f"max_sends_per_window must be a positive int")
+                else:
+                    total_window += v
+            # hourly windows fire ~1-3x/hour each; window caps must fit the cap
+            cap = (sch.get("caps") or {}).get("max_sends_per_hour_total")
+            if isinstance(cap, int) and total_window * 3 < cap:
+                rep.warn("send_schedule: window caps look far below the hourly "
+                         "cap; check the arithmetic")
+            doom = sch.get("doom_loop_prevention") or {}
+            ks = doom.get("kill_switch") or {}
+            if not ks.get("env_var") or not ks.get("file_flag"):
+                rep.error("send_schedule: doom_loop_prevention.kill_switch "
+                          "needs both env_var and file_flag")
+            cb = doom.get("circuit_breaker") or {}
+            if cb.get("auto_reset") is not False:
+                rep.error("send_schedule: circuit_breaker.auto_reset must be "
+                          "false (human reset only)")
+            if not isinstance(doom.get("max_reply_depth_per_thread"), int):
+                rep.error("send_schedule: max_reply_depth_per_thread must be set")
+            if doom.get("no_auto_reply_to_auto_reply") is not True:
+                rep.error("send_schedule: no_auto_reply_to_auto_reply must be true")
+            if doom.get("sends_may_not_enqueue_sends") is not True:
+                rep.error("send_schedule: sends_may_not_enqueue_sends must be true")
+
+
 def check_content_json(root: Path, rep: Report) -> dict:
     p = root / "content.json"
     if not p.exists():
@@ -831,6 +941,7 @@ def main() -> int:
     rep = Report()
 
     check_content_json(root, rep)
+    check_ops_contracts(root, rep)
     clients, contacts, domains, mixes = check_clients(root, rep)
     personas = check_personas(root, clients, contacts, rep)
     scenarios, by_series = check_scenarios(root, personas, rep)

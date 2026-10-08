@@ -26,6 +26,11 @@ Correspondence Agent ("the Correspondent") and the Boss — the rules
   requests, mailbox/ops faults, and cross-client questions). Columns:
   `issue_class, example, detected_by, owner, boss_action, autonomy,
   sla_sim_min, notes`.
+- **`metered_operations.md`** — the runtime companion: metered ingress
+  (`email/ingress_policy.yaml`), scheduled free-model sending with
+  doom-loop prevention (`email/send_schedule.yaml`), and the
+  separate-process topology that lets the Correspondent run alongside
+  the document pipeline.
 
 ## How it relates to the rest of the repo
 
