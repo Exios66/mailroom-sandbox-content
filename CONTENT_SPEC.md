@@ -138,18 +138,27 @@ Gmail token lifetime) confirmed at sandbox-up, tracked in §10.
 
 1. `content.json` shape and semver.
 2. CSV headers / row rules per `schemas/content_files.json`.
-3. Scenario YAMLs against `mailroom.scenario/v2` required fields and enums
-   (intents, signal kinds, attack classes, trust levels, relation kinds,
-   boss actions, invariants, profiles, gen modes, transports, priorities,
-   tiers, auth results).
+3. Scenario YAMLs: strict validation against `schemas/scenario.v2.json`
+   (jsonschema) plus required fields and enums (intents, signal kinds,
+   attack classes, trust levels, relation kinds, boss actions, invariants,
+   profiles, gen modes, transports, priorities, tiers, auth results);
+   filename stem must equal `name`; name must match `^[A-GST]`.
 4. Cross-references: persona ids, client ids, spec ids, attachment files.
+   `expect.quarantine` entries must be attached in the timeline and present
+   in the attachment manifest. A `verified` sender must write from a domain
+   registered to the persona's client.
 5. Leak scan: no real brands in client names, no non-`555-01xx` phone
    numbers, no real URLs, no pasted dataset text.
 6. Registry compile excludes `adversary/` (lookalikes, impostors, labels).
 7. `emails_index.csv` ↔ frozen JSONL sha256 consistency.
 8. Attachment manifest sha256 / `doc_id` verification for local files;
    inert files checked for active-content markers.
-9. Coverage report (strata × clients × scenarios × attachments).
+9. Ops contracts: `email/ingress_policy.yaml`, `email/send_schedule.yaml`,
+   and `email/recipient_policy.yaml` must parse and satisfy their schemas
+   (positive caps, sandbox/demo-only send profiles, free-model-only sends,
+   kill switch + circuit breaker present, priority reserve < hourly cap,
+   idempotency key includes the outbound message identity).
+10. Coverage report (strata × clients × scenarios × attachments).
 
 Optional flags: `--generate-indexes` writes `scenarios_index.csv`;
 `--coverage-out PATH` writes the coverage map as JSON.

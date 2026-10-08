@@ -26,7 +26,8 @@ Release history lives in [`CHANGELOG.md`](CHANGELOG.md).
 | `attachments/` | `manifest.csv` plus `synthetic/`, `offtaxonomy/`, `adversarial/` fixture files |
 | `relations/` | `relations_truth.csv`, `dataset_relation_map.csv` |
 | `adversary/` | Sandbox-only attack fixtures: `lookalike_domains.csv`, `impostor_personas.csv`. **Never compiled into the registry.** |
-| `email/` | Email infrastructure config: sender pool, overlay contract, AgentMail, Gmail sandbox, recipient policy |
+| `email/` | Email infrastructure config: sender pool, overlay contract, AgentMail, Gmail sandbox, recipient policy, ingress metering policy, scheduled-send contract |
+| `protocol/` | Correspondent↔Boss interaction protocol, delegation matrix, and metered-operations runtime contract (ingress metering, scheduled sending, doom-loop guards, separate-process topology) |
 | `taxonomy/` | `strata.csv` (document classes × strata); `coverage.csv` is generated |
 | `smoke/` | Smoke-set fixtures (the smallest runnable pack) |
 | `dist/` | Generated at validation time (`registry.yaml`); gitignored, never committed |
