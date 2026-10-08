@@ -32,9 +32,9 @@ Release history lives in [`CHANGELOG.md`](CHANGELOG.md).
 | `smoke/` | The pinned smoke subset; `tools/export_smoke.py` exports it for `sandbox/fixtures/smoke/` ([smoke/README.md](smoke/README.md)) |
 | `ids/` | `ranges.yaml`: ID blocks per workstream so parallel agents never collide |
 | `dist/` | Generated at validation time (`registry.yaml`); gitignored, shipped inside the release bundle |
-| `tools/` | `validate.py` (content CI), `sync_strata.py`, `gen_coverage_scenarios.py`, `export_smoke.py`, `build_attachments.py` (dataset join), `make_fixture_pdf.py`, `content.sh` (local shims); see CONTENT_SPEC §10 |
+| `tools/` | `ci.sh` (content-ci, local), `release.sh` + `build_bundle.py` (local release), `install-hooks.sh`, `validate.py`, `sync_strata.py`, `gen_coverage_scenarios.py`, `export_smoke.py`, `build_attachments.py` (dataset join), `make_fixture_pdf.py`, `content.sh` (local shims); see CONTENT_SPEC §10 |
 | `docs/` | `IMPLEMENTATION_PLAN.md`: audit, design decisions (CD1–CD18) and phases for this repo |
-| `.github/workflows/` | `content-ci.yml` (validator, unit tests, generated-file checks, strata drift), `release.yml` (tag → tarball + GitHub release) |
+| `.githooks/` | `pre-push`: runs `tools/ci.sh` before every push (install with `tools/install-hooks.sh`). **This repo does not use GitHub Actions**; all checks and releases run locally. |
 
 ## How mailroom-reloaded consumes this repo
 
@@ -60,16 +60,19 @@ fails the build if any adversary material leaks in.
 
 ## Release flow
 
-1. Land content changes on `main` (content-ci green).
+Releases are cut locally; GitHub Actions is not used.
+
+1. Land content changes on `main` with `tools/ci.sh` passing.
 2. Bump `version` in `content.json` (semver) in its own PR.
-3. Push a tag `vX.Y.Z`. That is the only trigger for a release.
-4. `.github/workflows/release.yml` checks the tag equals `content.json`
-   version and runs `tools/validate.py --strict-coverage` (which compiles
-   `dist/registry.yaml`); on success it builds
-   `mailroom-sandbox-content-<tag>.tar.zst` (including the compiled
-   registry; excluding `.git`, `.github`), writes `SHA256SUMS` over the
-   tarball and `content.json`, and creates a GitHub release attaching all
-   three.
+3. On a clean `main`, run `tools/release.sh`. It runs `tools/ci.sh`, builds
+   `release/mailroom-sandbox-content-vX.Y.Z.tar.zst` with
+   `tools/build_bundle.py` (deterministic: tracked files plus the compiled
+   `dist/registry.yaml`; same commit, same sha256), writes `SHA256SUMS`
+   over the tarball and `content.json`, and creates the annotated tag
+   `vX.Y.Z` locally.
+4. `tools/release.sh --push` also pushes the tag and, if the `gh` CLI is
+   logged in, creates the GitHub release with the three files. Without
+   `gh`, push the tag and attach `release/*` to a release by hand.
 5. Consumers move with `mailroom sandbox content bump --tag vX.Y.Z` in
    mailroom-reloaded, which refreshes `sandbox/content.lock`.
 
@@ -78,10 +81,12 @@ fails the build if any adversary material leaks in.
 - **One agent owns one series.** Pick up a series directory under
   `scenarios/` and own its scenarios end to end (spec → timeline → frozen
   emails → attachments). Coordinate cross-series changes in the PR.
-- **Validate before you PR.** `pip install pyyaml jsonschema jinja2`, then
-  from the repo root run `python3 tools/validate.py --strict-coverage` and
-  `python3 -m unittest discover -s tests -p 'test_*.py'`. content-ci runs
-  the same: ERRORs fail the build, WARNs don't.
+- **Run content-ci locally before you PR.** `pip install pyyaml jsonschema
+  jinja2 zstandard`, then `tools/ci.sh` from the repo root (validator with
+  strict coverage, unit tests, generated-file checks, strata drift). There
+  is no hosted CI: run `tools/install-hooks.sh` once so it runs on every
+  `git push`. ERRORs fail; WARNs don't. Reviewers should not merge a PR
+  whose author has not run it.
 - **Never hand-edit generated files** (`taxonomy/strata.csv`, the
   `A13`–`A17` coverage scenarios, `scenarios_index.csv`, the smoke
   `documents` block). Re-run their generator; CI diffs them.

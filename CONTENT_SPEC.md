@@ -201,8 +201,8 @@ asserts that no lookalike domain and none of the forbidden tokens
   `taxonomy/strata.csv` and `taxonomy/strata.source.json`. Today the roster
   has **56 catalog strata, 54 of them in ground truth** (contract 25,
   merger_agreement 5, corporate_record 10 of 11, correspondence 8 of 9,
-  insurance_claim 6). content-ci's `strata-drift` job re-runs the generator
-  at the pinned commit.
+  insurance_claim 6). `tools/ci.sh` re-runs the generator at the pinned
+  commit (strata drift check).
 - **Status:** `active` (train row count known), `rows_unverified` (in ground
   truth; rows not yet scanned), `catalog_only` (no dataset rows; can never be
   drawn, and CI rejects a draw from it).
@@ -226,7 +226,9 @@ asserts that no lookalike domain and none of the forbidden tokens
 
 | Tool | Purpose |
 |---|---|
-| `tools/validate.py [--strict-coverage] [--generate-indexes] [--coverage-out P]` | content-ci (§11); compiles `dist/registry.yaml` |
+| `tools/ci.sh [--skip-drift]` | **content-ci**, run locally (§11); also the git pre-push hook (`tools/install-hooks.sh`) |
+| `tools/release.sh [--push]` | ci, deterministic bundle + SHA256SUMS (`tools/build_bundle.py`), annotated tag; `--push` pushes and creates the GitHub release via `gh` |
+| `tools/validate.py [--strict-coverage] [--generate-indexes] [--coverage-out P]` | the validator (§11); compiles `dist/registry.yaml` |
 | `tools/sync_strata.py --from CHECKOUT [--check]` | generate / drift-check the strata roster |
 | `tools/gen_coverage_scenarios.py [--check]` | generate A13–A17 from the client mixes |
 | `tools/export_smoke.py --write-set \| --check \| --out DIR` | the zero-network smoke export for `sandbox/fixtures/smoke/` (see `smoke/README.md`) |
@@ -235,7 +237,7 @@ asserts that no lookalike domain and none of the forbidden tokens
 | `tools/migrate_scenarios_v2.py` | one-shot v2 reshape, kept for audit (not run by CI) |
 | `tools/content.sh` | local shims (`validate`, `coverage`, `indexes`, `strata`) |
 
-## 11. content-ci checks
+## 11. content-ci checks (local; no GitHub Actions)
 
 `tools/validate.py` (exit 0 = clean, 1 = any ERROR; WARNs never fail):
 
@@ -259,9 +261,11 @@ asserts that no lookalike domain and none of the forbidden tokens
     `recipient_policy.yaml`).
 12. Coverage (§9); errors under `--strict-coverage`.
 
-The workflow also runs the unit tests, checks that generated files (coverage
-scenarios, scenario index, smoke documents) are current, and runs the
-`strata-drift` job.
+`tools/ci.sh` runs the validator with `--strict-coverage`, then the unit
+tests, checks that generated files (coverage scenarios, scenario index,
+smoke documents) are current, and checks strata drift against
+mailroom-reloaded at the pinned commit. This repo uses no GitHub Actions;
+the same script is the git pre-push hook.
 
 ## 12. Compatibility policy
 

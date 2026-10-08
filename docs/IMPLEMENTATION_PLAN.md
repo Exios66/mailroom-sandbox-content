@@ -163,7 +163,7 @@ docs/IMPLEMENTATION_PLAN.md  # this file
 | 1.4 manifest | done | off-taxonomy kinds; 4 new synthetic fixtures |
 | 1.5–1.6 validator + tests | done | all schemas enforced, ID ranges, 117 tests |
 | 1.7 docs, revision pin | done | CONTENT_SPEC rewritten; `ed7576b6` |
-| 1.8 tag | **not done** | 0.1.0 merged untagged; release 0.5.0 after this PR merges (`git tag v0.5.0`) |
+| 1.8 tag | **not done** | 0.1.0 merged untagged; after this branch merges, run `tools/release.sh --push` on main to cut v0.5.0 |
 | 2.1–2.2 coverage | done | A13–A17 generated; `--strict-coverage` in CI |
 | 2.3 templates/personas | done | every message renders under StrictUndefined |
 | 2.4 B/C/D review | done (agent) | `status: review`; promotion to `frozen` needs a human reviewer |
@@ -177,4 +177,5 @@ Additional decision taken during implementation:
 
 | ID | Decision |
 |---|---|
+| CD19 | **No GitHub Actions** (owner's Actions are locked). content-ci is `tools/ci.sh`, run locally and as the versioned pre-push hook (`.githooks/`, `tools/install-hooks.sh`); releases are cut by `tools/release.sh` with a deterministic bundle (`tools/build_bundle.py`). `.github/workflows/` removed. Main-repo items that assumed hosted CI (addendum §11.6 `sandbox-smoke` / `sandbox-nightly` / `content-ci`) need the same treatment there. |
 | CD18 | Every client message names a `template` (scripted body and fallback); `gen_spec` is optional. Templates render `Subject:` first; variables come from `vars` plus the standard sender context (CONTENT_SPEC §4.3). Correspondent reply shapes live in `gen/templates/replies/`. |

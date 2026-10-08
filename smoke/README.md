@@ -39,6 +39,6 @@ templates/<name>.j2      only the templates these scenarios render
 personas/personas.csv, personas/behavior/*.yaml
 ```
 
-`--check` (run by content-ci) fails if the documents block is stale, a draw
+`--check` (run by `tools/ci.sh`) fails if the documents block is stale, a draw
 has no stand-in, a document's bytes differ from the manifest, or the export
 exceeds `budget_bytes` (2 MiB).

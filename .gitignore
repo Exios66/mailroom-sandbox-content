@@ -9,3 +9,5 @@ dist/
 __pycache__/
 # Release bundle staging (release workflow)
 release/
+# Local caches (tools/ci.sh strata-drift checkout)
+.cache/

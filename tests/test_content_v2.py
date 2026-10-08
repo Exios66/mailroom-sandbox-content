@@ -464,6 +464,37 @@ class BuildAttachments(unittest.TestCase):
             self.assertEqual([e for e in report.errors if "att_" in e], [])
 
 
+class Bundle(unittest.TestCase):
+    def test_bundle_is_reproducible_and_complete(self):
+        import importlib.util
+        import io
+        import shutil
+        import tarfile
+        from tempfile import TemporaryDirectory
+        from tools import build_bundle
+        if importlib.util.find_spec("zstandard") is None and shutil.which("zstd") is None:
+            self.skipTest("needs zstandard or zstd")
+        subprocess.run([sys.executable, str(REPO_ROOT / "tools/validate.py")],
+                       capture_output=True, cwd=REPO_ROOT, check=False)
+        files = build_bundle.tracked_files(REPO_ROOT)
+        self.assertIn("dist/registry.yaml", files)
+        self.assertFalse([f for f in files if f.startswith((".github/", "release/", ".cache/"))])
+        a, b = build_bundle.build_tar(REPO_ROOT, files), build_bundle.build_tar(REPO_ROOT, files)
+        self.assertEqual(hashlib.sha256(a).hexdigest(), hashlib.sha256(b).hexdigest())
+        with TemporaryDirectory() as t:
+            self.assertEqual(build_bundle.main(["--out", t]), 0)
+            sums = (Path(t) / "SHA256SUMS").read_text().splitlines()
+            self.assertEqual([line.split()[1] for line in sums],
+                             ["mailroom-sandbox-content-v"
+                              + __import__("json").loads((REPO_ROOT / "content.json")
+                                                         .read_text())["version"] + ".tar.zst",
+                              "content.json"])
+            for line in sums:
+                digest, name = line.split()
+                self.assertEqual(hashlib.sha256((Path(t) / name).read_bytes()).hexdigest(),
+                                 digest)
+
+
 class RealContent(unittest.TestCase):
     def test_every_scenario_message_renders(self):
         import csv

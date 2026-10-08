@@ -1,0 +1,4 @@
+#!/bin/sh
+# Local content-ci gate (GitHub Actions is not used for this repo).
+# Installed by tools/install-hooks.sh; bypass once with `git push --no-verify`.
+exec "$(git rev-parse --show-toplevel)/tools/ci.sh"

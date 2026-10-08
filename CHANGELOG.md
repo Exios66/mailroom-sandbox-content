@@ -28,7 +28,8 @@ Corrective and build-out release (docs/IMPLEMENTATION_PLAN.md, phases 1–2).
   (`same_as`).
 - Sender addresses match each persona's registered contact; spec personas
   match their scenarios; B/C/D/F expectations aligned with addendum §3/§8.
-- Release: the compiled `dist/registry.yaml` now ships in the bundle.
+- Release bundle now includes the compiled `dist/registry.yaml` (the old
+  workflow excluded it with `dist/`).
 
 ### Added
 - Final `mailroom.scenario/v2` shape (CONTENT_SPEC §4, amendment AM2):
@@ -45,10 +46,16 @@ Corrective and build-out release (docs/IMPLEMENTATION_PLAN.md, phases 1–2).
 - `tools/build_attachments.py` (dataset counts + selection; label/hash
   columns only), `tools/make_fixture_pdf.py`, `ids/ranges.yaml`.
 - Validator: every JSON Schema enforced, template variables checked, ID
-  ranges, drawable strata, resolvable endpoints; CI strata-drift job.
+  ranges, drawable strata, resolvable endpoints; strata drift check.
 - 117 unit tests (was 87), including a render of every scenario message.
 
 ### Changed
+- **No GitHub Actions.** `.github/workflows/` removed (the owner's Actions
+  are locked). content-ci runs locally as `tools/ci.sh` and as the git
+  pre-push hook (`tools/install-hooks.sh`); releases are cut with
+  `tools/release.sh`, which builds a deterministic bundle with
+  `tools/build_bundle.py` (same commit, same sha256) and tags locally;
+  `--push` publishes through the `gh` CLI when it is logged in.
 - `content.json`: 0.5.0, `dataset_revision` `ed7576b6` (train split),
   code window 0.2.0–0.3.0.
 - Amendments to addendum v2 recorded in CONTENT_SPEC §13 (AM1 G-series and
