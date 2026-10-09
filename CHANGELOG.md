@@ -27,6 +27,14 @@ All notable changes to the mailroom-sandbox-content pack.
   so the tests can reuse the mutations.
 
 ### Added
+- `tools/lint_contradictions.py` and `docs/CONTRADICTION_AUDIT.md` (plan K-03,
+  stage 1): the linter groups scenarios by client template set and
+  `expect.intent` and reports groups whose members disagree on `expect.outbox`
+  or priority (`--strict` exits 1; a top-level `contrast` string exempts a
+  scenario, but the schema does not allow that key yet). The audit checks each
+  reported finding and the brief's named scenarios against the delegation
+  matrix and protocol. No scenario was edited. Tests in
+  `tests/test_lint_contradictions.py`. Not yet wired into `tools/ci.sh`.
 - `tools/fault_inject.py`: fault-injection harness for the validator (28
   mutations; classifies CLEAN-FAIL / CRASH / MISSED). Seed for the K-02 tests.
 - **H-series ("held-out") scenarios**: 28 scenarios under `scenarios/H/`
