@@ -90,9 +90,18 @@ Releases are cut locally; GitHub Actions is not used.
 - **Run content-ci locally before you PR.** `pip install -r
   tools/requirements.txt`, then `tools/ci.sh` from the repo root (validator with
   strict coverage, unit tests, generated-file checks, strata drift). There
-  is no hosted CI: run `tools/install-hooks.sh` once so it runs on every
-  `git push`. ERRORs fail; WARNs don't. Reviewers should not merge a PR
+  is no hosted CI. ERRORs fail; WARNs don't. Reviewers should not merge a PR
   whose author has not run it.
+- **Run `tools/install-hooks.sh` once per clone; it is required.** It sets
+  `core.hooksPath` so `tools/ci.sh` runs on every `git push`. Nothing else
+  enforces this, and a clone without it skips the gate silently.
+- **`git push --no-verify` bypasses the pre-push hook.** Use it only on
+  purpose. CodeRabbit review on the PR is then the second gate, not a
+  replacement for running `tools/ci.sh`.
+- **A strata drift check that cannot fetch fails; it never passes.** Offline,
+  set `MAILROOM_RELOADED=/path/to/mailroom-reloaded tools/ci.sh` (a local
+  checkout of the pinned commit) or use `tools/ci.sh --skip-drift` for local
+  work. `tools/release.sh` always runs drift and refuses `--skip-drift`.
 - **Never hand-edit generated files** (`taxonomy/strata.csv`, the
   `A13`–`A17` coverage scenarios, `scenarios_index.csv`, the smoke
   `documents` block). Re-run their generator; CI diffs them.

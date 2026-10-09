@@ -35,6 +35,18 @@ All notable changes to the mailroom-sandbox-content pack.
   `tests/test_validate_faults.py` covers the reader and seven fault cases
   end to end. `tools/fault_inject.py` exposes `MUTATIONS` and `main(argv)`
   so the tests can reuse the mutations.
+- **Release and hook gating could pass without checking** (plan K-04).
+  `tools/ci.sh` now stops with the remedies (`--skip-drift` or
+  `MAILROOM_RELOADED=...`) when the strata-drift fetch fails, instead of a raw
+  git error; a failed fetch is never a pass, and a real drift still fails with
+  its own output. `tools/release.sh` always runs drift and refuses
+  `--skip-drift` and `SKIP_DRIFT`. It refuses to tag when
+  `dist/registry.yaml` was stale or missing before the check (the content-ci
+  recompile must reproduce it). Each failure after the tag prints the exact
+  command to retry (`git push origin vX.Y.Z`, or the `gh release create` line).
+  Tests in `tests/test_release_scripts.py` run both scripts offline in
+  temporary git repositories. README documents the per-clone hook install and
+  that `git push --no-verify` bypasses it.
 
 ### Added
 - `tools/lint_contradictions.py` and `docs/CONTRADICTION_AUDIT.md` (plan K-03,

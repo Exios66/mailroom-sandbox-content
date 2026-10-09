@@ -12,6 +12,8 @@
 # Usage: tools/ci.sh [--skip-drift]
 # Strata drift needs a mailroom-reloaded checkout: set MAILROOM_RELOADED to
 # one, or the script fetches the pinned commit into .cache/ (needs network).
+# A failed fetch stops the run with the remedies; it is never a pass.
+# --skip-drift is for local work only: tools/release.sh never passes it.
 # Installed as the pre-push hook by tools/install-hooks.sh.
 set -eu
 
@@ -51,8 +53,21 @@ else
             git init -q "$SRC"
             git -C "$SRC" remote add origin https://github.com/Exios66/mailroom-reloaded.git
         fi
-        git -C "$SRC" fetch -q --depth 1 origin "$COMMIT"
-        git -C "$SRC" checkout -q FETCH_HEAD
+        # Fetch failures (offline, no such commit on origin) end the run here
+        # with the remedies; the raw git error is kept only as detail.
+        if ! fetch_err="$(git -C "$SRC" fetch -q --depth 1 origin "$COMMIT" 2>&1 &&
+                          git -C "$SRC" checkout -q FETCH_HEAD 2>&1)"; then
+            {
+                printf 'strata drift: cannot fetch mailroom-reloaded commit %s into %s\n' "$COMMIT" "$SRC"
+                printf '  (no network, or the pinned commit is not on origin)\n'
+                printf '  git said:\n'
+                printf '%s\n' "$fetch_err" | sed 's/^/    /'
+                printf '  remedies (a failed fetch is not a pass):\n'
+                printf '    tools/ci.sh --skip-drift\n'
+                printf '    MAILROOM_RELOADED=/path/to/mailroom-reloaded tools/ci.sh\n'
+            } >&2
+            exit 1
+        fi
     fi
     "$PY" tools/sync_strata.py --from "$SRC" --check
 fi
