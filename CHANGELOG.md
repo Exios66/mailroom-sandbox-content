@@ -13,6 +13,18 @@ All notable changes to the mailroom-sandbox-content pack.
   and `tar_sha256` (digest of the uncompressed tar, compressor-independent).
   The published asset's bytes remain what a downloader verifies. `SHA256SUMS`
   is unchanged (still `sha256sum -c` clean).
+- **The validator crashed or silently accepted bad CSV and YAML input**
+  (plan K-02). Four crash paths are closed: a UTF-8 BOM on a CSV header
+  (now accepted and stripped), a short CSV row, a NUL byte in a CSV, and a
+  corrupt `ids/ranges.yaml`. Two silent accepts are closed: a row with extra
+  cells, and a duplicate `client_id` in `clients.csv`. One strict reader,
+  `read_csv_strict` in `tools/validate.py`, now reads every CSV the validator
+  opens; YAML and JSON parse errors and non-mapping roots are reported as
+  ERRORs. An outer guard prints `ERROR internal: <type>: <msg>` and exits 2
+  instead of a traceback (exit 1 is still a validation ERROR). New
+  `tests/test_validate_faults.py` covers the reader and seven fault cases
+  end to end. `tools/fault_inject.py` exposes `MUTATIONS` and `main(argv)`
+  so the tests can reuse the mutations.
 
 ### Added
 - `tools/fault_inject.py`: fault-injection harness for the validator (28

@@ -16,15 +16,11 @@ import shutil
 import subprocess
 import sys
 
-SRC = pathlib.Path(sys.argv[1])
-WORK = pathlib.Path(sys.argv[2])
-WORK.mkdir(parents=True, exist_ok=True)
 
-
-def fresh(tag):
-    dst = WORK / tag
+def fresh(src, work, tag):
+    dst = work / tag
     shutil.copytree(
-        SRC, dst, ignore=shutil.ignore_patterns(".git", "release", ".cache", "__pycache__")
+        src, dst, ignore=shutil.ignore_patterns(".git", "release", ".cache", "__pycache__")
     )
     return dst
 
@@ -151,7 +147,7 @@ def m_huge_scenario(r):
 def m_yaml_anchor_bomb(r):
     bomb = "a: &a [x,x,x,x,x,x,x,x,x]\n"
     prev = "a"
-    for i in range(b := 9):
+    for i in range(9):
         bomb += f"{chr(98+i)}: &{chr(98+i)} [*{prev},*{prev},*{prev},*{prev},*{prev},*{prev},*{prev},*{prev},*{prev}]\n"
         prev = chr(98 + i)
     first(r, "scenarios/E/*.yaml").write_text(bomb, encoding="utf-8")
@@ -191,33 +187,42 @@ def m_nul_in_csv(r):
 
 MUTATIONS = [(n[2:], f) for n, f in sorted(globals().items()) if n.startswith("m_") and callable(f)]
 
-results = []
-for name, fn in MUTATIONS:
-    root = fresh(name)
+
+def classify(src, work, name, fn):
+    """Apply one mutation to a fresh copy of src and classify validator behaviour."""
+    root = fresh(src, work, name)
     try:
         fn(root)
     except Exception as e:  # noqa: BLE001
-        results.append((name, "SETUP-ERR", str(e)[:80]))
-        continue
+        return (name, "SETUP-ERR", str(e)[:80])
     try:
         proc = subprocess.run(
             [sys.executable, "tools/validate.py", "--strict-coverage"],
             cwd=root, capture_output=True, text=True, timeout=120,
         )
     except subprocess.TimeoutExpired:
-        results.append((name, "HANG", ">120s"))
-        continue
+        return (name, "HANG", ">120s")
     err = proc.stderr + proc.stdout
     if "Traceback" in err:
         last = [ln for ln in err.strip().splitlines() if ln.strip()][-1][:110]
-        results.append((name, "CRASH", last))
-    elif proc.returncode == 0:
-        results.append((name, "MISSED", "exit 0"))
-    else:
-        results.append((name, "CLEAN-FAIL", f"exit {proc.returncode}"))
+        return (name, "CRASH", last)
+    if proc.returncode == 0:
+        return (name, "MISSED", "exit 0")
+    return (name, "CLEAN-FAIL", f"exit {proc.returncode}")
 
-w = max(len(r[0]) for r in results)
-for n, c, d in results:
-    print(f"{n:<{w}}  {c:<10}  {d}")
-from collections import Counter
-print(Counter(c for _, c, _ in results))
+
+def main(argv):
+    src = pathlib.Path(argv[1])
+    work = pathlib.Path(argv[2])
+    work.mkdir(parents=True, exist_ok=True)
+    results = [classify(src, work, name, fn) for name, fn in MUTATIONS]
+    w = max(len(r[0]) for r in results)
+    for n, c, d in results:
+        print(f"{n:<{w}}  {c:<10}  {d}")
+    from collections import Counter
+    print(Counter(c for _, c, _ in results))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

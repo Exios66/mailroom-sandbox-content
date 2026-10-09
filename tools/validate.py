@@ -16,7 +16,8 @@ Checks (addendum v2 §13.4, workstream C11):
 Usage:
   python3 tools/validate.py [--root DIR] [--generate-indexes] [--coverage-out PATH]
 
-Exit 0 when no ERRORs, 1 otherwise. WARNs never fail the build.
+Exit 0 when no ERRORs, 1 on ERRORs, 2 on an internal failure (one
+`ERROR internal:` line on stderr, never a traceback). WARNs never fail the build.
 """
 
 from __future__ import annotations
@@ -24,9 +25,11 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import io
 import json
 import re
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 # ---------------------------------------------------------------- constants
@@ -142,15 +145,125 @@ class Report:
         return not self.errors
 
 
+def read_csv_strict(path: Path, rep: Report | None = None, *,
+                    label: str | None = None, want: list[str] | None = None,
+                    key: str | None = None) -> list[dict]:
+    """The one CSV reader the validator uses. It never raises on file content.
+
+    Faults are appended to ``rep`` as ERRORs (``rep=None`` discards them, for
+    re-reads of a file another check already reports):
+      - NUL byte or bytes that are not UTF-8: the whole file is dropped
+      - UTF-8 BOM: accepted and stripped
+      - duplicate header name, or header != ``want``: the whole file is dropped
+      - row whose cell count differs from the header (short or extra cells):
+        that row is dropped
+      - repeated value of ``key``: the later row is dropped
+    Blank lines are skipped. Line numbers are the csv reader's line count.
+    """
+    rep = rep if rep is not None else Report()
+    name = label or path.name
+    try:
+        data = path.read_bytes()
+    except OSError as e:
+        rep.error(f"{name}: unreadable: {e}")
+        return []
+    if b"\x00" in data:
+        line = data[:data.index(b"\x00")].count(b"\n") + 1
+        rep.error(f"{name} line {line}: NUL byte (binary or corrupt data)")
+        return []
+    try:
+        text = data.decode("utf-8-sig")  # a leading BOM is stripped
+    except UnicodeDecodeError as e:
+        rep.error(f"{name}: not UTF-8 (byte {e.start}): {e.reason}")
+        return []
+    reader = csv.reader(io.StringIO(text, newline=""))
+    rows: list[dict] = []
+    try:
+        header = next((r for r in reader if r), None) or []
+        dups = sorted({h for h in header if header.count(h) > 1})
+        if dups:
+            rep.error(f"{name}: duplicate header name(s) {dups}")
+            return []
+        if want is not None and header != want:
+            rep.error(f"{name}: header mismatch.\n  want {want}\n  got  {header}")
+            return []
+        key_at = header.index(key) if key is not None and key in header else None
+        first_line: dict[str, int] = {}
+        for record in reader:
+            line = reader.line_num
+            if not record:
+                continue
+            if len(record) != len(header):
+                rep.error(f"{name} line {line}: row has {len(record)} cells, "
+                          f"header has {len(header)}")
+                continue
+            if key_at is not None:
+                value = record[key_at]
+                if value in first_line:
+                    rep.error(f"{name} line {line}: duplicate {key} {value!r} "
+                              f"(first at line {first_line[value]})")
+                    continue
+                first_line[value] = line
+            rows.append(dict(zip(header, record)))
+    except csv.Error as e:
+        rep.error(f"{name} line {reader.line_num}: malformed CSV: {e}")
+        return []
+    return rows
+
+
 def read_csv(path: Path) -> list[dict]:
-    with path.open(newline="", encoding="utf-8") as f:
-        return list(csv.DictReader(f))
+    """Strict read with errors discarded: for a file another check reports."""
+    return read_csv_strict(path)
 
 
 def load_yaml(path: Path):
     import yaml
     with path.open(encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+def load_json_file(path: Path, rel: str, rep: Report):
+    """Parse one JSON file. Unreadable or invalid input is an ERROR and None."""
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except OSError as e:
+        rep.error(f"{rel} is unreadable: {e}")
+    except ValueError as e:  # JSONDecodeError and UnicodeDecodeError
+        rep.error(f"{rel} is not valid JSON: {e}")
+    return None
+
+
+def read_text_or_error(path: Path, rel: str, rep: Report) -> str | None:
+    """Read one UTF-8 text file. Unreadable input is an ERROR and None."""
+    try:
+        return path.read_text(encoding="utf-8")
+    except (OSError, ValueError) as e:
+        rep.error(f"{rel} is unreadable: {e}")
+    return None
+
+
+def content_files(root: Path) -> defaultdict:
+    """Header declarations from schemas/content_files.json, keyed by path.
+    A missing or malformed index gives no declarations; the per-file checks
+    then report the missing header, and check_content_files_index reports why."""
+    try:
+        files = json.loads((root / "schemas" / "content_files.json")
+                           .read_text(encoding="utf-8"))["files"]
+    except (OSError, ValueError, KeyError, TypeError):
+        files = {}
+    return defaultdict(dict, files if isinstance(files, dict) else {})
+
+
+def check_content_files_index(root: Path, rep: Report) -> None:
+    rel = "schemas/content_files.json"
+    p = root / rel
+    if not p.exists():
+        rep.error(f"{rel} missing")
+        return
+    data = load_json_file(p, rel, rep)
+    if data is not None and not (isinstance(data, dict)
+                                 and isinstance(data.get("files"), dict)):
+        rep.error(f"{rel}: top level must be a mapping with a 'files' mapping")
 
 
 def parse_weight(raw) -> float | None:
@@ -316,10 +429,11 @@ def check_content_json(root: Path, rep: Report) -> dict:
     if not p.exists():
         rep.error("content.json missing")
         return {}
-    try:
-        data = json.loads(p.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as e:
-        rep.error(f"content.json is not valid JSON: {e}")
+    data = load_json_file(p, "content.json", rep)
+    if data is None:
+        return {}
+    if not isinstance(data, dict):
+        rep.error("content.json: top level must be a mapping")
         return {}
     for key in ("name", "version", "schema_version",
                 "dataset_revision", "min_code_version"):
@@ -331,40 +445,33 @@ def check_content_json(root: Path, rep: Report) -> dict:
     return data
 
 
-def check_csv_file(root: Path, rel: str, spec: dict, rep: Report) -> list[dict]:
+def check_csv_file(root: Path, rel: str, spec: dict, rep: Report,
+                   key: str | None = None) -> list[dict]:
     p = root / rel
     if not p.exists():
         rep.error(f"missing required file: {rel}")
         return []
-    rows = read_csv(p)
-    want = spec["header"]
-    got = list(rows[0].keys()) if rows else []
-    # allow empty files to still declare headers via DictReader fieldnames
-    if not rows:
-        with p.open(encoding="utf-8") as f:
-            first = f.readline().strip().split(",")
-        got = first
-    if got != want:
-        rep.error(f"{rel}: header mismatch.\n  want {want}\n  got  {got}")
-    return rows
+    if spec.get("header") is None:
+        rep.error(f"{rel}: no header declared in schemas/content_files.json")
+        return []
+    return read_csv_strict(p, rep, label=rel, want=spec["header"], key=key)
 
 
 def check_id(value: str, kind: str, where: str, rep: Report) -> None:
     pat = ID_PATTERNS[kind]
-    if not pat.match(value or ""):
+    if not pat.match(value if isinstance(value, str) else ""):
         rep.error(f"{where}: bad {kind} id: {value!r}")
 
 
 def check_clients(root: Path, rep: Report) -> tuple[dict, dict, dict, dict]:
-    spec = json.loads(
-        (root / "schemas" / "content_files.json").read_text(encoding="utf-8")
-    )["files"]
+    spec = content_files(root)
     clients = {r["client_id"]: r for r in
                check_csv_file(root, "clients/clients.csv",
-                              spec["clients/clients.csv"], rep)}
+                              spec["clients/clients.csv"], rep, key="client_id")}
     contacts = {r["contact_id"]: r for r in
                 check_csv_file(root, "clients/client_contacts.csv",
-                               spec["clients/client_contacts.csv"], rep)}
+                               spec["clients/client_contacts.csv"], rep,
+                               key="contact_id")}
     domains = check_csv_file(root, "clients/client_domains.csv",
                              spec["clients/client_domains.csv"], rep)
     mixes = check_csv_file(root, "clients/client_doc_mix.csv",
@@ -432,9 +539,7 @@ def check_clients(root: Path, rep: Report) -> tuple[dict, dict, dict, dict]:
 
 def check_personas(root: Path, clients: dict, contacts: dict,
                    rep: Report) -> dict:
-    spec = json.loads(
-        (root / "schemas" / "content_files.json").read_text(encoding="utf-8")
-    )["files"]
+    spec = content_files(root)
     rows = check_csv_file(root, "personas/personas.csv",
                           spec["personas/personas.csv"], rep)
     personas = {}
@@ -468,17 +573,20 @@ def check_personas(root: Path, clients: dict, contacts: dict,
     return personas
 
 
-def load_strata(root: Path) -> tuple[dict, set[tuple[str, str]]]:
-    """(strata rows keyed by (class, stratum), off-taxonomy (class, kind) pairs)."""
+def load_strata(root: Path, rep: Report | None = None
+                ) -> tuple[dict, set[tuple[str, str]]]:
+    """(strata rows keyed by (class, stratum), off-taxonomy (class, kind) pairs).
+    Pass ``rep`` from the one check that reports these files; None discards."""
     strata: dict[tuple[str, str], dict] = {}
     p = root / "taxonomy" / "strata.csv"
     if p.exists():
-        for r in read_csv(p):
-            strata[(r["class"], r["stratum"])] = r
+        for r in read_csv_strict(p, rep, label="taxonomy/strata.csv"):
+            strata[(r.get("class"), r.get("stratum"))] = r
     off: set[tuple[str, str]] = set()
     p = root / "taxonomy" / "offtaxonomy.csv"
     if p.exists():
-        off = {("off_taxonomy", r["kind"]) for r in read_csv(p)}
+        off = {("off_taxonomy", r.get("kind"))
+               for r in read_csv_strict(p, rep, label="taxonomy/offtaxonomy.csv")}
     return strata, off
 
 
@@ -537,11 +645,12 @@ def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
     attach_files = set()
     man = root / "attachments" / "manifest.csv"
     if man.exists():
-        attach_files = {r["file"] for r in read_csv(man)}
+        # check_attachments reports manifest faults; this read only collects names
+        attach_files = {r.get("file") for r in read_csv(man)}
     template_vars = template_variables(root, rep)
     templates = {p.stem for p in (root / "gen" / "templates").glob("*.j2")}
     replies = {p.stem for p in (root / "gen" / "templates" / "replies").glob("*.j2")}
-    strata, offtax = load_strata(root)
+    strata, offtax = load_strata(root, rep)
     awaiting_specs: list[str] = []
 
     scen_dir = root / "scenarios"
@@ -794,6 +903,9 @@ def check_gen_specs(root: Path, personas: dict, rep: Report) -> dict:
         except Exception as e:  # noqa: BLE001
             rep.error(f"gen/specs/{yf.name}: YAML error: {e}")
             continue
+        if not isinstance(s, dict):
+            rep.error(f"gen/specs/{yf.name}: top level must be a mapping")
+            continue
         sid = s.get("id", "")
         check_id(sid, "spec_id", f"gen/specs/{yf.name}", rep)
         if sid in specs:
@@ -824,9 +936,7 @@ def canonical_email_json(obj: dict) -> bytes:
 
 
 def check_emails(root: Path, rep: Report) -> None:
-    spec = json.loads(
-        (root / "schemas" / "content_files.json").read_text(encoding="utf-8")
-    )["files"]
+    spec = content_files(root)
     idx_path = root / "emails" / "emails_index.csv"
     if not idx_path.exists():
         rep.warn("emails/emails_index.csv missing (no frozen emails yet)")
@@ -837,14 +947,19 @@ def check_emails(root: Path, rep: Report) -> None:
     frozen: dict[str, dict[str, dict]] = {}
     for jf in sorted((root / "emails" / "frozen").glob("*.jsonl")):
         series = jf.stem
-        for ln, line in enumerate(jf.read_text(encoding="utf-8").splitlines(),
-                                  1):
+        text = read_text_or_error(jf, f"emails/frozen/{jf.name}", rep)
+        if text is None:
+            continue
+        for ln, line in enumerate(text.splitlines(), 1):
             if not line.strip():
                 continue
             try:
                 obj = json.loads(line)
-            except json.JSONDecodeError as e:
+            except ValueError as e:  # JSONDecodeError
                 rep.error(f"emails/frozen/{jf.name}:{ln}: bad JSON: {e}")
+                continue
+            if not isinstance(obj, dict):
+                rep.error(f"emails/frozen/{jf.name}:{ln}: must be a JSON object")
                 continue
             eid = obj.get("email_id", "")
             frozen.setdefault(series, {})[eid] = obj
@@ -869,7 +984,9 @@ def check_emails(root: Path, rep: Report) -> None:
             rep.error(f"emails_index.csv {eid}: bad tier {r.get('tier')!r}")
     # handwritten anchors: markdown with front matter
     for mf in sorted((root / "emails" / "handwritten").glob("*.md")):
-        text = mf.read_text(encoding="utf-8")
+        text = read_text_or_error(mf, f"emails/handwritten/{mf.name}", rep)
+        if text is None:
+            continue
         if not text.startswith("---"):
             rep.error(f"emails/handwritten/{mf.name}: missing front matter")
             continue
@@ -879,6 +996,10 @@ def check_emails(root: Path, rep: Report) -> None:
         except Exception as e:  # noqa: BLE001
             rep.error(f"emails/handwritten/{mf.name}: front matter error: {e}")
             continue
+        if not isinstance(fm, dict):
+            rep.error(f"emails/handwritten/{mf.name}: front matter must be a "
+                      f"mapping")
+            continue
         for field in ("email_id", "spec_id", "scenario_id", "persona_id"):
             if field not in (fm or {}):
                 rep.error(f"emails/handwritten/{mf.name}: front matter "
@@ -886,9 +1007,7 @@ def check_emails(root: Path, rep: Report) -> None:
 
 
 def check_attachments(root: Path, rep: Report) -> None:
-    spec = json.loads(
-        (root / "schemas" / "content_files.json").read_text(encoding="utf-8")
-    )["files"]
+    spec = content_files(root)
     man_path = root / "attachments" / "manifest.csv"
     if not man_path.exists():
         rep.warn("attachments/manifest.csv missing")
@@ -944,9 +1063,7 @@ def check_attachments(root: Path, rep: Report) -> None:
 
 
 def check_relations(root: Path, rep: Report) -> None:
-    spec = json.loads(
-        (root / "schemas" / "content_files.json").read_text(encoding="utf-8")
-    )["files"]
+    spec = content_files(root)
     p = root / "relations" / "relations_truth.csv"
     if not p.exists():
         rep.warn("relations/relations_truth.csv missing")
@@ -960,9 +1077,7 @@ def check_relations(root: Path, rep: Report) -> None:
 
 
 def check_adversary(root: Path, rep: Report) -> tuple[set[str], set[str]]:
-    spec = json.loads(
-        (root / "schemas" / "content_files.json").read_text(encoding="utf-8")
-    )["files"]
+    spec = content_files(root)
     lookalikes: set[str] = set()
     impostors: set[str] = set()
     p = root / "adversary" / "lookalike_domains.csv"
@@ -995,13 +1110,13 @@ def compile_registry(root: Path, clients: dict, contacts: dict,
     mix_by_client: dict[str, dict[str, float]] = {}
     man = root / "clients" / "client_doc_mix.csv"
     if man.exists():
-        for m in read_csv(man):
-            w = parse_weight(m["weight"])
+        for m in read_csv(man):  # check_clients reports manifest faults
+            w = parse_weight(m.get("weight"))
             if w is None:
                 continue  # already reported as an error by check_clients
-            mix_by_client.setdefault(m["client_id"], {})
-            mix_by_client[m["client_id"]][m["class"]] = \
-                mix_by_client[m["client_id"]].get(m["class"], 0.0) + w
+            mix_by_client.setdefault(m.get("client_id"), {})
+            mix_by_client[m.get("client_id")][m.get("class")] = \
+                mix_by_client[m.get("client_id")].get(m.get("class"), 0.0) + w
     for cid, c in clients.items():
         reg["clients"][cid] = {
             "display_name": c["display_name"],
@@ -1146,13 +1261,14 @@ def check_contract_schemas(root: Path, registry: dict | None,
             pass
     v = schema_validator(root, "overlay.v1.json", rep)
     ov = root / "email" / "overlay" / "example.jsonl"
-    if ov.exists():
-        for ln, line in enumerate(ov.read_text(encoding="utf-8").splitlines(), 1):
+    text = read_text_or_error(ov, "email/overlay/example.jsonl", rep) if ov.exists() else None
+    if text is not None:
+        for ln, line in enumerate(text.splitlines(), 1):
             if not line.strip():
                 continue
             try:
                 obj = json.loads(line)
-            except json.JSONDecodeError as e:
+            except ValueError as e:  # JSONDecodeError
                 rep.error(f"email/overlay/example.jsonl:{ln}: bad JSON: {e}")
                 continue
             report_schema(v, obj, f"email/overlay/example.jsonl:{ln}", rep)
@@ -1190,29 +1306,53 @@ def collect_ids(root: Path) -> dict[str, list[tuple[str, str]]]:
     return out
 
 
+def _block_ok(b) -> bool:
+    return (isinstance(b, dict) and isinstance(b.get("lo"), int)
+            and isinstance(b.get("hi"), int) and "owner" in b)
+
+
 def check_id_ranges(root: Path, rep: Report) -> None:
     p = root / "ids" / "ranges.yaml"
     if not p.exists():
         rep.error("ids/ranges.yaml missing (ID range allocation, §12.5)")
         return
-    ranges = load_yaml(p) or {}
+    try:
+        ranges = load_yaml(p)
+    except Exception as e:  # noqa: BLE001 - any YAML failure is a reported error
+        rep.error(f"ids/ranges.yaml is not valid YAML: {e}")
+        return
+    if ranges is None:
+        ranges = {}
+    if not isinstance(ranges, dict):
+        rep.error("ids/ranges.yaml: top level must be a mapping")
+        return
     if ranges.get("schema") != "mailroom.id_ranges/v1":
         rep.error("ids/ranges.yaml: schema must be mailroom.id_ranges/v1")
+    bad_kinds: set[str] = set()
     for kind, blocks in ranges.items():
         if kind == "schema":
             continue
-        spans = sorted((b["lo"], b["hi"], b["owner"]) for b in blocks or [])
+        if blocks is None:
+            blocks = []
+        if not isinstance(blocks, list) or not all(_block_ok(b) for b in blocks):
+            rep.error(f"ids/ranges.yaml {kind}: each block needs integer lo, "
+                      f"integer hi and an owner")
+            bad_kinds.add(kind)
+            continue
+        spans = sorted((b["lo"], b["hi"], b["owner"]) for b in blocks)
         for (lo1, hi1, o1), (lo2, _hi2, o2) in zip(spans, spans[1:]):
             if lo2 <= hi1:
                 rep.error(f"ids/ranges.yaml {kind}: {o1} and {o2} overlap")
     for kind, ids in collect_ids(root).items():
+        if kind in bad_kinds:
+            continue  # the block list itself is reported above
         blocks = ranges.get(kind) or []
         seen: dict[str, str] = {}
         for ident, where in ids:
             if ident in seen:
                 rep.error(f"{where}: duplicate id {ident} (also in {seen[ident]})")
             seen[ident] = where
-            m = ID_RANGE_KINDS[kind].match(ident or "")
+            m = ID_RANGE_KINDS[kind].match(ident if isinstance(ident, str) else "")
             if not m:
                 continue  # malformed ids are reported by check_id
             n = int(m.group(1))
@@ -1253,11 +1393,11 @@ def coverage_report(root: Path, mixes: list[dict], scenarios: dict,
     pinned: dict[str, tuple[str, str]] = {}
     man = root / "attachments" / "manifest.csv"
     if man.exists():
-        for r in read_csv(man):
+        for r in read_csv(man):  # check_attachments reports manifest faults
             key = (r.get("class", ""), r.get("stratum", ""))
-            pinned[r["file"]] = key
+            pinned[r.get("file")] = key
             if key in cov and r.get("in_taxonomy") == "true":
-                cov[key]["attachments"].add(r["attachment_id"])
+                cov[key]["attachments"].add(r.get("attachment_id"))
     for name, sc in scenarios.items():
         for spec in scenario_doc_specs(sc):
             key = (spec.get("class"), spec.get("stratum"))
@@ -1314,7 +1454,7 @@ def generate_indexes(root: Path, scenarios: dict, by_series: dict,
         rep.info(f"wrote {out.relative_to(root)} ({len(rows)} scenarios)")
 
 
-def main() -> int:
+def run_checks() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=str(Path(__file__).resolve().parent
                                           .parent))
@@ -1327,6 +1467,7 @@ def main() -> int:
     rep = Report()
 
     check_content_json(root, rep)
+    check_content_files_index(root, rep)
     check_ops_contracts(root, rep)
     clients, contacts, domains, mixes = check_clients(root, rep)
     domains_by_client: dict[str, set] = {}
@@ -1367,6 +1508,17 @@ def main() -> int:
     if len(rep.warnings) > 40:
         print(f"… and {len(rep.warnings) - 40} more warnings")
     return 0 if rep.ok() else 1
+
+
+def main() -> int:
+    """Exit 0 on success, 1 on validation ERRORs, 2 on an internal failure.
+    The outer guard turns any unexpected exception into one ERROR line rather
+    than a bare traceback."""
+    try:
+        return run_checks()
+    except Exception as e:  # noqa: BLE001 - last-resort guard, see docstring
+        print(f"ERROR internal: {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":
