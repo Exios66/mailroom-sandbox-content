@@ -45,6 +45,9 @@ step "dependencies"
 step "validator (strict coverage)"
 "$PY" tools/validate.py --strict-coverage
 
+step "scenario contradictions (strict)"
+"$PY" tools/lint_contradictions.py --strict
+
 step "unit tests"
 "$PY" -m unittest discover -s tests -p 'test_*.py'
 

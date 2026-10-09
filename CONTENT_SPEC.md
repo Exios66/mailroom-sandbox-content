@@ -273,11 +273,14 @@ asserts that no lookalike domain and none of the forbidden tokens
     `recipient_policy.yaml`).
 12. Coverage (§9); errors under `--strict-coverage`.
 
-`tools/ci.sh` runs the validator with `--strict-coverage`, then the unit
-tests, checks that generated files (coverage scenarios, scenario index,
-smoke documents) are current, and checks strata drift against
-mailroom-reloaded at the pinned commit. This repo uses no GitHub Actions;
-the same script is the git pre-push hook.
+`tools/ci.sh` runs the validator with `--strict-coverage`, the contradiction
+lint (`tools/lint_contradictions.py --strict`), then the unit tests, checks
+that generated files (coverage scenarios, scenario index, smoke documents)
+are current, loads the pack through the consumer's own loader and compares
+the shared schemas (when `MAILROOM_RELOADED` is set; a loud SKIPPED notice
+otherwise), and checks strata drift against mailroom-reloaded at the pinned
+commit. This repo uses no GitHub Actions; the same script is the git pre-push
+hook.
 
 ## 12. Compatibility policy
 

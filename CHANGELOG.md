@@ -12,7 +12,8 @@ All notable changes to the mailroom-sandbox-content pack.
   `tools/lint_contradictions.py` reports contradictions between scenarios that
   share a client template (0 now). `tools/migrations/scenarios_v2_map.py` is a
   historical one-shot map and still names `g_expedite_ack`; do not re-run it.
-  Decision table: `CONTENT_SPEC.md` Appendix A.
+  Decision table: `CONTENT_SPEC.md` Appendix A. `tools/ci.sh` now runs the
+  lint with `--strict`.
 
 ### Fixed
 - **The release bundle sha256 was not reproducible across `zstandard`
