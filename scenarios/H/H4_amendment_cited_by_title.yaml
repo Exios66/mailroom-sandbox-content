@@ -1,0 +1,33 @@
+name: H4_amendment_cited_by_title
+title: Adviser amends a term by title and date only, no filename match; amends relation with the pinned prior
+seed: 1504
+profile: demo
+gen: scripted
+transports: [sim, agentmail]
+status: draft
+tags: [heldout, B, amendment]
+timeline:
+- at: "00:00"
+  ingress: {ref: license_v1, class: contract, stratum: license, as: meridian_license_v1.pdf}
+- at: "00:04"
+  client:
+    persona: p_northstar_adviser
+    channel: email
+    claimed_from: jlin@northstar.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: h_b_amendment_title
+    vars: {document_title: the Meridian license, matter_ref: NA-2026-0207, amendment_date: October 2, change_summary: the exclusivity period in section 3 shortens from 24 to 18 months}
+    attach:
+    - {class: contract, stratum: license, ref: amendment_v2}
+expect:
+  intent: correction_or_amendment
+  signals:
+  - {kind: doc_relation, priority: normal, within: "00:08"}
+  trust: {sender_level: verified}
+  relations:
+  - {a: amendment_v2, b: license_v1, kind: amends, min_conf: 0.7}
+  outbox:
+  - {intent: correction_or_amendment, state: draft, to_sender: true}
+  boss_actions: [ack_signal, link_documents]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

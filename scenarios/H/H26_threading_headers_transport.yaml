@@ -1,0 +1,33 @@
+name: H26_threading_headers_transport
+title: Threading headers (In-Reply-To, References) preserved across an H-series reply
+seed: 1526
+profile: demo
+gen: scripted
+transports: [agentmail]
+status: draft
+tags: [heldout, T, transport-conformance, threading]
+timeline:
+- at: "00:02"
+  client:
+    ref: msg_thread_root
+    persona: p_tricounty_real
+    channel: email
+    claimed_from: kalvarado@tricountytitle.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: h_t_plain
+    vars: {subject_line: H26 threading check, note: First message in the thread.}
+- at: "00:05"
+  client:
+    persona: p_tricounty_real
+    channel: email
+    claimed_from: kalvarado@tricountytitle.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    reply_to: msg_thread_root
+    template: h_t_plain
+    vars: {subject_line: 'Re: H26 threading check', note: Reply in the same thread.}
+expect:
+  intent: general_question
+  signals:
+  - {kind: new_info, priority: normal, within: "00:02"}
+  outbox: []
+  invariants: [audit_chain_ok, comms_offpath]

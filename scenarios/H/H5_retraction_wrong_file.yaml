@@ -1,0 +1,43 @@
+name: H5_retraction_wrong_file
+title: Landlord retracts an earlier upload as the wrong file; withdraws relation, document retained, human decides
+seed: 1505
+profile: demo
+gen: scripted
+transports: [sim, agentmail]
+status: draft
+tags: [heldout, B, retraction]
+timeline:
+- at: "00:02"
+  client:
+    ref: msg_upload
+    persona: p_brightwater_pm
+    channel: email
+    claimed_from: treyes@brightwaterpg.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: h_b_upload_cover
+    vars: {document_title: the unit 7B lease, matter_ref: BW-2026-0311}
+    attach:
+    - {file: lease_v1_unit4b.pdf, ref: lease_upload}
+- at: "00:12"
+  client:
+    ref: msg_retract_say
+    persona: p_brightwater_pm
+    channel: email
+    claimed_from: treyes@brightwaterpg.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: h_b_wrong_file
+    vars: {document_title: the unit 7B lease}
+expect:
+  intent: retraction_or_withdrawal
+  signals:
+  - {kind: correction, priority: normal, within: "00:16"}
+  trust: {sender_level: verified}
+  relations:
+  - {a: msg_retract_say, b: lease_upload, kind: withdraws, min_conf: 0.95}
+  docs:
+    lease_upload: {state: withdrawn, retained: true}
+  outbox:
+  - {intent: retraction_or_withdrawal, state: draft, to_sender: true}
+  boss_actions: [request_human_review, link_documents]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

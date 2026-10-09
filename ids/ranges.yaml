@@ -15,6 +15,7 @@ generation_specs:            # gen_<archetype>_<nnnn>; nnnn is global across spe
   - {owner: C4-C,       lo: 900,  hi: 999,  note: "C-series edge cases"}
   - {owner: C6-ST,      lo: 1000, hi: 1099, note: "S and T series"}
   - {owner: C7-coverage, lo: 1100, hi: 1499, note: "coverage-profile cover notes"}
+  - {owner: H,           lo: 1500, hi: 1599, note: "H-series held-out"}
 emails:                      # em_<Series>_<nnnn>; the series letter partitions by owner
   - {owner: C8-handwritten, lo: 1,    hi: 99,   note: "scripted renders and hand-written anchors"}
   - {owner: C8-frozen,      lo: 100,  hi: 9999, note: "frozen build output (generation layer)"}

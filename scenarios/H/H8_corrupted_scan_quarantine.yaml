@@ -1,0 +1,29 @@
+name: H8_corrupted_scan_quarantine
+title: Fresh phone-photo scan arrives corrupted; quarantined with a missing-doc signal, never opened
+seed: 1508
+profile: demo
+gen: scripted
+transports: [sim, agentmail]
+status: draft
+tags: [heldout, C, corrupted, quarantine]
+timeline:
+- at: "00:02"
+  client:
+    persona: p_brightwater_pm
+    channel: email
+    claimed_from: treyes@brightwaterpg.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: h_c_scan_note
+    vars: {subject_line: site scan}
+    attach:
+    - {file: corrupted_scan_01.pdf}
+expect:
+  intent: document_submission
+  signals:
+  - {kind: missing_doc, priority: normal, within: "00:08"}
+  trust: {sender_level: verified}
+  quarantine: [corrupted_scan_01.pdf]
+  outbox: []
+  boss_actions: [quarantine_attachments, request_human_review]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

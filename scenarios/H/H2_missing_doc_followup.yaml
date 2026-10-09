@@ -1,0 +1,27 @@
+name: H2_missing_doc_followup
+title: Claimant asks what is still outstanding on claim CL-664032; the loop is closed with a missing-doc signal
+seed: 1502
+profile: demo
+gen: scripted
+transports: [sim, agentmail]
+status: draft
+tags: [heldout, A, missing-doc]
+timeline:
+- at: "00:04"
+  client:
+    persona: p_okafor_claimant
+    channel: email
+    claimed_from: aokafor@okaforfreight.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: h_a_missing_doc_probe
+    vars: {claim_ref: CL-664032, missing_item: the signed police report}
+expect:
+  intent: missing_document_followup
+  signals:
+  - {kind: missing_doc, priority: normal, within: "00:07"}
+  trust: {sender_level: verified}
+  outbox:
+  - {intent: missing_document_followup, state: draft, to_sender: true}
+  boss_actions: [ack_signal, task_correspondent]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

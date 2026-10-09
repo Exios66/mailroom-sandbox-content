@@ -1,0 +1,30 @@
+name: H17_genuine_remittance_callback
+title: Genuine remittance change arrives verified but stays soft-held pending callback and human approval
+seed: 1517
+profile: demo
+gen: scripted
+transports: [sim, agentmail]
+status: draft
+tags: [heldout, F, hard-negative, payment-change]
+timeline:
+- at: "00:01"
+  client:
+    persona: p_tricounty_real
+    channel: email
+    claimed_from: remittance@tricountytitle.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: h_f_remittance_update
+    vars: {matter_ref: TC-2026-1345, effective_date: November 1}
+    attach:
+    - {file: payoff_letter.pdf}
+expect:
+  intent: payment_or_identity_change
+  signals:
+  - {kind: payment_change, priority: high, within: "00:05"}
+  trust: {sender_level: verified}
+  quarantine: []
+  soft_hold: [payoff_letter.pdf]
+  outbox: []
+  boss_actions: [hold_attachments, recommend_callback, request_human_review, release_attachments]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

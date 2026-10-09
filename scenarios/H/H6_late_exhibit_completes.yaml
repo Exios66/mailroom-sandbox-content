@@ -1,0 +1,34 @@
+name: H6_late_exhibit_completes
+title: Adjuster sends the last exhibit, completing an already-archived claim set; completes relation
+seed: 1506
+profile: demo
+gen: scripted
+transports: [sim, agentmail]
+status: draft
+tags: [heldout, B, completes]
+timeline:
+- at: "00:00"
+  ingress: {ref: claim_part_a, group: cl_664032, class: insurance_claim, stratum: auto, as: CL-664032_part_a.pdf}
+- at: "00:06"
+  client:
+    persona: p_cedarridge_adjuster
+    channel: email
+    claimed_from: dpark@cedarridge.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: h_b_last_exhibit
+    vars: {claim_ref: CL-664032, exhibit_label: the repair estimate}
+    attach:
+    - {class: insurance_claim, stratum: property, ref: claim_part_b, group: cl_664032}
+expect:
+  intent: document_submission
+  signals:
+  - {kind: new_info, priority: normal, within: "00:09"}
+  - {kind: doc_relation, priority: normal, within: "00:09"}
+  trust: {sender_level: verified}
+  relations:
+  - {a: claim_part_b, b: claim_part_a, kind: completes, min_conf: 0.8}
+  outbox:
+  - {intent: document_submission, state: draft, to_sender: true}
+  boss_actions: [ack_signal, link_documents]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

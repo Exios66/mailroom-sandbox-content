@@ -1,0 +1,24 @@
+name: H23_crash_mid_triage_resume
+title: Crash in the middle of triage; the watcher resumes from the cursor without duplicate signals
+seed: 1523
+profile: smoke
+gen: scripted
+transports: [sim]
+status: draft
+tags: [heldout, S, self-test, crash-recovery]
+timeline:
+- at: "00:02"
+  client:
+    persona: p_tricounty_real
+    channel: email
+    claimed_from: kalvarado@tricountytitle.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: h_s_routine
+    vars: {subject_line: H23 sandbox self-test, note: Routine message used by a sandbox self-test.}
+  fault: crash_mid_triage
+expect:
+  intent: unrelated
+  signals:
+  - {kind: fyi, priority: normal, within: "00:02"}
+  outbox: []
+  invariants: [audit_chain_ok, no_stuck_docs, comms_offpath]

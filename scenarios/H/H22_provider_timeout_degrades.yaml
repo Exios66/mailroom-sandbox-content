@@ -1,0 +1,24 @@
+name: H22_provider_timeout_degrades
+title: Provider timeout during triage; deterministic fallback emits one signal, ingestion not blocked
+seed: 1522
+profile: smoke
+gen: scripted
+transports: [sim]
+status: draft
+tags: [heldout, S, self-test, provider-timeout]
+timeline:
+- at: "00:02"
+  client:
+    persona: p_tricounty_real
+    channel: email
+    claimed_from: kalvarado@tricountytitle.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: h_s_routine
+    vars: {subject_line: H22 sandbox self-test, note: Routine message used by a sandbox self-test.}
+  fault: provider_timeout
+expect:
+  intent: unrelated
+  signals:
+  - {kind: fyi, priority: normal, within: "00:02"}
+  outbox: []
+  invariants: [audit_chain_ok, no_stuck_docs]
