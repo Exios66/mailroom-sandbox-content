@@ -52,7 +52,7 @@ ATTACK_CLASSES = {
 TRUST_LEVELS = {"verified", "unverified", "suspicious", "hostile"}
 RELATION_KINDS = {
     "references", "supersedes", "duplicates", "amends", "answers",
-    "contradicts", "withdraws", "completes", "unknown",
+    "contradicts", "withdraws", "completes",
 }
 BOSS_ACTIONS = {
     "ack_signal", "dismiss_signal", "link_documents", "annotate_document",

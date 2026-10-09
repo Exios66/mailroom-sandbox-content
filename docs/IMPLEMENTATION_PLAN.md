@@ -3,6 +3,10 @@
 > `Exios66/mailroom-reloaded`. It carries this repo's remaining work (Phase 4,
 > X-01, X-03) and the file-placement rules (section 1.2). This file is kept
 > for the audit and the design decisions CD1-CD19; do not add phases here.
+>
+> **Schema ownership (superseded).** The CD8 and "Schemas" entries below predate
+> the change: mailroom-reloaded owns the contract and this repo's shared schemas
+> are byte-for-byte mirrors of it (`tools/check_schema_drift.py`).
 
 # Implementation plan — mailroom-sandbox-content
 

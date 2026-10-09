@@ -3,8 +3,12 @@
 The contract between this content pack and the mailroom-reloaded sandbox.
 Normative file formats are the JSON Schemas in `schemas/`; this document
 explains them. Where this document and a schema disagree, the schema wins.
-Until M0 lands in mailroom-reloaded, `schemas/` here is the draft contract
-M0 adopts (CD8, `docs/IMPLEMENTATION_PLAN.md`).
+mailroom-reloaded owns the contract. A schema here that mailroom-reloaded also
+ships must be a byte-for-byte copy of its `schemas/` file; `tools/check_schema_drift.py`
+(checkout as an argument or in `MAILROOM_RELOADED`) prints `DRIFT <file>` for any
+difference. Schemas that exist only here are content-only. `scenario.v2.json` is
+not currently a copy (the H series pattern and the `unknown` relation kind; see
+CHANGELOG).
 
 ## 1. Formats (addendum v2 §12.4)
 

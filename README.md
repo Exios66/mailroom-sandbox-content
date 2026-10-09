@@ -17,7 +17,7 @@ Release history lives in [`CHANGELOG.md`](CHANGELOG.md).
 | Path | What lives there |
 |---|---|
 | `content.json` | Pack identity: name, semver version, `schema_version`, `dataset_revision`, `min_code_version` / `max_code_version` |
-| `schemas/` | JSON Schemas for every content file (`content_files.json`, `registry.v1.json`, `scenario.v2.json`, `gen_spec.v1.json`, `overlay.v1.json`, `persona_behavior.v1.json`) |
+| `schemas/` | JSON Schemas for every content file (`content_files.json`, `registry.v1.json`, `scenario.v2.json`, `gen_spec.v1.json`, `overlay.v1.json`, `persona_behavior.v1.json`). mailroom-reloaded owns these contracts; shared ones are byte-for-byte mirrors checked by `tools/check_schema_drift.py` |
 | `clients/` | Client registry sources: `clients.csv`, `client_contacts.csv`, `client_domains.csv`, `client_doc_mix.csv` |
 | `personas/` | `personas.csv` plus `behavior/<persona_id>.yaml` persona behavior files |
 | `scenarios/` | One YAML per scenario under `<Series>/` (series `A`–`H`, `S`, `T`; `H` is the held-out batch, see the consumer's `docs/HELD_OUT_SCENARIOS.md`); `scenarios_index.csv` is generated |
