@@ -4,6 +4,16 @@ All notable changes to the mailroom-sandbox-content pack.
 
 ## [Unreleased]
 
+### Changed
+- **Scenario expectations follow the delegation matrix** (plan K-03). Draft
+  replies now require a matrix-sanctioned task: 14 `document_submission`
+  scenarios plus G9 and H21 expect `outbox: []`, and G9/H21 also expect
+  `request_human_review`. Series S `fyi` signals are `low`.
+  `tools/lint_contradictions.py` reports contradictions between scenarios that
+  share a client template (0 now). `tools/migrations/scenarios_v2_map.py` is a
+  historical one-shot map and still names `g_expedite_ack`; do not re-run it.
+  Decision table: `CONTENT_SPEC.md` Appendix A.
+
 ### Fixed
 - **The release bundle sha256 was not reproducible across `zstandard`
   versions** (same commit: 0.25.0 gives the sha256 pinned in

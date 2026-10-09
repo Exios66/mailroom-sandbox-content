@@ -1,6 +1,6 @@
 # Contradiction audit: scenario expectations vs the delegation matrix
 
-> **Status: analysis only. No scenario has been edited.** Many CONFIRMED rows depend on rule R1 ("a draft needs a `task_correspondent` or a matrix note that sanctions one"), which is a reading of protocol lines 63-64, not a stated rule. The owner decides R1 (and the Series S treatment) before any scenario changes. Verdicts were produced by an automated read and spot-checked, not independently re-derived row by row.
+> **Status (updated):** the owner decided R1 (a draft needs a matrix-sanctioned task or note) and that Series S `fyi` signals are `low`. Those edits are applied (14 submission scenarios, G9, H21, S1-S3, S5-S10); see `CONTENT_SPEC.md` Appendix A. Everything else in this file is still analysis. The tables below describe the pack **before** those edits. Verdicts were produced by an automated read and spot-checked, not independently re-derived row by row.
 
 
 Plan item K-03, stage 1 (analysis only). No scenario was edited. Scope: the

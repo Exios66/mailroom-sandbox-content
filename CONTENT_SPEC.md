@@ -146,6 +146,13 @@ any template variable that neither source supplies.
 
 `outbox[].reference_template` names a file in `gen/templates/replies/`.
 
+**Draft rule (owner-decided, K-03).** A draft in `expect.outbox` must be
+sanctioned by `protocol/delegation_matrix.csv`: the row for the scenario's
+intent names `task_correspondent`, or its notes explicitly allow a draft.
+Otherwise `outbox` is `[]`. Scenarios that share a client template must agree
+on `outbox` shape and signal priority; `tools/lint_contradictions.py --strict`
+checks this. Decisions that applied the rules are in Appendix A.
+
 ## 5. Generation modes (addendum v2 §6.2)
 
 | Mode | Text comes from | CI-gated? |
@@ -302,3 +309,25 @@ the same script is the git pre-push hook.
   confirm at `sandbox up`.
 - **AgentMail plan limits** and websocket host; **Gmail token lifetime**.
 - **Frozen email output terms** per free model (addendum §13.5).
+
+## Appendix A. Expectation decisions (K-03)
+
+Authority: `protocol/delegation_matrix.csv` (matrix:N = CSV line) and
+`protocol/correspondent_boss_protocol.md`. Full analysis, including rows not
+yet decided, is in `docs/CONTRADICTION_AUDIT.md`. `status` was not changed on
+any scenario.
+
+| Scenario(s) | Conflict | Authority relied on | Decision |
+|---|---|---|---|
+| A3, A5, A10, A11, A12, B2, B3, B6, C3, C5, C11, H3, H6, H18 | `document_submission` expected a draft; the matrix row is `ack_signal + link_documents` with no task | matrix:9; protocol:63-64 | `outbox: []` |
+| G9, H21 | `urgent_deadline` expected a draft and only `raise_priority`; peer G10 has `[]` and both actions | matrix:7 | `outbox: []`; `boss_actions: [request_human_review, raise_priority]`; priority left as is |
+| S1, S2, S3, S5, S6, S7, S8, S9, S10 | `fyi` signals carried normal, high or critical; S scenarios assert the sandbox, not the Correspondent | protocol:259 (`fyi` is low); matrix:22; CONTENT_SPEC section 3 | `fyi` priority is `low` in every S scenario. S4 (`possible_attack`, critical) is unchanged |
+
+**Decided but not yet applied** (same rule, outside the first batch):
+B5 and H5 retraction drafts (matrix:20), B4 correction draft (matrix:5), D3, D4
+and D6 status drafts missing (matrix:2), T6 and the other `general_question`
+scenarios whose `[]` conflicts with matrix:26, and `fyi` priority in F1, H16
+and H22-H24. **Open, needs a ruling:** urgent-deadline priority (matrix SLA vs
+protocol:168), correction priority, and missing matrix rows for amendments,
+out-of-profile senders, client phishing forwards, corrupted-file review and
+the A4 duplicate action.
