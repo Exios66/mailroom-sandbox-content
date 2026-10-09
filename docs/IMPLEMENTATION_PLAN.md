@@ -1,3 +1,9 @@
+> **Historical (2026-10-09).** The single live plan for both repositories is
+> `docs/superpowers/plans/2026-10-09-mailroom-core-plan.md` in
+> `Exios66/mailroom-reloaded`. It carries this repo's remaining work (Phase 4,
+> X-01, X-03) and the file-placement rules (section 1.2). This file is kept
+> for the audit and the design decisions CD1-CD19; do not add phases here.
+
 # Implementation plan — mailroom-sandbox-content
 
 - **Date:** 2026-10-08
