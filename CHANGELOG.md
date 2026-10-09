@@ -2,6 +2,24 @@
 
 All notable changes to the mailroom-sandbox-content pack.
 
+## [Unreleased]
+
+### Added
+- **H-series ("held-out") scenarios**: 28 scenarios under `scenarios/H/`
+  (H1–H28), at least three per family A–G, S and T, each tagged `heldout`
+  and rendered from a new inbound template (`gen/templates/h_*.j2`).
+  Authored from the delegation matrix, the Correspondent↔Boss protocol and
+  the policy sources only; expectations are derived from the delegation
+  matrix, never from the Correspondent's behaviour or conformance output.
+- The scenario `name` series now admits `H`
+  (`schemas/scenario.v2.json`, `^[A-HST][0-9]+_[a-z0-9_]+$`) with an H ID
+  block (`1500–1599`) in `ids/ranges.yaml`, enabling a frozen held-out
+  batch run via the consumer's `mailroom sandbox conformance --heldout`.
+
+### Changed
+- `CONTENT_SPEC.md` §3 and `README.md` list the new H (held-out) series;
+  `tools/validate.py` accepts the H-series name pattern.
+
 ## 0.5.0 — 2026-10-08
 
 Corrective and build-out release (docs/IMPLEMENTATION_PLAN.md, phases 1–2).

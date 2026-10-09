@@ -240,8 +240,8 @@
    ]
   },
   "name": {
-   "description": "Series letter + number + slug, e.g. E1_lookalike_wire_change",
-   "pattern": "^[A-GST][0-9]+_[a-z0-9_]+$",
+   "description": "Series letter + number + slug, e.g. E1_lookalike_wire_change. Series H is the held-out batch (tag `heldout`; see the consumer's docs/HELD_OUT_SCENARIOS.md).",
+   "pattern": "^[A-HST][0-9]+_[a-z0-9_]+$",
    "type": "string"
   },
   "owner": {

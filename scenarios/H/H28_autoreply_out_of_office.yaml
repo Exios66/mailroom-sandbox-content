@@ -1,0 +1,26 @@
+name: H28_autoreply_out_of_office
+title: Winter auto-reply loops on a billing mailbox; classified auto_reply, one digest entry, no LLM reply
+seed: 1528
+profile: demo
+gen: scripted
+transports: [sim, agentmail]
+status: draft
+tags: [heldout, A, auto-reply]
+timeline:
+- at: "00:03"
+  client:
+    persona: p_lakeshore_biller
+    channel: email
+    claimed_from: nnguyen@lakeshore.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: h_a_autoreply_loop
+    vars: {original_subject: Claim batch received, return_day: January 6}
+expect:
+  intent: auto_reply
+  signals:
+  - {kind: fyi, priority: low, within: "00:06"}
+  trust: {sender_level: verified}
+  outbox: []
+  boss_actions: [dismiss_signal]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

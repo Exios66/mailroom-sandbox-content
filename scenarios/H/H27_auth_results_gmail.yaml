@@ -1,0 +1,24 @@
+name: H27_auth_results_gmail
+title: Real SPF/DKIM/DMARC results parsed into auth on the gmail leg
+seed: 1527
+profile: demo
+gen: scripted
+transports: [gmail]
+status: draft
+tags: [heldout, T, transport-conformance, auth-parsing]
+timeline:
+- at: "00:02"
+  client:
+    persona: p_tricounty_real
+    channel: email
+    claimed_from: kalvarado@tricountytitle.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: h_t_plain
+    vars: {subject_line: H27 auth results, note: Auth-results parsing check.}
+expect:
+  intent: general_question
+  signals:
+  - {kind: new_info, priority: normal, within: "00:02"}
+  trust: {sender_level: verified}
+  outbox: []
+  invariants: [audit_chain_ok, comms_offpath]

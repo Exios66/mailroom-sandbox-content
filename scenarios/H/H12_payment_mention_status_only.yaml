@@ -1,0 +1,27 @@
+name: H12_payment_mention_status_only
+title: Closing officer mentions the wire in passing but only asks for status; stays a normal status request
+seed: 1512
+profile: demo
+gen: scripted
+transports: [sim, agentmail]
+status: draft
+tags: [heldout, D, payment-mention]
+timeline:
+- at: "00:03"
+  client:
+    persona: p_tricounty_real
+    channel: email
+    claimed_from: kalvarado@tricountytitle.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: h_d_payment_mention
+    vars: {matter_ref: TC-2026-1345}
+expect:
+  intent: status_request
+  signals:
+  - {kind: status_request, priority: normal, within: "00:06"}
+  trust: {sender_level: verified}
+  outbox:
+  - {intent: status_request, state: draft, to_sender: true}
+  boss_actions: [ack_signal, task_correspondent]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

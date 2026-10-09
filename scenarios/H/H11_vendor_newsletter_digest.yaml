@@ -1,0 +1,28 @@
+name: H11_vendor_newsletter_digest
+title: Vendor newsletter with a countdown subject; low-priority digest, no reply, no escalation
+seed: 1511
+profile: demo
+gen: scripted
+transports: [sim, agentmail]
+status: draft
+tags: [heldout, D, newsletter]
+timeline:
+- at: "00:02"
+  client:
+    persona: p_vendor_spam
+    channel: email
+    claimed_from: promos@freightops-weekly.sandbox.invalid
+    auth: {spf: pass, dkim: none, dmarc: none}
+    template: h_d_newsletter
+    vars: {sender_name: FreightOps Weekly, event_name: the Q1 logistics summit}
+expect:
+  intent: unrelated
+  signals:
+  - {kind: fyi, priority: low, within: "00:05"}
+  trust: {sender_level: unverified}
+  quarantine: []
+  soft_hold: []
+  outbox: []
+  boss_actions: [dismiss_signal]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

@@ -82,7 +82,7 @@ ID_PATTERNS = {
     "client_id": re.compile(r"^[a-z0-9_]+$"),
     "persona_id": re.compile(r"^p_[a-z0-9_]+$"),
     "contact_id": re.compile(r"^[a-z0-9_]+$"),
-    "scenario": re.compile(r"^[A-GST][0-9]+_[a-z0-9_]+$"),
+    "scenario": re.compile(r"^[A-HST][0-9]+_[a-z0-9_]+$"),
     "spec_id": re.compile(r"^gen_[a-zA-Z0-9_]+$"),
     "email_id": re.compile(r"^em_[A-Z]_[0-9]+$"),
     "attachment_id": re.compile(r"^att_[0-9]+$"),

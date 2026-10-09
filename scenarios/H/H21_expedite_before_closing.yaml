@@ -1,0 +1,29 @@
+name: H21_expedite_before_closing
+title: Closing partner asks to expedite a package before an afternoon closing; bounded priority raise
+seed: 1521
+profile: demo
+gen: scripted
+transports: [sim, agentmail]
+status: draft
+tags: [heldout, G, expedite, sla]
+timeline:
+- at: "00:00"
+  ingress: {ref: closing_pkg, class: corporate_record, stratum: officer_certificate, as: TC-2026-1345_officer_cert.pdf}
+- at: "00:04"
+  client:
+    persona: p_tricounty_real
+    channel: email
+    claimed_from: kalvarado@tricountytitle.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: h_g_expedite
+    vars: {matter_ref: TC-2026-1345, closing_time: 4 p.m.}
+expect:
+  intent: urgent_deadline
+  signals:
+  - {kind: urgent, priority: high, within: "00:02"}
+  trust: {sender_level: verified}
+  outbox:
+  - {intent: urgent_deadline, state: draft, to_sender: true, reference_template: g_expedite_ack}
+  boss_actions: [raise_priority]
+  overblocking: {benign_hard_actions: 0}
+  invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

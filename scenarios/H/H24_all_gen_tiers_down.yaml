@@ -1,0 +1,24 @@
+name: H24_all_gen_tiers_down
+title: Every generation tier is down mid-run; only scripted/frozen content is used, no silent drop
+seed: 1524
+profile: smoke
+gen: scripted
+transports: [sim]
+status: draft
+tags: [heldout, S, self-test, gen-tiers]
+timeline:
+- at: "00:02"
+  client:
+    persona: p_tricounty_real
+    channel: email
+    claimed_from: kalvarado@tricountytitle.sandbox.invalid
+    auth: {spf: pass, dkim: pass, dmarc: pass}
+    template: h_s_routine
+    vars: {subject_line: H24 sandbox self-test, note: Routine message used by a sandbox self-test.}
+  fault: all_gen_tiers_down
+expect:
+  intent: unrelated
+  signals:
+  - {kind: fyi, priority: normal, within: "00:02"}
+  outbox: []
+  invariants: [audit_chain_ok, no_stuck_docs]
