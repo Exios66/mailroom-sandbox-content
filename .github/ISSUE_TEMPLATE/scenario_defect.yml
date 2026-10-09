@@ -1,0 +1,104 @@
+name: Scenario defect
+description: A scenario expects the wrong thing, contradicts another scenario, or fails the validator or lint.
+title: "[defect]: "
+labels: ["defect", "scenarios"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for a wrong or contradictory expectation, or a validator / lint / unit-test failure on scenario content.
+        Synthetic data only: do not paste real names, real mail, or dataset text. Authority for expectations is `protocol/delegation_matrix.csv`, `protocol/correspondent_boss_protocol.md` and `CONTENT_SPEC.md` (Appendix A).
+  - type: input
+    id: scenario_id
+    attributes:
+      label: Scenario ID
+      description: Name as in the file, e.g. `E1_lookalike_wire_change`. List several separated by commas.
+      placeholder: E1_lookalike_wire_change
+    validations:
+      required: true
+  - type: dropdown
+    id: series
+    attributes:
+      label: Series
+      options:
+        - A
+        - B
+        - C
+        - D
+        - E
+        - F
+        - G
+        - H (held-out)
+        - S
+        - T
+        - Several / not series-specific
+    validations:
+      required: true
+  - type: dropdown
+    id: issue_class
+    attributes:
+      label: Issue class
+      options:
+        - Wrong expectation (outbox, state, intent)
+        - Wrong expectation (signal priority)
+        - Contradiction between scenarios
+        - Contradiction with delegation matrix or protocol
+        - Validator ERROR
+        - Contradiction lint failure
+        - Generated file out of date
+        - Unit test failure
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what_is_wrong
+    attributes:
+      label: What is wrong
+      description: One paragraph. Cite the file and line (`scenarios/<series>/<name>.yaml:N`) and the policy source (`matrix:N`, `protocol:N`, spec section) that the scenario disagrees with.
+    validations:
+      required: true
+  - type: textarea
+    id: expected_vs_actual
+    attributes:
+      label: Expected vs actual
+      description: What the scenario says now, and what the policy sources say it should be.
+      placeholder: |
+        Scenario says: ...
+        Policy says: ... (source)
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction commands
+      description: Exact commands run from the repo root.
+      render: shell
+      placeholder: |
+        python3 tools/validate.py --strict-coverage
+        python3 tools/lint_contradictions.py --strict
+    validations:
+      required: true
+  - type: textarea
+    id: validator_output
+    attributes:
+      label: Validator output
+      description: Paste the relevant ERROR / WARN lines only.
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: affected_consumers
+    attributes:
+      label: Affected consumers
+      description: Does this change what mailroom-reloaded loads or scores (frozen emails, smoke set, held-out batch, a pinned tag)? Say "unknown" if you did not check.
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: This report contains no real personal data and no pasted dataset text.
+          required: true
+        - label: I searched existing issues for this scenario ID.
+          required: false

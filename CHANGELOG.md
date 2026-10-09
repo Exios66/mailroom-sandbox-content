@@ -50,6 +50,13 @@ All notable changes to the mailroom-sandbox-content pack.
   that `git push --no-verify` bypasses it.
 
 ### Added
+- **Repository governance files** (no content or tooling change). Four
+  GitHub issue forms under `.github/ISSUE_TEMPLATE/` (`scenario_defect`,
+  `scenario_proposal`, `contract_drift`, `agent_task`) plus `config.yml`
+  (blank issues off, consumer issues linked), `.github/pull_request_template.md`
+  with a machine-readable `agent-report` YAML block, and `AGENTS.md`, the
+  operating contract for AI agents (generated-files rule, gates, release
+  flow, git conventions). No version bump.
 - **Content CI loads the pack through the consumer's own loader** (plan K-06).
   New `tools/load_with_consumer.py` imports `load_content` from a
   mailroom-reloaded checkout (`--reloaded`, default `$MAILROOM_RELOADED`) and

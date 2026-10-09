@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Contract or loader problem (mailroom-reloaded)
+    url: https://github.com/Exios66/mailroom-reloaded/issues
+    about: The consumer owns the schemas, the loader (load_content) and the strata catalogue. Open loader, schema-ownership or sandbox-runtime problems there. Use the "Contract drift" form here only when this pack disagrees with a pinned consumer checkout.
