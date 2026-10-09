@@ -1,0 +1,84 @@
+name: Scenario proposal
+description: Propose a new scenario or report a coverage gap.
+title: "[scenario]: "
+labels: ["enhancement", "scenarios"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Scenarios are authored source-first: the expectation is written from the policy sources (`protocol/delegation_matrix.csv`, `protocol/correspondent_boss_protocol.md`, `CONTENT_SPEC.md`) before anything is run, never copied from what the Correspondent happened to do.
+        Read `CONTENT_SPEC.md` section 4 (scenario shape) and claim IDs inside your block in `ids/ranges.yaml`.
+  - type: input
+    id: proposed_name
+    attributes:
+      label: Proposed scenario name
+      description: Pattern `<Series><n>_<slug>`, matching `^[A-HST][0-9]+_[a-z0-9_]+$`.
+      placeholder: F6_example_slug
+    validations:
+      required: true
+  - type: dropdown
+    id: series_letter
+    attributes:
+      label: Series letter
+      options:
+        - A
+        - B
+        - C
+        - D
+        - E
+        - F
+        - G
+        - H (held-out)
+        - S
+        - T
+    validations:
+      required: true
+  - type: dropdown
+    id: proposal_kind
+    attributes:
+      label: Kind
+      options:
+        - New scenario
+        - Coverage gap (stratum, client mix, or transport)
+        - Companion (benign or adversarial counterpart)
+    validations:
+      required: true
+  - type: textarea
+    id: coverage_rationale
+    attributes:
+      label: Coverage rationale
+      description: What behaviour, stratum, or client mix is not exercised today, and how you checked (scenario index, `--strict-coverage` output).
+    validations:
+      required: true
+  - type: textarea
+    id: policy_sources
+    attributes:
+      label: Policy sources for the expectation
+      description: The rows and sections the expectation is derived from (`matrix:N`, `protocol:N`, spec section). Write the expectation here before running anything.
+    validations:
+      required: true
+  - type: textarea
+    id: expected_behaviour
+    attributes:
+      label: Expected behaviour
+      description: Outbox (intent, state), signals and priorities, human-review requests.
+    validations:
+      required: true
+  - type: textarea
+    id: id_block
+    attributes:
+      label: ID block needed
+      description: Which `ids/ranges.yaml` block the new spec, email, attachment or relation IDs come from, or "needs a new block".
+    validations:
+      required: false
+  - type: checkboxes
+    id: authoring_confirmations
+    attributes:
+      label: Authoring confirmations
+      options:
+        - label: Source-first. The expectation is written from the policy sources, not from observed results.
+          required: true
+        - label: Synthetic only. Clients, people and domains are fictional (`*.sandbox.invalid`, phones `+1-555-01xx`), with no real brands and no dataset text.
+          required: true
+        - label: I will run `tools/ci.sh` and report the result in the PR.
+          required: false
