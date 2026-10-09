@@ -25,7 +25,7 @@ step() { printf '\n== %s\n' "$1"; }
 
 step "dependencies"
 "$PY" -c "import yaml, jsonschema, jinja2" 2>/dev/null || {
-    echo "missing deps: $PY -m pip install pyyaml jsonschema jinja2" >&2; exit 1; }
+    echo "missing deps: $PY -m pip install -r tools/requirements.txt" >&2; exit 1; }
 
 step "validator (strict coverage)"
 "$PY" tools/validate.py --strict-coverage

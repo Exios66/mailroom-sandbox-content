@@ -228,7 +228,7 @@ asserts that no lookalike domain and none of the forbidden tokens
 | Tool | Purpose |
 |---|---|
 | `tools/ci.sh [--skip-drift]` | **content-ci**, run locally (§11); also the git pre-push hook (`tools/install-hooks.sh`) |
-| `tools/release.sh [--push]` | ci, deterministic bundle + SHA256SUMS (`tools/build_bundle.py`), annotated tag; `--push` pushes and creates the GitHub release via `gh` |
+| `tools/release.sh [--push]` | ci, deterministic bundle + SHA256SUMS + BUILD_INFO (`tools/build_bundle.py --release`; needs the pinned `zstandard`, see `tools/requirements.txt`), annotated tag; `--push` pushes and creates the GitHub release via `gh` |
 | `tools/validate.py [--strict-coverage] [--generate-indexes] [--coverage-out P]` | the validator (§11); compiles `dist/registry.yaml` |
 | `tools/sync_strata.py --from CHECKOUT [--check]` | generate / drift-check the strata roster |
 | `tools/gen_coverage_scenarios.py [--check]` | generate A13–A17 from the client mixes |

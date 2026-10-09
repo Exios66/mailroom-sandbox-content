@@ -495,6 +495,45 @@ class Bundle(unittest.TestCase):
                                  digest)
 
 
+class BundleToolchainPin(unittest.TestCase):
+    """K-01: compressed bytes depend on the zstandard version, so the version is pinned."""
+
+    def test_requirements_pin_matches_the_constant(self):
+        from tools import build_bundle
+        reqs = (REPO_ROOT / "tools/requirements.txt").read_text().splitlines()
+        self.assertIn(f"zstandard=={build_bundle.PINNED_ZSTANDARD}", reqs)
+
+    def test_release_build_refuses_an_unpinned_version(self):
+        from tools import build_bundle
+        with self.assertRaises(SystemExit) as cm:
+            build_bundle.check_zstandard(True, version="0.23.0")
+        self.assertIn(build_bundle.PINNED_ZSTANDARD, str(cm.exception))
+        self.assertEqual(build_bundle.check_zstandard(True, version=build_bundle.PINNED_ZSTANDARD),
+                         build_bundle.PINNED_ZSTANDARD)
+
+    def test_plain_build_accepts_any_version(self):
+        from tools import build_bundle
+        self.assertEqual(build_bundle.check_zstandard(False, version="0.23.0"), "0.23.0")
+
+    def test_build_info_records_tar_digest_and_version(self):
+        import importlib.util
+        import json
+        from tempfile import TemporaryDirectory
+        from tools import build_bundle
+        if importlib.util.find_spec("zstandard") is None:
+            self.skipTest("needs zstandard")
+        subprocess.run([sys.executable, str(REPO_ROOT / "tools/validate.py")],
+                       capture_output=True, cwd=REPO_ROOT, check=False)
+        with TemporaryDirectory() as t:
+            self.assertEqual(build_bundle.main(["--out", t]), 0)
+            info = json.loads((Path(t) / "BUILD_INFO").read_text())
+            tar = build_bundle.build_tar(REPO_ROOT, build_bundle.tracked_files(REPO_ROOT))
+            self.assertEqual(info["tar_sha256"], hashlib.sha256(tar).hexdigest())
+            self.assertEqual(info["zstandard"], build_bundle.zstandard_version())
+            # SHA256SUMS stays exactly two lines so `sha256sum -c` keeps working
+            self.assertEqual(len((Path(t) / "SHA256SUMS").read_text().splitlines()), 2)
+
+
 class RealContent(unittest.TestCase):
     def test_every_scenario_message_renders(self):
         import csv

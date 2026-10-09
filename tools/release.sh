@@ -27,7 +27,7 @@ if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
 fi
 
 tools/ci.sh
-"$PY" tools/build_bundle.py --out release
+"$PY" tools/build_bundle.py --out release --release
 git tag -a "$TAG" -m "mailroom-sandbox-content $TAG"
 echo "tagged $TAG at $(git rev-parse --short HEAD); assets in release/"
 
@@ -35,7 +35,7 @@ if [ "$PUSH" = 1 ]; then
     git push origin "$TAG"
     if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
         gh release create "$TAG" "release/mailroom-sandbox-content-$TAG.tar.zst" \
-            release/SHA256SUMS release/content.json \
+            release/SHA256SUMS release/content.json release/BUILD_INFO \
             --title "mailroom-sandbox-content $TAG" \
             --notes "Content bundle $TAG. Verify with \`sha256sum -c SHA256SUMS\`; pin in mailroom-reloaded via sandbox/content.lock (repo, tag, commit, bundle sha256)." || {
             echo "gh release create failed; the tag $TAG is already pushed." >&2
@@ -43,7 +43,7 @@ if [ "$PUSH" = 1 ]; then
             exit 1; }
     else
         echo "gh not available or not logged in: create the GitHub release for $TAG"
-        echo "by hand and attach the three files in release/."
+        echo "by hand and attach the four files in release/."
     fi
 else
     echo "next: tools/release.sh --push   (or: git push origin $TAG, then upload release/*)"

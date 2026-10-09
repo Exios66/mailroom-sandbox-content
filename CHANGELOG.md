@@ -4,7 +4,19 @@ All notable changes to the mailroom-sandbox-content pack.
 
 ## [Unreleased]
 
+### Fixed
+- **The release bundle sha256 was not reproducible across `zstandard`
+  versions** (same commit: 0.25.0 gives the sha256 pinned in
+  `content.lock`, 0.23.0 gives a different one). `tools/requirements.txt` pins
+  `zstandard==0.25.0`; `build_bundle.py --release` (used by `release.sh`)
+  refuses any other version; the new `BUILD_INFO` asset records the version
+  and `tar_sha256` (digest of the uncompressed tar, compressor-independent).
+  The published asset's bytes remain what a downloader verifies. `SHA256SUMS`
+  is unchanged (still `sha256sum -c` clean).
+
 ### Added
+- `tools/fault_inject.py`: fault-injection harness for the validator (28
+  mutations; classifies CLEAN-FAIL / CRASH / MISSED). Seed for the K-02 tests.
 - **H-series ("held-out") scenarios**: 28 scenarios under `scenarios/H/`
   (H1–H28), at least three per family A–G, S and T, each tagged `heldout`
   and rendered from a new inbound template (`gen/templates/h_*.j2`).
