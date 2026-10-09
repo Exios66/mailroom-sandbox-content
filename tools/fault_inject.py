@@ -7,8 +7,8 @@ must_fail mutations that report CRASH or MISSED are defects; csv_crlf is a
 legitimate accept (the csv module handles CRLF).
 
 Outcome classes:
-  CLEAN-FAIL       exit > 0, no traceback (error reported properly)
-  CRASH            traceback or termination by signal
+  CLEAN-FAIL       exit > 0, no traceback or internal error (clean rejection)
+  CRASH            traceback, internal error, or termination by signal
   MISSED           exit 0 (bad input accepted)
   EXPECTED-ACCEPT  exit 0 for csv_crlf (valid input accepted)
 """
@@ -240,7 +240,7 @@ def classify(src, work, name, fn):
     except subprocess.TimeoutExpired:
         return (name, "HANG", ">120s")
     err = proc.stderr + proc.stdout
-    if "Traceback" in err:
+    if "Traceback" in err or "ERROR internal:" in err:
         last = [ln for ln in err.strip().splitlines() if ln.strip()][-1][:110]
         return (name, "CRASH", last)
     if proc.returncode == 0:

@@ -97,11 +97,23 @@ echo "tagged $TAG at $(git rev-parse --short HEAD); assets in release/"
 
 if [ "$PUSH" = 1 ]; then
     if ! git push origin "$TAG"; then
-        echo "git push origin $TAG failed: the tag exists locally only; nothing is published." >&2
-        echo "retry exactly:" >&2
-        echo "  git push origin $TAG" >&2
-        echo "or drop the local tag and start over (nothing was pushed):" >&2
-        echo "  git tag -d $TAG" >&2
+        echo "git push origin $TAG failed." >&2
+        if remote_tag="$(git ls-remote --tags origin "refs/tags/$TAG")"; then
+            if [ -z "$remote_tag" ]; then
+                echo "tag $TAG is absent from origin; the tag exists locally only." >&2
+                echo "retry exactly:" >&2
+                echo "  git push origin $TAG" >&2
+                echo "or drop the local tag and start over:" >&2
+                echo "  git tag -d $TAG" >&2
+            else
+                echo "tag $TAG exists on origin; verify its target before continuing." >&2
+                echo "  git ls-remote --tags origin refs/tags/$TAG" >&2
+            fi
+        else
+            echo "could not check origin: remote tag state is unknown; $TAG may already be published." >&2
+            echo "check the remote before retrying:" >&2
+            echo "  git ls-remote --tags origin refs/tags/$TAG" >&2
+        fi
         exit 1
     fi
     if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then

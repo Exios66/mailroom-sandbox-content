@@ -288,13 +288,58 @@ class ReleaseScriptTests(GitSandbox):
         self.assertIn("no tag was created", result.stderr)
         self.assertEqual(self.tags(self.root), [])
 
-    def test_push_failure_prints_exact_retry_command(self):
-        """Verify push failure preserves the local tag and prints the exact retry command."""
+    def test_push_failure_with_unknown_remote_preserves_tag(self):
+        """Verify an unreachable remote produces no claims of absence or deletion advice."""
         self.write_registry("fresh")
         # No origin remote: the push fails offline before any release step.
         result = self.release("--push")
         self.assertNotEqual(result.returncode, 0)
+        self.assertIn("remote tag state is unknown", result.stderr)
+        self.assertIn(f"  git ls-remote --tags origin refs/tags/{TAG}\n", result.stderr)
+        self.assertNotIn("locally only", result.stderr)
+        self.assertNotIn("nothing", result.stderr)
+        self.assertNotIn("git tag -d", result.stderr)
+        self.assertEqual(self.tags(self.root), [TAG])
+        self.assertEqual(self.read_log("gh.txt"), "")
+
+    def test_rejected_push_with_absent_remote_tag_prints_recovery(self):
+        """Verify deletion advice is offered only after confirming remote absence."""
+        self.write_registry("fresh")
+        remote = self.base / "remote.git"
+        self.git("init", "-q", "--bare", str(remote), cwd=self.root)
+        self.git("remote", "add", "origin", str(remote), cwd=self.root)
+        write_executable(remote / "hooks" / "pre-receive", "#!/bin/sh\nexit 1\n")
+        result = self.release("--push")
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn(f"tag {TAG} is absent from origin", result.stderr)
+        self.assertIn("locally only", result.stderr)
         self.assertIn(f"  git push origin {TAG}\n", result.stderr)
+        self.assertIn(f"  git tag -d {TAG}\n", result.stderr)
+        self.assertEqual(self.tags(remote), [])
+        self.assertEqual(self.tags(self.root), [TAG])
+        self.assertEqual(self.read_log("gh.txt"), "")
+
+    def test_push_reports_failure_after_publishing_tag(self):
+        """Verify a lost push acknowledgement does not suggest deleting the published tag."""
+        self.write_registry("fresh")
+        remote = self.base / "remote.git"
+        self.git("init", "-q", "--bare", str(remote), cwd=self.root)
+        self.git("remote", "add", "origin", str(remote), cwd=self.root)
+        self.env["TEST_REAL_GIT"] = shutil.which("git")
+        write_executable(self.bin / "git", """#!/bin/sh
+if [ "$1" = push ]; then
+    "$TEST_REAL_GIT" "$@" || exit "$?"
+    exit 1
+fi
+exec "$TEST_REAL_GIT" "$@"
+""")
+        result = self.release("--push")
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn(f"tag {TAG} exists on origin", result.stderr)
+        self.assertNotIn("locally only", result.stderr)
+        self.assertNotIn("nothing", result.stderr)
+        self.assertNotIn("git tag -d", result.stderr)
+        self.assertEqual(self.tags(remote), [TAG])
         self.assertEqual(self.tags(self.root), [TAG])
         self.assertEqual(self.read_log("gh.txt"), "")
 

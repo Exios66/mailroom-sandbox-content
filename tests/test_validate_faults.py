@@ -252,6 +252,22 @@ class FaultHarnessTests(unittest.TestCase):
                 result = fault_inject.classify(self.src, Path(tmp), name, lambda root: None)
             self.assertEqual(result, (name, expected, detail))
 
+    def test_internal_errors_and_tracebacks_are_crashes(self):
+        """Verify crash diagnostics on either stream override clean-failure status."""
+        diagnostics = (
+            "ERROR internal: RuntimeError: boom\n",
+            "Traceback (most recent call last):\nRuntimeError: boom\n",
+        )
+        for diagnostic in diagnostics:
+            for stdout, stderr in ((diagnostic, ""), ("", diagnostic)):
+                with self.subTest(stdout=stdout, stderr=stderr), TemporaryDirectory() as tmp, \
+                        patch.object(fault_inject, "run_validator", return_value=
+                                     subprocess.CompletedProcess([], 2, stdout, stderr)):
+                    result = fault_inject.classify(self.src, Path(tmp), "bad_yaml",
+                                                  lambda root: None)
+                self.assertEqual(result, ("bad_yaml", "CRASH",
+                                          diagnostic.strip().splitlines()[-1]))
+
 
 if __name__ == "__main__":
     unittest.main()
