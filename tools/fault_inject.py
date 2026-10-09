@@ -7,9 +7,10 @@ must_fail mutations that report CRASH or MISSED are defects; csv_crlf is a
 legitimate accept (the csv module handles CRLF).
 
 Outcome classes:
-  CLEAN-FAIL  exit != 0, no traceback (error reported properly)
-  CRASH       traceback in stderr (unhandled exception)
-  MISSED      exit 0 (bad input accepted)
+  CLEAN-FAIL       exit > 0, no traceback (error reported properly)
+  CRASH            traceback or termination by signal
+  MISSED           exit 0 (bad input accepted)
+  EXPECTED-ACCEPT  exit 0 for csv_crlf (valid input accepted)
 """
 import pathlib
 import shutil
@@ -219,6 +220,14 @@ def m_nul_in_csv(r):
 MUTATIONS = [(n[2:], f) for n, f in sorted(globals().items()) if n.startswith("m_") and callable(f)]
 
 
+def run_validator(root):
+    """Run the same strict checks for the baseline and every mutation."""
+    return subprocess.run(
+        [sys.executable, "tools/validate.py", "--strict-coverage"],
+        cwd=root, capture_output=True, text=True, timeout=120,
+    )
+
+
 def classify(src, work, name, fn):
     """Apply one mutation to a fresh copy of src and classify validator behaviour."""
     root = fresh(src, work, name)
@@ -227,10 +236,7 @@ def classify(src, work, name, fn):
     except Exception as e:  # noqa: BLE001
         return (name, "SETUP-ERR", str(e)[:80])
     try:
-        proc = subprocess.run(
-            [sys.executable, "tools/validate.py", "--strict-coverage"],
-            cwd=root, capture_output=True, text=True, timeout=120,
-        )
+        proc = run_validator(root)
     except subprocess.TimeoutExpired:
         return (name, "HANG", ">120s")
     err = proc.stderr + proc.stdout
@@ -238,19 +244,35 @@ def classify(src, work, name, fn):
         last = [ln for ln in err.strip().splitlines() if ln.strip()][-1][:110]
         return (name, "CRASH", last)
     if proc.returncode == 0:
-        return (name, "MISSED", "exit 0")
+        result = "EXPECTED-ACCEPT" if name == "csv_crlf" else "MISSED"
+        return (name, result, "exit 0")
+    if proc.returncode < 0:
+        return (name, "CRASH", f"signal {-proc.returncode}")
     return (name, "CLEAN-FAIL", f"exit {proc.returncode}")
 
 
 def main(argv):
-    """Run mutations using repo and scratch paths in argv; print results and return 0."""
-    src = pathlib.Path(argv[1])
-    work = pathlib.Path(argv[2])
+    """Validate paths and baseline before running and reporting mutations."""
+    src = pathlib.Path(argv[1]).resolve()
+    work = pathlib.Path(argv[2]).resolve()
+    if work == src or src in work.parents:
+        print("ERROR: scratch directory must be outside the source tree", file=sys.stderr)
+        return 2
     work.mkdir(parents=True, exist_ok=True)
+    baseline = fresh(src, work, "baseline")
+    try:
+        proc = run_validator(baseline)
+    except subprocess.TimeoutExpired:
+        print("BASELINE-FAIL: validation timed out (>120s)", file=sys.stderr)
+        return 1
+    if proc.returncode != 0:
+        print(f"BASELINE-FAIL: exit {proc.returncode}", file=sys.stderr)
+        print((proc.stdout + proc.stderr).strip(), file=sys.stderr)
+        return 1
     results = [classify(src, work, name, fn) for name, fn in MUTATIONS]
     w = max(len(r[0]) for r in results)
     for n, c, d in results:
-        print(f"{n:<{w}}  {c:<10}  {d}")
+        print(f"{n:<{w}}  {c:<15}  {d}")
     from collections import Counter
     print(Counter(c for _, c, _ in results))
     return 0

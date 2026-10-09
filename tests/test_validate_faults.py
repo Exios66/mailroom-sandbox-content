@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import sys
 import unittest
-from contextlib import redirect_stderr
+from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -133,6 +133,13 @@ class OuterGuardTests(unittest.TestCase):
 
 
 class FaultCaseTests(unittest.TestCase):
+    def test_crlf_is_an_expected_accept_end_to_end(self):
+        """Verify valid CRLF input is accepted without being counted as a missed fault."""
+        with TemporaryDirectory() as tmp:
+            result = fault_inject.classify(
+                REPO_ROOT, Path(tmp), "csv_crlf", fault_inject.m_csv_crlf)
+        self.assertEqual(result, ("csv_crlf", "EXPECTED-ACCEPT", "exit 0"))
+
     def test_fast_fault_cases_fail_cleanly_end_to_end(self):
         """Verify selected mutations fail validation without tracebacks or internal errors."""
         mutations = dict(fault_inject.MUTATIONS)
@@ -149,6 +156,101 @@ class FaultCaseTests(unittest.TestCase):
                 self.assertNotEqual(proc.returncode, 0, output[-2000:])
                 self.assertNotIn("Traceback", output)
                 self.assertNotIn("ERROR internal", output)
+
+
+class FaultHarnessTests(unittest.TestCase):
+    def setUp(self):
+        """Create a small source tree with a validator that rejects an invalid marker."""
+        temporary = TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.src = self.root / "source"
+        self.work = self.root / "scratch"
+        (self.src / "tools").mkdir(parents=True)
+        (self.src / "tools/validate.py").write_text(
+            "import pathlib, sys\n"
+            "assert sys.argv[1:] == ['--strict-coverage']\n"
+            "sys.exit(1 if pathlib.Path('invalid').exists() else 0)\n",
+            encoding="utf-8")
+
+    def test_unsafe_scratch_paths_are_rejected_before_copying(self):
+        """Verify equal, nested, relative and symlink paths cannot create source files."""
+        source_alias = self.root / "source_alias"
+        source_alias.symlink_to(self.src, target_is_directory=True)
+        cases = (
+            (self.src, self.src),
+            (self.src, self.src / "new/scratch"),
+            (self.src, self.src / "../source/new/scratch"),
+            (source_alias, self.src / "new/scratch"),
+            (self.src, source_alias),
+            (self.src, source_alias / "new/scratch"),
+        )
+        original_paths = sorted(self.src.rglob("*"))
+        for src, work in cases:
+            with self.subTest(src=src, work=work), \
+                    patch.object(fault_inject, "fresh") as copy, \
+                    redirect_stderr(StringIO()) as err:
+                status = fault_inject.main(["fault_inject.py", str(src), str(work)])
+            self.assertEqual(status, 2)
+            self.assertIn("outside the source tree", err.getvalue())
+            copy.assert_not_called()
+            self.assertEqual(sorted(self.src.rglob("*")), original_paths)
+
+    def test_failed_baseline_stops_before_mutations(self):
+        """Verify an invalid unmodified copy stops the run without classifying faults."""
+        (self.src / "invalid").touch()
+        with patch.object(fault_inject, "classify") as classify, \
+                redirect_stderr(StringIO()) as err, redirect_stdout(StringIO()) as out:
+            status = fault_inject.main(["fault_inject.py", str(self.src), str(self.work)])
+        self.assertEqual(status, 1)
+        self.assertIn("BASELINE-FAIL: exit 1", err.getvalue())
+        self.assertEqual(out.getvalue(), "")
+        classify.assert_not_called()
+        self.assertEqual(list(self.work.iterdir()), [self.work / "baseline"])
+        self.assertTrue((self.work / "baseline/invalid").exists())
+
+    def test_baseline_timeout_stops_before_mutations(self):
+        """Verify a baseline timeout also prevents fault classification."""
+        with patch.object(fault_inject.subprocess, "run", side_effect=
+                          subprocess.TimeoutExpired("validate.py", 120)), \
+                patch.object(fault_inject, "classify") as classify, \
+                redirect_stderr(StringIO()) as err:
+            status = fault_inject.main(["fault_inject.py", str(self.src), str(self.work)])
+        self.assertEqual(status, 1)
+        self.assertIn("BASELINE-FAIL: validation timed out", err.getvalue())
+        classify.assert_not_called()
+
+    def test_passing_baseline_allows_mutation_in_separate_copy(self):
+        """Verify strict baseline validation precedes mutation while preserving source."""
+        def invalidate(root):
+            """Make the copied validator fail by adding the invalid marker."""
+            (root / "invalid").touch()
+
+        with patch.object(fault_inject, "MUTATIONS", [("invalid", invalidate)]), \
+                redirect_stdout(StringIO()) as out:
+            status = fault_inject.main(["fault_inject.py", str(self.src), str(self.work)])
+        self.assertEqual(status, 0)
+        self.assertIn("CLEAN-FAIL", out.getvalue())
+        self.assertFalse((self.src / "invalid").exists())
+        self.assertFalse((self.work / "baseline/invalid").exists())
+        self.assertTrue((self.work / "invalid/invalid").exists())
+
+    def test_exit_status_classification(self):
+        """Verify accepted inputs, ordinary failures and signal deaths stay distinct."""
+        cases = (
+            ("csv_crlf", 0, "EXPECTED-ACCEPT", "exit 0"),
+            ("bad_yaml", 0, "MISSED", "exit 0"),
+            ("bad_yaml", 1, "CLEAN-FAIL", "exit 1"),
+            ("bad_yaml", 2, "CLEAN-FAIL", "exit 2"),
+            ("bad_yaml", -9, "CRASH", "signal 9"),
+            ("bad_yaml", -15, "CRASH", "signal 15"),
+        )
+        for name, code, expected, detail in cases:
+            with self.subTest(name=name, code=code), TemporaryDirectory() as tmp, \
+                    patch.object(fault_inject.subprocess, "run", return_value=
+                                 subprocess.CompletedProcess([], code, "", "")):
+                result = fault_inject.classify(self.src, Path(tmp), name, lambda root: None)
+            self.assertEqual(result, (name, expected, detail))
 
 
 if __name__ == "__main__":
