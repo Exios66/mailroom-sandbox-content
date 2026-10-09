@@ -249,6 +249,30 @@ class CliTest(unittest.TestCase):
                 code, _ = self.run_main(["--root", str(root)])
         self.assertEqual(code, 2)
 
+    def test_missing_or_non_directory_scenarios_exits_two(self):
+        """A bad root reports a load error rather than a successful empty scan."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for is_file in (False, True):
+                with self.subTest(is_file=is_file):
+                    if is_file:
+                        (root / "scenarios").write_text("not a directory")
+                    err = io.StringIO()
+                    with contextlib.redirect_stderr(err):
+                        code, text = self.run_main(["--root", str(root)])
+                    self.assertEqual(code, 2)
+                    self.assertIn("ERROR: cannot load scenarios:", err.getvalue())
+                    self.assertNotIn("lint_contradictions: scenarios=", text)
+
+    def test_existing_empty_scenarios_directory_exits_zero(self):
+        """An intentionally empty scenarios directory is still a valid input."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "scenarios").mkdir()
+            code, text = self.run_main(["--root", str(root), "--strict"])
+        self.assertEqual(code, 0)
+        self.assertIn("scenarios=0", text)
+
     def test_pack_default_mode_exits_zero(self):
         """Verify the repository content pack can be linted in advisory mode."""
         code, text = self.run_main(["--root", str(REPO_ROOT)])

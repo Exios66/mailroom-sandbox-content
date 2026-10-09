@@ -85,6 +85,18 @@ class SchemaDriftTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertNotIn("consumer_only", out)
 
+    def test_no_shared_schemas_is_an_error(self):
+        """An empty or unrelated consumer schema directory cannot pass the check."""
+        self.write(self.content, "local_only.v1.json", b"{}")
+        for unrelated in (False, True):
+            with self.subTest(unrelated=unrelated):
+                if unrelated:
+                    self.write(self.consumer / "schemas", "unrelated.v1.json", b"{}")
+                code, out, err = self.run_check(str(self.consumer))
+                self.assertEqual(code, 2)
+                self.assertIn("no shared schemas", err)
+                self.assertNotIn("schema drift: none", out)
+
     def test_checkout_from_environment(self):
         """Verify MAILROOM_RELOADED supplies the consumer checkout when no path is given."""
         self.write(self.content, "shared.v1.json", b"{}")

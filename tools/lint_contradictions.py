@@ -18,10 +18,8 @@ a scenario only groups with scenarios that send exactly the same templates.
 Cross-template comparisons are out of scope for this lint.
 
 A scenario is exempt from comparison when it carries a top-level, non-empty
-string ``contrast: "<reason>"``. The reason is read but not validated.
-NOTE: schemas/scenario.v2.json sets additionalProperties to false at the top
-level, so a scenario that uses ``contrast`` fails tools/validate.py until the
-schema gains a ``contrast`` property. This tool does not edit the schema.
+string ``contrast: "<reason>"``. The scenario schema requires the reason to
+contain at least one non-whitespace character.
 
 Modes: default prints WARN lines and exits 0; ``--strict`` exits 1 when any
 unexempted disagreement exists. Exit 2 when a scenario file cannot be read.
@@ -169,8 +167,11 @@ def load_scenarios(root: Path) -> list:
     """Load scenarios/<series>/*.yaml under root, sorted by path."""
     import yaml  # deferred so the pure functions above need no PyYAML
 
+    scenario_dir = root / "scenarios"
+    if not scenario_dir.is_dir():
+        raise ValueError(f"{scenario_dir}: scenarios directory is missing or not a directory")
     loaded = []
-    for path in sorted((root / "scenarios").glob("*/*.yaml")):
+    for path in sorted(scenario_dir.glob("*/*.yaml")):
         with path.open(encoding="utf-8") as handle:
             data = yaml.safe_load(handle)
         if not isinstance(data, dict):

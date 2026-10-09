@@ -1,7 +1,7 @@
 """Fault-inject a copy of the content repo; record how tools/validate.py reacts.
 
 Usage: python3 -I tools/fault_inject.py <repo root> <empty scratch dir>
-Seed for workstream K-04 (docs/superpowers/plans/2026-10-09-mailroom-core-plan.md in
+Seed for workstream K-02 (docs/superpowers/plans/2026-10-09-mailroom-core-plan.md in
 mailroom-reloaded). Read-only against the repo: every mutation runs in a copy.
 must_fail mutations that report CRASH or MISSED are defects; csv_crlf is a
 legitimate accept (the csv module handles CRLF).

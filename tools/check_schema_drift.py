@@ -13,7 +13,7 @@ neither set, the check is skipped and exits 0.
 
 Exit status: 0 when every shared schema is identical (or the check is
 skipped), 1 when any shared schema differs, 2 when the given checkout has no
-schemas/ directory.
+schemas/ directory or no shared schemas.
 """
 
 from __future__ import annotations
@@ -76,6 +76,9 @@ def main(argv: list[str] | None = None, environ=None) -> int:
         print(f"DRIFT {name}")
     for name in local_only:
         print(f"content-only (not compared): {name}")
+    if not shared:
+        print(f"schema drift check: no shared schemas in {consumer_dir}", file=sys.stderr)
+        return 2
     if drifted:
         print(f"schema drift: {len(drifted)} of {len(shared)} shared schema(s) differ "
               f"from {consumer_dir}", file=sys.stderr)
