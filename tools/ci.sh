@@ -6,11 +6,17 @@
 #   2. unit tests
 #   3. generated files are current (coverage scenarios, scenario index,
 #      smoke documents block)
-#   4. strata drift: taxonomy/strata.csv vs mailroom-reloaded's catalogue at
+#   4. consumer loader: the pack loaded through mailroom-reloaded's own loader
+#      (tools/load_with_consumer.py) and schema drift against its schemas/
+#      (tools/check_schema_drift.py). Needs MAILROOM_RELOADED.
+#   5. strata drift: taxonomy/strata.csv vs mailroom-reloaded's catalogue at
 #      the commit pinned in taxonomy/strata.source.json
 #
-# Usage: tools/ci.sh [--skip-drift]
-# Strata drift needs a mailroom-reloaded checkout: set MAILROOM_RELOADED to
+# Usage: tools/ci.sh [--skip-drift] [--skip-consumer]
+# MAILROOM_RELOADED=/path/to/mailroom-reloaded tools/ci.sh runs the consumer
+# checks (step 4) against that checkout. Without it, step 4 is SKIPPED with a
+# loud notice: the pack is then NOT checked against the consumer's contract.
+# Strata drift needs a mailroom-reloaded checkout too: set MAILROOM_RELOADED to
 # one, or the script fetches the pinned commit into .cache/ (needs network).
 # A failed fetch stops the run with the remedies; it is never a pass.
 # --skip-drift is for local work only: tools/release.sh never passes it.
@@ -21,7 +27,14 @@ ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 cd "$ROOT"
 PY="${PYTHON:-python3}"
 SKIP_DRIFT=0
-[ "${1:-}" = "--skip-drift" ] && SKIP_DRIFT=1
+SKIP_CONSUMER=0
+for arg in "$@"; do
+    case "$arg" in
+        --skip-drift) SKIP_DRIFT=1 ;;
+        --skip-consumer) SKIP_CONSUMER=1 ;;
+        *) echo "usage: tools/ci.sh [--skip-drift] [--skip-consumer]" >&2; exit 2 ;;
+    esac
+done
 
 step() { printf '\n== %s\n' "$1"; }
 
@@ -40,6 +53,32 @@ step "generated files are current"
 "$PY" tools/validate.py --generate-indexes > /dev/null
 git diff --exit-code -- scenarios/scenarios_index.csv
 "$PY" tools/export_smoke.py --check
+
+if [ "$SKIP_CONSUMER" = 1 ]; then
+    step "consumer loader: SKIPPED (--skip-consumer)"
+elif [ -n "${MAILROOM_RELOADED:-}" ]; then
+    step "consumer loader"
+    CONSUMER_FAILED=0
+    "$PY" tools/load_with_consumer.py --reloaded "$MAILROOM_RELOADED" --content "$ROOT" || CONSUMER_FAILED=1
+    "$PY" tools/check_schema_drift.py "$MAILROOM_RELOADED" || CONSUMER_FAILED=1
+    if [ "$CONSUMER_FAILED" = 1 ]; then
+        echo "consumer checks FAILED against $MAILROOM_RELOADED" >&2
+        exit 1
+    fi
+else
+    step "consumer loader: SKIPPED (MAILROOM_RELOADED unset)"
+    cat <<'NOTICE'
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!  SKIPPED: THE PACK WAS NOT CHECKED AGAINST mailroom-reloaded's CONTRACT.
+!!  The consumer's loader (load_content) and its schemas/ did not run, and
+!!  the schema drift check did not run. This passing does NOT mean the
+!!  consumer will load this pack. To enable both checks, run:
+!!
+!!      MAILROOM_RELOADED=/path/to/mailroom-reloaded tools/ci.sh
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+NOTICE
+fi
 
 if [ "$SKIP_DRIFT" = 1 ]; then
     step "strata drift: SKIPPED (--skip-drift)"

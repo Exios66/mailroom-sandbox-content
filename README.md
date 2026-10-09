@@ -112,6 +112,30 @@ Releases are cut locally; GitHub Actions is not used.
 - Reviews are routed by `CODEOWNERS` (currently all `@Exios66`); per-directory
   delegation notes there mark where series ownership will land.
 
+## Checking against mailroom-reloaded
+
+`tools/ci.sh` checks the pack against the consumer's contract only when
+`MAILROOM_RELOADED` points at a mailroom-reloaded checkout:
+
+    MAILROOM_RELOADED=/path/to/mailroom-reloaded tools/ci.sh
+
+With it set, step 4 loads the pack through the consumer's own loader
+(`tools/load_with_consumer.py`: one `ERROR <file>` line per error) and runs
+`tools/check_schema_drift.py` against the consumer's `schemas/`. If either
+fails, the run fails. The strata drift step (step 5) reads the same variable.
+
+What each skip means:
+
+- `consumer loader: SKIPPED (MAILROOM_RELOADED unset)`: the pack was **not**
+  checked against the consumer's loader or schemas, so a passing run does not
+  mean the consumer will accept it. The notice is loud; the exit status is
+  unchanged.
+- `consumer loader: SKIPPED (--skip-consumer)`: skipped on purpose.
+- `strata drift: SKIPPED (--skip-drift)`: the strata comparison was not run.
+
+`load_with_consumer.py` reads `dist/registry.yaml`, which `tools/validate.py`
+writes. Run the validator first when calling the script directly.
+
 ## Data-handling notes
 
 - **Everything here is synthetic and fictional.** No real client names, no

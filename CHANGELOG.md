@@ -49,6 +49,23 @@ All notable changes to the mailroom-sandbox-content pack.
   that `git push --no-verify` bypasses it.
 
 ### Added
+- **Content CI loads the pack through the consumer's own loader** (plan K-06).
+  New `tools/load_with_consumer.py` imports `load_content` from a
+  mailroom-reloaded checkout (`--reloaded`, default `$MAILROOM_RELOADED`) and
+  prints one `ERROR <file>: <message>` line per error, then
+  `consumer-load: scenarios=N personas=N gen_specs=N errors=N`. Exit 0 with no
+  errors, 1 on load errors, 2 on a missing or invalid checkout or a failed
+  import (reason on stderr, no traceback). The consumer's package `__init__`
+  needs the OpenTelemetry SDK and pydantic-settings; when it does not import,
+  the script loads the loader's own modules without it. Nothing is written to
+  either tree. `tools/ci.sh` step 4 runs it and `check_schema_drift.py`
+  against `MAILROOM_RELOADED`; either failing fails the run. Without the
+  variable, step 4 prints a loud `SKIPPED` notice and CI still passes. New
+  `--skip-consumer` flag. Tests in `tests/test_load_with_consumer.py` use a fake
+  checkout, so they run offline. Measured against reloaded main at this
+  change: the loader reports 28 errors (the H-series scenario names, such as
+  `H1_...`, fail reloaded's `^[A-GST]` pattern) and the drift check reports `DRIFT
+  scenario.v2.json`, so both checks fail until the consumer accepts the pack.
 - `tools/lint_contradictions.py` and `docs/CONTRADICTION_AUDIT.md` (plan K-03,
   stage 1): the linter groups scenarios by client template set and
   `expect.intent` and reports groups whose members disagree on `expect.outbox`
