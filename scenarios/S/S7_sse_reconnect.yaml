@@ -19,6 +19,6 @@ timeline:
 expect:
   intent: unrelated
   signals:
-  - {kind: fyi, priority: normal, within: "00:02"}
+  - {kind: fyi, priority: low, within: "00:02"}
   outbox: []
   invariants: [audit_chain_ok]
