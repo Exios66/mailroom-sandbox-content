@@ -1,0 +1,223 @@
+"""Fault-inject a copy of the content repo; record how tools/validate.py reacts.
+
+Usage: python3 -I tools/fault_inject.py <repo root> <empty scratch dir>
+Seed for workstream K-04 (docs/superpowers/plans/2026-10-09-mailroom-core-plan.md in
+mailroom-reloaded). Read-only against the repo: every mutation runs in a copy.
+must_fail mutations that report CRASH or MISSED are defects; csv_crlf is a
+legitimate accept (the csv module handles CRLF).
+
+Outcome classes:
+  CLEAN-FAIL  exit != 0, no traceback (error reported properly)
+  CRASH       traceback in stderr (unhandled exception)
+  MISSED      exit 0 (bad input accepted)
+"""
+import pathlib
+import shutil
+import subprocess
+import sys
+
+SRC = pathlib.Path(sys.argv[1])
+WORK = pathlib.Path(sys.argv[2])
+WORK.mkdir(parents=True, exist_ok=True)
+
+
+def fresh(tag):
+    dst = WORK / tag
+    shutil.copytree(
+        SRC, dst, ignore=shutil.ignore_patterns(".git", "release", ".cache", "__pycache__")
+    )
+    return dst
+
+
+def first(p, pat):
+    return sorted(p.glob(pat))[0]
+
+
+def m_bad_yaml(r):
+    first(r, "scenarios/A/*.yaml").write_text("name: [unclosed\n  - x: {", encoding="utf-8")
+
+
+def m_non_utf8(r):
+    first(r, "scenarios/A/*.yaml").write_bytes(b"name: \xff\xfe\x00bad\n")
+
+
+def m_empty_yaml(r):
+    first(r, "scenarios/B/*.yaml").write_text("", encoding="utf-8")
+
+
+def m_yaml_list_root(r):
+    first(r, "scenarios/B/*.yaml").write_text("- a\n- b\n", encoding="utf-8")
+
+
+def m_dup_scenario_name(r):
+    a = sorted(r.glob("scenarios/C/*.yaml"))
+    a[1].write_text(a[0].read_text(encoding="utf-8"), encoding="utf-8")
+
+
+def m_csv_bom_header(r):
+    p = r / "clients/clients.csv"
+    p.write_bytes(b"\xef\xbb\xbf" + p.read_bytes())
+
+
+def m_csv_crlf(r):
+    p = r / "clients/clients.csv"
+    p.write_bytes(p.read_bytes().replace(b"\n", b"\r\n"))
+
+
+def m_csv_empty(r):
+    (r / "relations/relations_truth.csv").write_text("", encoding="utf-8")
+
+
+def m_content_json_invalid(r):
+    (r / "content.json").write_text("{not json", encoding="utf-8")
+
+
+def m_content_json_missing_key(r):
+    import json
+    p = r / "content.json"
+    d = json.loads(p.read_text())
+    d.pop("schema_version")
+    p.write_text(json.dumps(d))
+
+
+def m_content_json_version_type(r):
+    import json
+    p = r / "content.json"
+    d = json.loads(p.read_text())
+    d["version"] = 5
+    p.write_text(json.dumps(d))
+
+
+def m_missing_template(r):
+    first(r, "gen/templates/*.j2").unlink()
+
+
+def m_template_syntax(r):
+    first(r, "gen/templates/*.j2").write_text("Subject: {{ unclosed\n{% if %}", encoding="utf-8")
+
+
+def m_template_undefined_var(r):
+    first(r, "gen/templates/*.j2").write_text("Subject: hi\n{{ no_such_var }}", encoding="utf-8")
+
+
+def m_real_domain_leak(r):
+    p = first(r, "gen/templates/*.j2")
+    p.write_text(p.read_text(encoding="utf-8") + "\nSee https://www.chase.com/login\n", encoding="utf-8")
+
+
+def m_real_phone(r):
+    p = r / "clients/clients.csv"
+    p.write_text(p.read_text(encoding="utf-8").replace("+1-555-01", "+1-212-55", 1), encoding="utf-8")
+
+
+def m_missing_attachment_file(r):
+    first(r, "attachments/synthetic/*").unlink()
+
+
+def m_attachment_hash_mismatch(r):
+    p = first(r, "attachments/synthetic/*.pdf")
+    p.write_bytes(p.read_bytes() + b"\n%tamper\n")
+
+
+def m_lookalike_in_registry_source(r):
+    import csv
+    dom = next(csv.DictReader(open(r / "adversary/lookalike_domains.csv", encoding="utf-8")))["domain"]
+    p = r / "clients/client_domains.csv"
+    lines = p.read_text(encoding="utf-8").splitlines()
+    hdr = lines[0].split(",")
+    row = lines[1].split(",")
+    row[hdr.index("domain")] = dom
+    lines.append(",".join(row))
+    p.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def m_schema_file_corrupt(r):
+    (r / "schemas/scenario.v2.json").write_text("{ broken", encoding="utf-8")
+
+
+def m_missing_dir(r):
+    shutil.rmtree(r / "taxonomy")
+
+
+def m_ids_ranges_corrupt(r):
+    (r / "ids/ranges.yaml").write_text(": : :\n", encoding="utf-8")
+
+
+def m_huge_scenario(r):
+    p = first(r, "scenarios/D/*.yaml")
+    p.write_text(p.read_text(encoding="utf-8") + "\n# " + "x" * 5_000_000 + "\n", encoding="utf-8")
+
+
+def m_yaml_anchor_bomb(r):
+    bomb = "a: &a [x,x,x,x,x,x,x,x,x]\n"
+    prev = "a"
+    for i in range(b := 9):
+        bomb += f"{chr(98+i)}: &{chr(98+i)} [*{prev},*{prev},*{prev},*{prev},*{prev},*{prev},*{prev},*{prev},*{prev}]\n"
+        prev = chr(98 + i)
+    first(r, "scenarios/E/*.yaml").write_text(bomb, encoding="utf-8")
+
+
+def m_symlink_escape(r):
+    p = first(r, "attachments/synthetic/*")
+    p.unlink()
+    p.symlink_to("/etc/passwd")
+
+
+def m_short_row(r):
+    p = r / "clients/clients.csv"
+    lines = p.read_text(encoding="utf-8").splitlines()
+    lines[2] = ",".join(lines[2].split(",")[:3])
+    p.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def m_extra_columns(r):
+    p = r / "clients/clients.csv"
+    lines = p.read_text(encoding="utf-8").splitlines()
+    lines[2] += ",extra,cells"
+    p.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def m_duplicate_client_key(r):
+    p = r / "clients/clients.csv"
+    lines = p.read_text(encoding="utf-8").splitlines()
+    lines.append(lines[1])
+    p.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def m_nul_in_csv(r):
+    p = r / "clients/clients.csv"
+    p.write_bytes(p.read_bytes() + b"\x00garbage,row\n")
+
+
+MUTATIONS = [(n[2:], f) for n, f in sorted(globals().items()) if n.startswith("m_") and callable(f)]
+
+results = []
+for name, fn in MUTATIONS:
+    root = fresh(name)
+    try:
+        fn(root)
+    except Exception as e:  # noqa: BLE001
+        results.append((name, "SETUP-ERR", str(e)[:80]))
+        continue
+    try:
+        proc = subprocess.run(
+            [sys.executable, "tools/validate.py", "--strict-coverage"],
+            cwd=root, capture_output=True, text=True, timeout=120,
+        )
+    except subprocess.TimeoutExpired:
+        results.append((name, "HANG", ">120s"))
+        continue
+    err = proc.stderr + proc.stdout
+    if "Traceback" in err:
+        last = [ln for ln in err.strip().splitlines() if ln.strip()][-1][:110]
+        results.append((name, "CRASH", last))
+    elif proc.returncode == 0:
+        results.append((name, "MISSED", "exit 0"))
+    else:
+        results.append((name, "CLEAN-FAIL", f"exit {proc.returncode}"))
+
+w = max(len(r[0]) for r in results)
+for n, c, d in results:
+    print(f"{n:<{w}}  {c:<10}  {d}")
+from collections import Counter
+print(Counter(c for _, c, _ in results))
