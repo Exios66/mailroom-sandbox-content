@@ -8,7 +8,7 @@ status: draft
 tags: [heldout, B, completes]
 timeline:
 - at: "00:00"
-  ingress: {ref: claim_part_a, class: insurance_claim, stratum: auto, as: CL-664032_part_a.pdf}
+  ingress: {ref: claim_part_a, group: cl_664032, class: insurance_claim, stratum: auto, as: CL-664032_part_a.pdf}
 - at: "00:06"
   client:
     persona: p_cedarridge_adjuster
@@ -18,7 +18,7 @@ timeline:
     template: h_b_last_exhibit
     vars: {claim_ref: CL-664032, exhibit_label: the repair estimate}
     attach:
-    - {class: insurance_claim, stratum: property, ref: claim_part_b}
+    - {class: insurance_claim, stratum: property, ref: claim_part_b, group: cl_664032}
 expect:
   intent: document_submission
   signals:

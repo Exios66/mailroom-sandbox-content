@@ -69,7 +69,7 @@ PR before minting IDs in a new range.
 | **E** | Adversarial and phishing, E1–E13, each with a benign companion | frozen (E1 scripted) | identity-dependent: never on the `gmail` leg |
 | **F** | Hard negatives: legitimate but suspicious-looking | frozen (F1 scripted) | scored down for accusatory wording |
 | **G** | Production-adjacent traffic (AM1): frustrated status requests, extraction confirmation and correction, bulk status, summaries, re-extraction, receipt checks, forwarded chains, expedite requests, court deadlines, access-scope and repeat questions | frozen | all benign; corrections produce `contradicts` relations, never auto-linked |
-| **H** | Held-out (see the consumer's `docs/HELD_OUT_SCENARIOS.md`): the frozen, source-derived generalization batch, tagged `heldout` | scripted | measured only with `mailroom sandbox conformance --heldout`; never averaged with tuning-family rates |
+| **H** | Held-out (see the consumer's `docs/HELD_OUT_SCENARIOS.md`): the source-derived generalization batch, pending freeze, tagged `heldout` | scripted | conformance measured only after human approval and scenario freeze, with `mailroom sandbox conformance --heldout`; never averaged with tuning-family rates |
 | **S** | Sandbox self-tests: assert on the sandbox, not the Correspondent | scripted | `closed` profile against fake servers unless marked live |
 | **T** | Transport conformance on real mail (`live` marker, `egress` profile) | scripted | the Gmail leg runs only T |
 

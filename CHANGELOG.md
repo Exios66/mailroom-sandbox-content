@@ -13,8 +13,9 @@ All notable changes to the mailroom-sandbox-content pack.
   matrix, never from the Correspondent's behaviour or conformance output.
 - The scenario `name` series now admits `H`
   (`schemas/scenario.v2.json`, `^[A-HST][0-9]+_[a-z0-9_]+$`) with an H ID
-  block (`1500–1599`) in `ids/ranges.yaml`, enabling a frozen held-out
-  batch run via the consumer's `mailroom sandbox conformance --heldout`.
+  block (`1500–1599`) in `ids/ranges.yaml`, preparing a held-out batch for a
+  future run via the consumer's `mailroom sandbox conformance --heldout`
+  after human approval and scenario freeze.
 
 ### Changed
 - `CONTENT_SPEC.md` §3 and `README.md` list the new H (held-out) series;
