@@ -255,6 +255,7 @@ def content_files(root: Path) -> defaultdict:
 
 
 def check_content_files_index(root: Path, rep: Report) -> None:
+    """Report a missing or malformed content file index and its files mapping."""
     rel = "schemas/content_files.json"
     p = root / rel
     if not p.exists():
@@ -425,6 +426,7 @@ def check_ops_contracts(root: Path, rep: Report) -> None:
 
 
 def check_content_json(root: Path, rep: Report) -> dict:
+    """Report invalid pack metadata and return its mapping, or {} if unreadable."""
     p = root / "content.json"
     if not p.exists():
         rep.error("content.json missing")
@@ -447,6 +449,7 @@ def check_content_json(root: Path, rep: Report) -> dict:
 
 def check_csv_file(root: Path, rel: str, spec: dict, rep: Report,
                    key: str | None = None) -> list[dict]:
+    """Read rows using the declared header and optional unique key, reporting errors."""
     p = root / rel
     if not p.exists():
         rep.error(f"missing required file: {rel}")
@@ -458,12 +461,14 @@ def check_csv_file(root: Path, rel: str, spec: dict, rep: Report,
 
 
 def check_id(value: str, kind: str, where: str, rep: Report) -> None:
+    """Record an error when value does not match the requested ID kind."""
     pat = ID_PATTERNS[kind]
     if not pat.match(value if isinstance(value, str) else ""):
         rep.error(f"{where}: bad {kind} id: {value!r}")
 
 
 def check_clients(root: Path, rep: Report) -> tuple[dict, dict, dict, dict]:
+    """Validate client data and return clients, contacts, domain rows, and mix rows."""
     spec = content_files(root)
     clients = {r["client_id"]: r for r in
                check_csv_file(root, "clients/clients.csv",
@@ -539,6 +544,7 @@ def check_clients(root: Path, rep: Report) -> tuple[dict, dict, dict, dict]:
 
 def check_personas(root: Path, clients: dict, contacts: dict,
                    rep: Report) -> dict:
+    """Validate persona references and behavior files; return rows keyed by persona ID."""
     spec = content_files(root)
     rows = check_csv_file(root, "personas/personas.csv",
                           spec["personas/personas.csv"], rep)
@@ -621,6 +627,7 @@ def template_variables(root: Path, rep: Report) -> dict[str, set[str]] | None:
 
 def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
                     rep: Report) -> tuple[dict, dict]:
+    """Validate scenario schemas and references; return scenarios and names by series."""
     scenarios: dict[str, dict] = {}
     by_series: dict[str, list[str]] = {}
     # Strict schema validation: manual checks below cover cross-references,
@@ -896,6 +903,7 @@ def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
 
 
 def check_gen_specs(root: Path, personas: dict, rep: Report) -> dict:
+    """Report invalid generation specs and return loaded mappings keyed by spec ID."""
     specs = {}
     for yf in sorted((root / "gen" / "specs").glob("*.yaml")):
         try:
@@ -936,6 +944,7 @@ def canonical_email_json(obj: dict) -> bytes:
 
 
 def check_emails(root: Path, rep: Report) -> None:
+    """Check frozen email hashes and index entries, plus handwritten front matter."""
     spec = content_files(root)
     idx_path = root / "emails" / "emails_index.csv"
     if not idx_path.exists():
@@ -1007,6 +1016,7 @@ def check_emails(root: Path, rep: Report) -> None:
 
 
 def check_attachments(root: Path, rep: Report) -> None:
+    """Check attachment IDs, provenance, file hashes, and inert-content restrictions."""
     spec = content_files(root)
     man_path = root / "attachments" / "manifest.csv"
     if not man_path.exists():
@@ -1063,6 +1073,7 @@ def check_attachments(root: Path, rep: Report) -> None:
 
 
 def check_relations(root: Path, rep: Report) -> None:
+    """Validate relation IDs and kinds, warning when the truth CSV is absent."""
     spec = content_files(root)
     p = root / "relations" / "relations_truth.csv"
     if not p.exists():
@@ -1077,6 +1088,7 @@ def check_relations(root: Path, rep: Report) -> None:
 
 
 def check_adversary(root: Path, rep: Report) -> tuple[set[str], set[str]]:
+    """Read adversary CSVs and return sets of lookalike domains and impostor IDs."""
     spec = content_files(root)
     lookalikes: set[str] = set()
     impostors: set[str] = set()
@@ -1307,11 +1319,13 @@ def collect_ids(root: Path) -> dict[str, list[tuple[str, str]]]:
 
 
 def _block_ok(b) -> bool:
+    """Return whether an allocation block has integer bounds and an owner key."""
     return (isinstance(b, dict) and isinstance(b.get("lo"), int)
             and isinstance(b.get("hi"), int) and "owner" in b)
 
 
 def check_id_ranges(root: Path, rep: Report) -> None:
+    """Report malformed or overlapping allocations, duplicate IDs, and unallocated IDs."""
     p = root / "ids" / "ranges.yaml"
     if not p.exists():
         rep.error("ids/ranges.yaml missing (ID range allocation, §12.5)")
@@ -1455,6 +1469,7 @@ def generate_indexes(root: Path, scenarios: dict, by_series: dict,
 
 
 def run_checks() -> int:
+    """Parse CLI options, validate and compile the pack, and return 1 on reported errors."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=str(Path(__file__).resolve().parent
                                           .parent))

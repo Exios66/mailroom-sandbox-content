@@ -87,11 +87,13 @@ FAKE_LOADER = textwrap.dedent('''\
 
 
 def tree_snapshot(root: Path) -> set:
+    """Return relative paths under root to detect files created by the loader."""
     return {str(p.relative_to(root)) for p in root.rglob("*")}
 
 
 class LoadWithConsumerTests(unittest.TestCase):
     def setUp(self):
+        """Create isolated paths for the fake consumer checkout and content pack."""
         temporary = TemporaryDirectory(prefix="consumer load ")
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
@@ -99,10 +101,12 @@ class LoadWithConsumerTests(unittest.TestCase):
         self.content = self.root / "content"
 
     def write(self, path: Path, text: str) -> None:
+        """Write a UTF-8 fixture file, creating its parent directories."""
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
 
     def make_checkout(self, *, package_init=HEAVY_PACKAGE_INIT, loader=FAKE_LOADER):
+        """Build a fake consumer package and schema with the requested loader code."""
         base = self.checkout / "src" / "mailroom_reloaded"
         self.write(base / "__init__.py", package_init)
         self.write(base / "sandbox" / "__init__.py", '"""Sandbox."""\n')
@@ -111,6 +115,7 @@ class LoadWithConsumerTests(unittest.TestCase):
         self.write(self.checkout / "schemas" / "scenario.v2.json", FAKE_SCHEMA)
 
     def make_content(self, scenarios, *, registry=True):
+        """Write pack metadata, scenario fixtures, and an optional compiled registry."""
         self.write(self.content / "content.json", '{"schema_version": "2.0"}\n')
         for rel, text in scenarios.items():
             self.write(self.content / "scenarios" / rel, text)
@@ -118,6 +123,7 @@ class LoadWithConsumerTests(unittest.TestCase):
             self.write(self.content / "dist" / "registry.yaml", "clients: []\n")
 
     def run_script(self, *arguments, env=None):
+        """Run the loader wrapper with captured output and explicit environment overrides."""
         environment = dict(os.environ)
         environment.pop("MAILROOM_RELOADED", None)
         environment.update(env or {})
@@ -126,10 +132,12 @@ class LoadWithConsumerTests(unittest.TestCase):
             capture_output=True, text=True, timeout=60, env=environment, check=False)
 
     def run_load(self, *extra):
+        """Run the wrapper against the test consumer checkout and content pack."""
         return self.run_script("--reloaded", str(self.checkout),
                                "--content", str(self.content), *extra)
 
     def test_clean_load_exits_zero_and_prints_summary(self):
+        """Verify valid content loads successfully and reports scenario counts."""
         self.make_checkout()
         self.make_content({"G1_good.yaml": "name: G1_good\n",
                            "A2_also_good.yaml": "name: A2_also_good\n"})
@@ -140,6 +148,7 @@ class LoadWithConsumerTests(unittest.TestCase):
                          "consumer-load: scenarios=2 personas=0 gen_specs=0 errors=0")
 
     def test_load_errors_exit_one_and_name_the_file(self):
+        """Verify schema failures identify the offending file and return status 1."""
         self.make_checkout()
         self.make_content({"G1_good.yaml": "name: G1_good\n",
                            "H/H1_bad.yaml": "name: H1_bad\n"})
@@ -152,6 +161,7 @@ class LoadWithConsumerTests(unittest.TestCase):
                          "consumer-load: scenarios=2 personas=0 gen_specs=0 errors=1")
 
     def test_missing_registry_is_a_load_error(self):
+        """Verify an absent compiled registry is reported as a content load failure."""
         self.make_checkout()
         self.make_content({"G1_good.yaml": "name: G1_good\n"}, registry=False)
         result = self.run_load()
@@ -159,6 +169,7 @@ class LoadWithConsumerTests(unittest.TestCase):
         self.assertIn("ERROR missing registry: dist/registry.yaml", result.stdout)
 
     def test_missing_checkout_path_exits_two_without_traceback(self):
+        """Verify a nonexistent consumer path produces status 2 without a traceback."""
         self.make_content({"G1_good.yaml": "name: G1_good\n"})
         result = self.run_script("--reloaded", str(self.root / "nowhere"),
                                  "--content", str(self.content))
@@ -167,6 +178,7 @@ class LoadWithConsumerTests(unittest.TestCase):
         self.assertNotIn("Traceback", result.stderr)
 
     def test_directory_without_loader_exits_two(self):
+        """Verify a directory lacking consumer loader files is rejected with status 2."""
         self.checkout.mkdir()
         self.make_content({"G1_good.yaml": "name: G1_good\n"})
         result = self.run_load()
@@ -175,6 +187,7 @@ class LoadWithConsumerTests(unittest.TestCase):
         self.assertNotIn("Traceback", result.stderr)
 
     def test_import_failure_exits_two_with_reason(self):
+        """Verify loader import failures report the missing dependency without a traceback."""
         self.make_checkout(loader="import definitely_missing_module_for_test\n")
         self.make_content({"G1_good.yaml": "name: G1_good\n"})
         result = self.run_load()
@@ -184,6 +197,7 @@ class LoadWithConsumerTests(unittest.TestCase):
         self.assertNotIn("Traceback", result.stderr)
 
     def test_no_checkout_given_exits_two(self):
+        """Verify missing checkout configuration returns status 2 with setup guidance."""
         self.make_checkout()
         self.make_content({"G1_good.yaml": "name: G1_good\n"})
         result = self.run_script("--content", str(self.content))
@@ -191,6 +205,7 @@ class LoadWithConsumerTests(unittest.TestCase):
         self.assertIn("MAILROOM_RELOADED", result.stderr)
 
     def test_environment_variable_selects_the_checkout(self):
+        """Verify MAILROOM_RELOADED selects the consumer when no CLI path is given."""
         self.make_checkout()
         self.make_content({"G1_good.yaml": "name: G1_good\n"})
         result = self.run_script("--content", str(self.content),
@@ -198,6 +213,7 @@ class LoadWithConsumerTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_real_package_init_is_used_when_it_imports(self):
+        """Verify a working consumer package imports without a fallback notice."""
         self.make_checkout(package_init="")
         self.make_content({"G1_good.yaml": "name: G1_good\n"})
         result = self.run_load()
@@ -205,6 +221,7 @@ class LoadWithConsumerTests(unittest.TestCase):
         self.assertNotIn("note:", result.stderr)
 
     def test_heavy_package_init_falls_back_with_a_note(self):
+        """Verify package initialization failures use the bare-package fallback with a notice."""
         self.make_checkout()
         self.make_content({"G1_good.yaml": "name: G1_good\n"})
         result = self.run_load()
@@ -212,6 +229,7 @@ class LoadWithConsumerTests(unittest.TestCase):
         self.assertIn("note: package __init__ not importable", result.stderr)
 
     def test_checkout_and_content_are_not_written_to(self):
+        """Verify loading adds no paths to either tree, including bytecode cache files."""
         self.make_checkout()
         self.make_content({"G1_good.yaml": "name: G1_good\n"})
         before = (tree_snapshot(self.checkout), tree_snapshot(self.content))
@@ -226,6 +244,7 @@ class CiConsumerStepTests(unittest.TestCase):
     """Run a copy of ci.sh whose interpreter is a stub that only logs its calls."""
 
     def setUp(self):
+        """Copy CI into a temporary Git repo with a Python stub that records calls."""
         temporary = TemporaryDirectory(prefix="ci consumer ")
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
@@ -245,6 +264,7 @@ class CiConsumerStepTests(unittest.TestCase):
         self.log = self.root / "calls.log"
 
     def run_ci(self, *arguments, env=None, fail=None):
+        """Run the copied CI script with optional environment overrides and a failing stub."""
         environment = dict(os.environ)
         environment.pop("MAILROOM_RELOADED", None)
         environment.update(PYTHON=str(self.stub), CI_TEST_LOG=str(self.log))
@@ -256,9 +276,11 @@ class CiConsumerStepTests(unittest.TestCase):
                               timeout=60, env=environment, check=False)
 
     def calls(self):
+        """Return interpreter calls recorded by the stub, or an empty list if unused."""
         return self.log.read_text(encoding="utf-8").splitlines() if self.log.exists() else []
 
     def test_unset_prints_loud_skipped_notice_and_passes(self):
+        """Verify an unset consumer checkout skips its checks with a prominent notice."""
         result = self.run_ci("--skip-drift")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("consumer loader: SKIPPED (MAILROOM_RELOADED unset)", result.stdout)
@@ -269,6 +291,7 @@ class CiConsumerStepTests(unittest.TestCase):
                              for c in self.calls()))
 
     def test_set_runs_loader_then_drift_with_the_checkout(self):
+        """Verify configured consumer checks invoke both loader and schema comparison."""
         result = self.run_ci("--skip-drift", env={"MAILROOM_RELOADED": "/fake/reloaded"})
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertNotIn("consumer loader: SKIPPED", result.stdout)
@@ -279,6 +302,7 @@ class CiConsumerStepTests(unittest.TestCase):
         self.assertIn("tools/check_schema_drift.py /fake/reloaded", calls)
 
     def test_loader_failure_fails_the_run_and_drift_still_runs(self):
+        """Verify loader failure fails CI while still allowing the schema check to run."""
         result = self.run_ci("--skip-drift", env={"MAILROOM_RELOADED": "/fake/reloaded"},
                              fail="load_with_consumer")
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
@@ -287,12 +311,14 @@ class CiConsumerStepTests(unittest.TestCase):
         self.assertTrue(any("check_schema_drift" in c for c in self.calls()))
 
     def test_drift_failure_fails_the_run(self):
+        """Verify schema drift makes the consumer CI step fail."""
         result = self.run_ci("--skip-drift", env={"MAILROOM_RELOADED": "/fake/reloaded"},
                              fail="check_schema_drift")
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertIn("consumer checks FAILED", result.stderr)
 
     def test_skip_consumer_skips_quietly_even_when_set(self):
+        """Verify an explicit skip suppresses consumer checks even with a checkout set."""
         result = self.run_ci("--skip-drift", "--skip-consumer",
                              env={"MAILROOM_RELOADED": "/fake/reloaded"})
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -301,6 +327,7 @@ class CiConsumerStepTests(unittest.TestCase):
         self.assertFalse(any("load_with_consumer" in c for c in self.calls()))
 
     def test_unknown_argument_is_a_usage_error(self):
+        """Verify unsupported CI flags return status 2 with usage guidance."""
         result = self.run_ci("--bogus")
         self.assertEqual(result.returncode, 2)
         self.assertIn("usage: tools/ci.sh", result.stderr)

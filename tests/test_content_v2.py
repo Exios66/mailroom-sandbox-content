@@ -499,11 +499,13 @@ class BundleToolchainPin(unittest.TestCase):
     """K-01: compressed bytes depend on the zstandard version, so the version is pinned."""
 
     def test_requirements_pin_matches_the_constant(self):
+        """Verify the dependency file and bundle builder pin the same zstandard version."""
         from tools import build_bundle
         reqs = (REPO_ROOT / "tools/requirements.txt").read_text().splitlines()
         self.assertIn(f"zstandard=={build_bundle.PINNED_ZSTANDARD}", reqs)
 
     def test_release_build_refuses_an_unpinned_version(self):
+        """Verify release mode rejects other compressor versions and accepts the pin."""
         from tools import build_bundle
         with self.assertRaises(SystemExit) as cm:
             build_bundle.check_zstandard(True, version="0.23.0")
@@ -512,10 +514,12 @@ class BundleToolchainPin(unittest.TestCase):
                          build_bundle.PINNED_ZSTANDARD)
 
     def test_plain_build_accepts_any_version(self):
+        """Verify development builds permit an unpinned compressor version."""
         from tools import build_bundle
         self.assertEqual(build_bundle.check_zstandard(False, version="0.23.0"), "0.23.0")
 
     def test_build_info_records_tar_digest_and_version(self):
+        """Verify bundle metadata records the tar hash and compressor with two checksums."""
         import importlib.util
         import json
         from tempfile import TemporaryDirectory

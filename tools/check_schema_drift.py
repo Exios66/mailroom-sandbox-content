@@ -51,6 +51,7 @@ def compare(content_dir: Path, consumer_dir: Path) -> tuple[list[str], list[str]
 
 
 def main(argv: list[str] | None = None, environ=None) -> int:
+    """Compare shared schemas; return 0 for equal/skipped, 1 for drift, or 2 for a bad checkout."""
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("checkout", nargs="?", default=None,
                         help="mailroom-reloaded checkout (default: $MAILROOM_RELOADED)")

@@ -1135,6 +1135,7 @@ class DerivedOutputTests(ContentFixture):
             "status": "frozen", "owner": "fixture"})
 
     def test_relations_validate_ids_and_kinds(self):
+        """Verify relation IDs and kinds are checked and a missing CSV only warns."""
         for kind in ("references", "supersedes", "duplicates", "amends", "answers",
                      "contradicts", "withdraws", "completes"):
             with self.subTest(kind=kind):

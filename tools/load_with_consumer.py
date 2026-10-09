@@ -49,6 +49,7 @@ PACKAGE = "mailroom_reloaded"
 
 
 def _purge_package() -> None:
+    """Remove the consumer package and its submodules from the import cache."""
     for name in [m for m in sys.modules if m == PACKAGE or m.startswith(PACKAGE + ".")]:
         del sys.modules[name]
 
@@ -85,6 +86,7 @@ def import_loader(checkout: Path):
 
 
 def main(argv: list[str] | None = None, environ=None) -> int:
+    """Load via the consumer; return 0 on success, 1 on load errors, or 2 on setup errors."""
     sys.dont_write_bytecode = True  # never write __pycache__ into the consumer checkout
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--reloaded", default=None,

@@ -65,6 +65,7 @@ exit 0
 
 
 def write_executable(path: Path, text: str) -> None:
+    """Write a UTF-8 script with executable permissions, creating parent directories."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
     path.chmod(0o755)
@@ -74,6 +75,7 @@ class GitSandbox(unittest.TestCase):
     """Common setup: a temporary directory, isolated git config, and helpers."""
 
     def setUp(self):
+        """Create temporary logs and an isolated Git environment for script tests."""
         temporary = TemporaryDirectory(prefix="release scripts ")
         self.addCleanup(temporary.cleanup)
         self.base = Path(temporary.name)
@@ -91,17 +93,21 @@ class GitSandbox(unittest.TestCase):
             TEST_GH_LOG=str(self.log / "gh.txt"))
 
     def git(self, *args, cwd):
+        """Run Git in the fixture environment, capturing output and raising on failure."""
         return subprocess.run(["git", *args], cwd=cwd, env=self.env, check=True,
                               capture_output=True, text=True)
 
     def read_log(self, name):
+        """Return a fixture log as text, or an empty string when it is absent."""
         path = self.log / name
         return path.read_text(encoding="utf-8") if path.exists() else ""
 
     def tags(self, cwd):
+        """Return the tag names in the temporary Git repository."""
         return self.git("tag", "--list", cwd=cwd).stdout.split()
 
     def run_script(self, cwd, script, *arguments, env=None):
+        """Run a shell script with captured output and the fixture environment."""
         return subprocess.run(["sh", str(script), *arguments], cwd=cwd,
                               env=self.env if env is None else env,
                               capture_output=True, text=True, timeout=60, check=False)
@@ -109,6 +115,7 @@ class GitSandbox(unittest.TestCase):
 
 class CiDriftTests(GitSandbox):
     def setUp(self):
+        """Create a temporary CI checkout using a stub Python interpreter."""
         super().setUp()
         self.root = self.base / "tree"
         (self.root / "tools").mkdir(parents=True)
@@ -121,11 +128,13 @@ class CiDriftTests(GitSandbox):
         self.git("init", "-q", cwd=self.root)
 
     def ci(self, *arguments, env=None):
+        """Run the copied CI script with the requested arguments and environment."""
         return self.run_script(self.root, self.root / "tools" / "ci.sh", *arguments, env=env)
 
     def test_fetch_failure_prints_remedies_and_exits_nonzero(self):
         # A cached checkout whose origin does not exist: the fetch fails with no
         # network access at all, deterministically.
+        """Verify failed strata fetches stop CI and print both documented remedies."""
         cache = self.root / ".cache" / "mailroom-reloaded"
         self.git("init", "-q", str(cache), cwd=self.root)
         self.git("remote", "add", "origin", str(self.base / "no-such-repo"), cwd=cache)
@@ -139,6 +148,7 @@ class CiDriftTests(GitSandbox):
         self.assertNotIn("sync_strata", self.read_log("py.txt"))
 
     def test_skip_drift_passes_without_fetching(self):
+        """Verify an explicit drift skip avoids fetching and checking the catalog."""
         result = self.ci("--skip-drift")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("strata drift: SKIPPED", result.stdout)
@@ -147,6 +157,7 @@ class CiDriftTests(GitSandbox):
         self.assertNotIn("sync_strata", self.read_log("py.txt"))
 
     def test_real_drift_fails_with_its_own_output(self):
+        """Verify catalog drift preserves its exit status and diagnostic output."""
         reloaded = self.base / "reloaded"
         reloaded.mkdir()
         self.env.update(MAILROOM_RELOADED=str(reloaded), TEST_DRIFT_EXIT="3")
@@ -157,6 +168,7 @@ class CiDriftTests(GitSandbox):
         self.assertNotIn("cannot fetch", result.stdout + result.stderr)
 
     def test_checkout_path_from_environment_is_used_and_clean_drift_passes(self):
+        """Verify a configured consumer checkout passes drift checks without a cache fetch."""
         reloaded = self.base / "reloaded"
         reloaded.mkdir()
         self.env.update(MAILROOM_RELOADED=str(reloaded), TEST_DRIFT_EXIT="0")
@@ -169,6 +181,7 @@ class CiDriftTests(GitSandbox):
 
 class ReleaseScriptTests(GitSandbox):
     def setUp(self):
+        """Create a clean temporary main branch with stub CI, bundle, and GitHub commands."""
         super().setUp()
         self.root = self.base / "release-tree"
         (self.root / "tools").mkdir(parents=True)
@@ -187,14 +200,17 @@ class ReleaseScriptTests(GitSandbox):
         self.git("commit", "-q", "-m", "release fixture", cwd=self.root)
 
     def release(self, *arguments, env=None):
+        """Run the copied release script against the temporary repository."""
         return self.run_script(self.root, self.root / "tools" / "release.sh", *arguments, env=env)
 
     def write_registry(self, text):
+        """Write a registry fixture with the same trailing newline as the CI stub."""
         (self.root / "dist").mkdir(exist_ok=True)
         # The stub writes with a trailing newline; match it so "fresh" is fresh.
         (self.root / "dist" / "registry.yaml").write_text(text + "\n", encoding="utf-8")
 
     def test_skip_drift_argument_is_refused(self):
+        """Verify releases reject a drift-skip flag before CI or tagging."""
         result = self.release("--skip-drift")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("refuses --skip-drift", result.stderr)
@@ -202,6 +218,7 @@ class ReleaseScriptTests(GitSandbox):
         self.assertEqual(self.read_log("ci.txt"), "")
 
     def test_skip_drift_variant_arguments_are_refused(self):
+        """Verify alternate drift-skip flags also fail without creating a tag."""
         for argument in ("--no-drift", "--skip-drift=yes"):
             with self.subTest(argument=argument):
                 result = self.release(argument)
@@ -209,6 +226,7 @@ class ReleaseScriptTests(GitSandbox):
                 self.assertEqual(self.tags(self.root), [])
 
     def test_skip_drift_environment_is_refused(self):
+        """Verify the SKIP_DRIFT environment variable blocks release before CI or tagging."""
         self.env["SKIP_DRIFT"] = "1"
         result = self.release()
         self.assertNotEqual(result.returncode, 0)
@@ -217,6 +235,7 @@ class ReleaseScriptTests(GitSandbox):
         self.assertEqual(self.read_log("ci.txt"), "")
 
     def test_unknown_arguments_are_usage_errors(self):
+        """Verify unsupported or extra release arguments produce status 2 and usage text."""
         for arguments in (("--frobnicate",), ("--push", "extra")):
             with self.subTest(arguments=arguments):
                 result = self.release(*arguments)
@@ -224,6 +243,7 @@ class ReleaseScriptTests(GitSandbox):
                 self.assertIn("usage: tools/release.sh", result.stderr)
 
     def test_content_ci_runs_without_arguments_and_tags(self):
+        """Verify release runs full CI, builds with the compressor pin, and creates a tag."""
         self.write_registry("fresh")
         result = self.release()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -232,6 +252,7 @@ class ReleaseScriptTests(GitSandbox):
         self.assertIn("--out release --release", self.read_log("bundle.txt"))
 
     def test_stale_registry_is_refused_without_tagging(self):
+        """Verify a changed registry digest blocks bundling and tagging."""
         self.write_registry("old")
         self.env["TEST_REGISTRY"] = "new"  # what a fresh compile would produce
         result = self.release()
@@ -241,6 +262,7 @@ class ReleaseScriptTests(GitSandbox):
         self.assertEqual(self.read_log("bundle.txt"), "")
 
     def test_missing_registry_is_refused_without_tagging(self):
+        """Verify an initially missing registry blocks tagging even after CI creates it."""
         self.env["TEST_REGISTRY"] = "new"
         result = self.release()
         self.assertNotEqual(result.returncode, 0)
@@ -248,6 +270,7 @@ class ReleaseScriptTests(GitSandbox):
         self.assertEqual(self.tags(self.root), [])
 
     def test_content_ci_failure_stops_before_tagging(self):
+        """Verify CI failure stops release before tagging and reports recovery guidance."""
         self.write_registry("fresh")
         self.env["TEST_CI_EXIT"] = "1"
         result = self.release()
@@ -257,6 +280,7 @@ class ReleaseScriptTests(GitSandbox):
         self.assertEqual(self.tags(self.root), [])
 
     def test_bundle_failure_stops_before_tagging(self):
+        """Verify a bundle build failure leaves no release tag."""
         self.write_registry("fresh")
         self.env["TEST_BUNDLE_EXIT"] = "1"
         result = self.release()
@@ -265,6 +289,7 @@ class ReleaseScriptTests(GitSandbox):
         self.assertEqual(self.tags(self.root), [])
 
     def test_push_failure_prints_exact_retry_command(self):
+        """Verify push failure preserves the local tag and prints the exact retry command."""
         self.write_registry("fresh")
         # No origin remote: the push fails offline before any release step.
         result = self.release("--push")
@@ -274,6 +299,7 @@ class ReleaseScriptTests(GitSandbox):
         self.assertEqual(self.read_log("gh.txt"), "")
 
     def test_push_and_gh_release_success_path(self):
+        """Verify release pushes to a local bare remote and invokes the GitHub stub."""
         self.write_registry("fresh")
         remote = self.base / "remote.git"
         subprocess.run(["git", "init", "-q", "--bare", str(remote)], check=True, env=self.env)
@@ -287,6 +313,7 @@ class ReleaseScriptTests(GitSandbox):
                       self.read_log("gh.txt"))
 
     def test_gh_release_failure_prints_copyable_retry(self):
+        """Verify GitHub release failure reports the pushed tag and a complete retry command."""
         self.write_registry("fresh")
         remote = self.base / "remote.git"
         subprocess.run(["git", "init", "-q", "--bare", str(remote)], check=True, env=self.env)

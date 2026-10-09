@@ -106,6 +106,7 @@ def zstd(data: bytes) -> bytes:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Write the bundle, metadata, and checksums; return 1 if the registry is missing."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--root", type=Path, default=ROOT)
     ap.add_argument("--out", type=Path, default=None)

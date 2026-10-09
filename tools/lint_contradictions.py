@@ -94,6 +94,7 @@ def outbox_signature(scenario: dict) -> Optional[frozenset]:
 
 
 def outbox_label(signature: frozenset) -> str:
+    """Format an outbox signature as sorted intent/state pairs, or [] if empty."""
     if not signature:
         return "[]"
     pairs = sorted(signature, key=lambda p: (str(p[0]), str(p[1])))
@@ -154,6 +155,7 @@ def find_disagreements(scenarios: list) -> tuple:
 
 
 def format_finding(finding: Finding) -> str:
+    """Return a warning naming the disputed field, group, and member values."""
     members = ", ".join(f"{name}={label}" for name, label in finding.members)
     templates = ",".join(finding.templates)
     return (f"WARN: {finding.field} disagreement in group "
@@ -178,6 +180,7 @@ def load_scenarios(root: Path) -> list:
 
 
 def main(argv: Optional[list] = None) -> int:
+    """Report disagreements; return 1 for strict failures, 2 for read errors, else 0."""
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--root", type=Path, default=ROOT,
                         help="content repo root (default: this checkout)")

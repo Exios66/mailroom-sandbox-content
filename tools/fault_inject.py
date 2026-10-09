@@ -18,6 +18,7 @@ import sys
 
 
 def fresh(src, work, tag):
+    """Copy src into work/tag, excluding Git metadata and generated artifacts."""
     dst = work / tag
     shutil.copytree(
         src, dst, ignore=shutil.ignore_patterns(".git", "release", ".cache", "__pycache__")
@@ -26,49 +27,60 @@ def fresh(src, work, tag):
 
 
 def first(p, pat):
+    """Return the first path in sorted glob matches; raise if none match."""
     return sorted(p.glob(pat))[0]
 
 
 def m_bad_yaml(r):
+    """Replace a series A scenario with malformed YAML in scratch root r."""
     first(r, "scenarios/A/*.yaml").write_text("name: [unclosed\n  - x: {", encoding="utf-8")
 
 
 def m_non_utf8(r):
+    """Write invalid UTF-8 bytes to a series A scenario in scratch root r."""
     first(r, "scenarios/A/*.yaml").write_bytes(b"name: \xff\xfe\x00bad\n")
 
 
 def m_empty_yaml(r):
+    """Empty a series B scenario file in scratch root r."""
     first(r, "scenarios/B/*.yaml").write_text("", encoding="utf-8")
 
 
 def m_yaml_list_root(r):
+    """Replace a series B scenario mapping with a YAML list in r."""
     first(r, "scenarios/B/*.yaml").write_text("- a\n- b\n", encoding="utf-8")
 
 
 def m_dup_scenario_name(r):
+    """Copy one series C scenario over another to duplicate its name in r."""
     a = sorted(r.glob("scenarios/C/*.yaml"))
     a[1].write_text(a[0].read_text(encoding="utf-8"), encoding="utf-8")
 
 
 def m_csv_bom_header(r):
+    """Prepend a UTF-8 BOM to the client CSV header in scratch root r."""
     p = r / "clients/clients.csv"
     p.write_bytes(b"\xef\xbb\xbf" + p.read_bytes())
 
 
 def m_csv_crlf(r):
+    """Convert client CSV newlines to valid CRLF line endings in r."""
     p = r / "clients/clients.csv"
     p.write_bytes(p.read_bytes().replace(b"\n", b"\r\n"))
 
 
 def m_csv_empty(r):
+    """Empty the relation truth CSV in scratch root r."""
     (r / "relations/relations_truth.csv").write_text("", encoding="utf-8")
 
 
 def m_content_json_invalid(r):
+    """Replace content.json with invalid JSON in scratch root r."""
     (r / "content.json").write_text("{not json", encoding="utf-8")
 
 
 def m_content_json_missing_key(r):
+    """Remove schema_version from content.json in scratch root r."""
     import json
     p = r / "content.json"
     d = json.loads(p.read_text())
@@ -77,6 +89,7 @@ def m_content_json_missing_key(r):
 
 
 def m_content_json_version_type(r):
+    """Set the content version to an integer in scratch root r."""
     import json
     p = r / "content.json"
     d = json.loads(p.read_text())
@@ -85,37 +98,45 @@ def m_content_json_version_type(r):
 
 
 def m_missing_template(r):
+    """Delete the first inbound template in scratch root r."""
     first(r, "gen/templates/*.j2").unlink()
 
 
 def m_template_syntax(r):
+    """Replace an inbound template with malformed Jinja syntax in r."""
     first(r, "gen/templates/*.j2").write_text("Subject: {{ unclosed\n{% if %}", encoding="utf-8")
 
 
 def m_template_undefined_var(r):
+    """Reference an undefined variable in an inbound template in r."""
     first(r, "gen/templates/*.j2").write_text("Subject: hi\n{{ no_such_var }}", encoding="utf-8")
 
 
 def m_real_domain_leak(r):
+    """Append a real-domain URL to an inbound template in scratch root r."""
     p = first(r, "gen/templates/*.j2")
     p.write_text(p.read_text(encoding="utf-8") + "\nSee https://www.chase.com/login\n", encoding="utf-8")
 
 
 def m_real_phone(r):
+    """Replace the first synthetic client phone prefix with a real one in r."""
     p = r / "clients/clients.csv"
     p.write_text(p.read_text(encoding="utf-8").replace("+1-555-01", "+1-212-55", 1), encoding="utf-8")
 
 
 def m_missing_attachment_file(r):
+    """Delete the first synthetic attachment in scratch root r."""
     first(r, "attachments/synthetic/*").unlink()
 
 
 def m_attachment_hash_mismatch(r):
+    """Append bytes to a synthetic PDF without updating its manifest in r."""
     p = first(r, "attachments/synthetic/*.pdf")
     p.write_bytes(p.read_bytes() + b"\n%tamper\n")
 
 
 def m_lookalike_in_registry_source(r):
+    """Add an adversary domain to the client domain registry source in r."""
     import csv
     dom = next(csv.DictReader(open(r / "adversary/lookalike_domains.csv", encoding="utf-8")))["domain"]
     p = r / "clients/client_domains.csv"
@@ -128,23 +149,28 @@ def m_lookalike_in_registry_source(r):
 
 
 def m_schema_file_corrupt(r):
+    """Replace the scenario schema with invalid JSON in scratch root r."""
     (r / "schemas/scenario.v2.json").write_text("{ broken", encoding="utf-8")
 
 
 def m_missing_dir(r):
+    """Remove the taxonomy directory from scratch root r."""
     shutil.rmtree(r / "taxonomy")
 
 
 def m_ids_ranges_corrupt(r):
+    """Replace the ID allocation file with malformed YAML in r."""
     (r / "ids/ranges.yaml").write_text(": : :\n", encoding="utf-8")
 
 
 def m_huge_scenario(r):
+    """Append a five-million-character comment to a series D scenario in r."""
     p = first(r, "scenarios/D/*.yaml")
     p.write_text(p.read_text(encoding="utf-8") + "\n# " + "x" * 5_000_000 + "\n", encoding="utf-8")
 
 
 def m_yaml_anchor_bomb(r):
+    """Write nested YAML aliases with exponential expansion to a scenario in r."""
     bomb = "a: &a [x,x,x,x,x,x,x,x,x]\n"
     prev = "a"
     for i in range(9):
@@ -154,12 +180,14 @@ def m_yaml_anchor_bomb(r):
 
 
 def m_symlink_escape(r):
+    """Replace a synthetic attachment with a symlink to /etc/passwd in r."""
     p = first(r, "attachments/synthetic/*")
     p.unlink()
     p.symlink_to("/etc/passwd")
 
 
 def m_short_row(r):
+    """Truncate the second client CSV data row to three cells in r."""
     p = r / "clients/clients.csv"
     lines = p.read_text(encoding="utf-8").splitlines()
     lines[2] = ",".join(lines[2].split(",")[:3])
@@ -167,6 +195,7 @@ def m_short_row(r):
 
 
 def m_extra_columns(r):
+    """Append two extra cells to the second client CSV data row in r."""
     p = r / "clients/clients.csv"
     lines = p.read_text(encoding="utf-8").splitlines()
     lines[2] += ",extra,cells"
@@ -174,6 +203,7 @@ def m_extra_columns(r):
 
 
 def m_duplicate_client_key(r):
+    """Append a duplicate of the first client CSV data row in r."""
     p = r / "clients/clients.csv"
     lines = p.read_text(encoding="utf-8").splitlines()
     lines.append(lines[1])
@@ -181,6 +211,7 @@ def m_duplicate_client_key(r):
 
 
 def m_nul_in_csv(r):
+    """Append a row containing a NUL byte to the client CSV in r."""
     p = r / "clients/clients.csv"
     p.write_bytes(p.read_bytes() + b"\x00garbage,row\n")
 
@@ -212,6 +243,7 @@ def classify(src, work, name, fn):
 
 
 def main(argv):
+    """Run mutations using repo and scratch paths in argv; print results and return 0."""
     src = pathlib.Path(argv[1])
     work = pathlib.Path(argv[2])
     work.mkdir(parents=True, exist_ok=True)
