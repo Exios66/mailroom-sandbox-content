@@ -25,8 +25,7 @@ expect:
   signals:
   - {kind: urgent, priority: high, within: "00:02"}
   trust: {sender_level: verified}
-  outbox:
-  - {intent: urgent_deadline, state: draft, to_sender: true, reference_template: g_expedite_ack}
-  boss_actions: [raise_priority]
+  outbox: []
+  boss_actions: [request_human_review, raise_priority]
   overblocking: {benign_hard_actions: 0}
   invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

@@ -1135,8 +1135,9 @@ class DerivedOutputTests(ContentFixture):
             "status": "frozen", "owner": "fixture"})
 
     def test_relations_validate_ids_and_kinds(self):
+        """Verify relation IDs and kinds are checked and a missing CSV only warns."""
         for kind in ("references", "supersedes", "duplicates", "amends", "answers",
-                     "contradicts", "withdraws", "completes", "unknown"):
+                     "contradicts", "withdraws", "completes"):
             with self.subTest(kind=kind):
                 self.write_csv("relations/relations_truth.csv", [{"relation_id": "rel_0001", "kind": kind}])
                 _, report = self.check(validate.check_relations)
@@ -1144,6 +1145,10 @@ class DerivedOutputTests(ContentFixture):
         self.write_csv("relations/relations_truth.csv", [{"relation_id": "bad", "kind": "bad"}])
         _, report = self.check(validate.check_relations)
         self.assert_error(report, "bad relation_id")
+        self.assert_error(report, "bad kind")
+        # 'unknown' is a linked_docs placeholder in the consumer, not a relation kind.
+        self.write_csv("relations/relations_truth.csv", [{"relation_id": "rel_0001", "kind": "unknown"}])
+        _, report = self.check(validate.check_relations)
         self.assert_error(report, "bad kind")
         (self.root / "relations/relations_truth.csv").unlink()
         _, report = self.check(validate.check_relations)

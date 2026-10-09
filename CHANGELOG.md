@@ -4,7 +4,79 @@ All notable changes to the mailroom-sandbox-content pack.
 
 ## [Unreleased]
 
+### Changed
+- **Scenario expectations follow the delegation matrix** (plan K-03). Draft
+  replies now require a matrix-sanctioned task: 14 `document_submission`
+  scenarios plus G9 and H21 expect `outbox: []`, and G9/H21 also expect
+  `request_human_review`. Series S `fyi` signals are `low`.
+  `tools/lint_contradictions.py` reports contradictions between scenarios that
+  share a client template (0 now). `tools/migrations/scenarios_v2_map.py` is a
+  historical one-shot map and still names `g_expedite_ack`; do not re-run it.
+  Decision table: `CONTENT_SPEC.md` Appendix A. `tools/ci.sh` now runs the
+  lint with `--strict`.
+
+### Fixed
+- **The release bundle sha256 was not reproducible across `zstandard`
+  versions** (same commit: 0.25.0 gives the sha256 pinned in
+  `content.lock`, 0.23.0 gives a different one). `tools/requirements.txt` pins
+  `zstandard==0.25.0`; `build_bundle.py --release` (used by `release.sh`)
+  refuses any other version; the new `BUILD_INFO` asset records the version
+  and `tar_sha256` (digest of the uncompressed tar, compressor-independent).
+  The published asset's bytes remain what a downloader verifies. `SHA256SUMS`
+  is unchanged (still `sha256sum -c` clean).
+- **The validator crashed or silently accepted bad CSV and YAML input**
+  (plan K-02). Four crash paths are closed: a UTF-8 BOM on a CSV header
+  (now accepted and stripped), a short CSV row, a NUL byte in a CSV, and a
+  corrupt `ids/ranges.yaml`. Two silent accepts are closed: a row with extra
+  cells, and a duplicate `client_id` in `clients.csv`. One strict reader,
+  `read_csv_strict` in `tools/validate.py`, now reads every CSV the validator
+  opens; YAML and JSON parse errors and non-mapping roots are reported as
+  ERRORs. An outer guard prints `ERROR internal: <type>: <msg>` and exits 2
+  instead of a traceback (exit 1 is still a validation ERROR). New
+  `tests/test_validate_faults.py` covers the reader and seven fault cases
+  end to end. `tools/fault_inject.py` exposes `MUTATIONS` and `main(argv)`
+  so the tests can reuse the mutations.
+- **Release and hook gating could pass without checking** (plan K-04).
+  `tools/ci.sh` now stops with the remedies (`--skip-drift` or
+  `MAILROOM_RELOADED=...`) when the strata-drift fetch fails, instead of a raw
+  git error; a failed fetch is never a pass, and a real drift still fails with
+  its own output. `tools/release.sh` always runs drift and refuses
+  `--skip-drift` and `SKIP_DRIFT`. It refuses to tag when
+  `dist/registry.yaml` was stale or missing before the check (the content-ci
+  recompile must reproduce it). Each failure after the tag prints the exact
+  command to retry (`git push origin vX.Y.Z`, or the `gh release create` line).
+  Tests in `tests/test_release_scripts.py` run both scripts offline in
+  temporary git repositories. README documents the per-clone hook install and
+  that `git push --no-verify` bypasses it.
+
 ### Added
+- **Content CI loads the pack through the consumer's own loader** (plan K-06).
+  New `tools/load_with_consumer.py` imports `load_content` from a
+  mailroom-reloaded checkout (`--reloaded`, default `$MAILROOM_RELOADED`) and
+  prints one `ERROR <file>: <message>` line per error, then
+  `consumer-load: scenarios=N personas=N gen_specs=N errors=N`. Exit 0 with no
+  errors, 1 on load errors, 2 on a missing or invalid checkout or a failed
+  import (reason on stderr, no traceback). The consumer's package `__init__`
+  needs the OpenTelemetry SDK and pydantic-settings; when it does not import,
+  the script loads the loader's own modules without it. Nothing is written to
+  either tree. `tools/ci.sh` step 4 runs it and `check_schema_drift.py`
+  against `MAILROOM_RELOADED`; either failing fails the run. Without the
+  variable, step 4 prints a loud `SKIPPED` notice and CI still passes. New
+  `--skip-consumer` flag. Tests in `tests/test_load_with_consumer.py` use a fake
+  checkout, so they run offline. Measured against reloaded main at this
+  change: the loader reports 28 errors (the H-series scenario names, such as
+  `H1_...`, fail reloaded's `^[A-GST]` pattern) and the drift check reports `DRIFT
+  scenario.v2.json`, so both checks fail until the consumer accepts the pack.
+- `tools/lint_contradictions.py` and `docs/CONTRADICTION_AUDIT.md` (plan K-03,
+  stage 1): the linter groups scenarios by client template set and
+  `expect.intent` and reports groups whose members disagree on `expect.outbox`
+  or priority (`--strict` exits 1; a top-level `contrast` string exempts a
+  scenario, but the schema does not allow that key yet). The audit checks each
+  reported finding and the brief's named scenarios against the delegation
+  matrix and protocol. No scenario was edited. Tests in
+  `tests/test_lint_contradictions.py`. Not yet wired into `tools/ci.sh`.
+- `tools/fault_inject.py`: fault-injection harness for the validator (28
+  mutations; classifies CLEAN-FAIL / CRASH / MISSED). Seed for the K-02 tests.
 - **H-series ("held-out") scenarios**: 28 scenarios under `scenarios/H/`
   (H1–H28), at least three per family A–G, S and T, each tagged `heldout`
   and rendered from a new inbound template (`gen/templates/h_*.j2`).
@@ -16,10 +88,29 @@ All notable changes to the mailroom-sandbox-content pack.
   block (`1500–1599`) in `ids/ranges.yaml`, preparing a held-out batch for a
   future run via the consumer's `mailroom sandbox conformance --heldout`
   after human approval and scenario freeze.
+- `tools/check_schema_drift.py`: compares each schema here that mailroom-reloaded
+  also ships byte-for-byte with that checkout (path argument or
+  `MAILROOM_RELOADED`); prints `DRIFT <file>` and exits 1 on any difference,
+  exits 0 when skipped without a checkout. Tests in
+  `tests/test_check_schema_drift.py`. Not yet wired into `tools/ci.sh`.
 
 ### Changed
 - `CONTENT_SPEC.md` §3 and `README.md` list the new H (held-out) series;
   `tools/validate.py` accepts the H-series name pattern.
+- **Schema sync (K-05).** mailroom-reloaded owns the contract.
+  `schemas/gen_spec.v1.json` and `schemas/persona_behavior.v1.json` are now
+  byte-for-byte copies of the consumer's, which are stricter (closed objects,
+  required `constraints.forbidden`); the pack validates against them with 0
+  errors. `schemas/scenario.v2.json` is **not** synced: the consumer's name
+  pattern `^[A-GST][0-9]+_[a-z0-9_]+$` rejects all 28 H-series scenarios, so
+  the content copy stays until the consumer admits the H series.
+- **`unknown` is no longer a relation kind.** mailroom-reloaded's
+  `relation_kinds.v1.json` allows the eight kinds only (`unknown` is a
+  `linked_docs` placeholder). No pack file uses it, so `tools/validate.py`
+  and its test drop it. `schemas/scenario.v2.json` still lists it until that
+  file is synced.
+- `CONTENT_SPEC.md` and `README.md` say mailroom-reloaded owns the contract
+  and shared schemas are mirrors checked by `tools/check_schema_drift.py`.
 
 ## 0.5.0 — 2026-10-08
 

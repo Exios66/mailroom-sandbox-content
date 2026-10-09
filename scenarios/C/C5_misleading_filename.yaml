@@ -22,8 +22,7 @@ expect:
   signals:
   - {kind: new_info, priority: normal, within: "00:08"}
   trust: {sender_level: verified}
-  outbox:
-  - {intent: document_submission, state: draft, to_sender: true}
+  outbox: []
   boss_actions: [ack_signal, link_documents]
   overblocking: {benign_hard_actions: 0}
   invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

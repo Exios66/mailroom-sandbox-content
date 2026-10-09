@@ -17,7 +17,7 @@ Release history lives in [`CHANGELOG.md`](CHANGELOG.md).
 | Path | What lives there |
 |---|---|
 | `content.json` | Pack identity: name, semver version, `schema_version`, `dataset_revision`, `min_code_version` / `max_code_version` |
-| `schemas/` | JSON Schemas for every content file (`content_files.json`, `registry.v1.json`, `scenario.v2.json`, `gen_spec.v1.json`, `overlay.v1.json`, `persona_behavior.v1.json`) |
+| `schemas/` | JSON Schemas for every content file (`content_files.json`, `registry.v1.json`, `scenario.v2.json`, `gen_spec.v1.json`, `overlay.v1.json`, `persona_behavior.v1.json`). mailroom-reloaded owns these contracts; shared ones are byte-for-byte mirrors checked by `tools/check_schema_drift.py` |
 | `clients/` | Client registry sources: `clients.csv`, `client_contacts.csv`, `client_domains.csv`, `client_doc_mix.csv` |
 | `personas/` | `personas.csv` plus `behavior/<persona_id>.yaml` persona behavior files |
 | `scenarios/` | One YAML per scenario under `<Series>/` (series `A`–`H`, `S`, `T`; `H` is the held-out batch, see the consumer's `docs/HELD_OUT_SCENARIOS.md`); `scenarios_index.csv` is generated |
@@ -66,14 +66,20 @@ Releases are cut locally; GitHub Actions is not used.
 2. Bump `version` in `content.json` (semver) in its own PR.
 3. On a clean `main`, run `tools/release.sh`. It runs `tools/ci.sh`, builds
    `release/mailroom-sandbox-content-vX.Y.Z.tar.zst` with
-   `tools/build_bundle.py` (deterministic: tracked files plus the compiled
-   `dist/registry.yaml`; same commit, same sha256), writes `SHA256SUMS`
-   over the tarball and `content.json`, and creates the annotated tag
-   `vX.Y.Z` locally.
+   `tools/build_bundle.py --release` (deterministic: tracked files plus the
+   compiled `dist/registry.yaml`; same commit and same pinned `zstandard`,
+   same sha256), writes `SHA256SUMS` over the tarball and `content.json`
+   plus `BUILD_INFO` (zstandard version and `tar_sha256`, the digest of the
+   uncompressed tar), and creates the annotated tag `vX.Y.Z` locally. The
+   compressed bytes change with the `zstandard` version, so `--release`
+   refuses any version but the one in `tools/requirements.txt`.
 4. `tools/release.sh --push` also pushes the tag and, if the `gh` CLI is
-   logged in, creates the GitHub release with the three files. Without
+   logged in, creates the GitHub release with the four files. Without
    `gh`, push the tag and attach `release/*` to a release by hand.
-5. Consumers move with `mailroom sandbox content bump --tag vX.Y.Z` in
+5. A downloader verifies the **published asset's bytes** against
+   `sandbox/content.lock`; a local rebuild is an audit (compare `tar_sha256`
+   in `BUILD_INFO` if the compressor version differs).
+6. Consumers move with `mailroom sandbox content bump --tag vX.Y.Z` in
    mailroom-reloaded, which refreshes `sandbox/content.lock`.
 
 ## Contributing
@@ -81,12 +87,21 @@ Releases are cut locally; GitHub Actions is not used.
 - **One agent owns one series.** Pick up a series directory under
   `scenarios/` and own its scenarios end to end (spec → timeline → frozen
   emails → attachments). Coordinate cross-series changes in the PR.
-- **Run content-ci locally before you PR.** `pip install pyyaml jsonschema
-  jinja2 zstandard`, then `tools/ci.sh` from the repo root (validator with
+- **Run content-ci locally before you PR.** `pip install -r
+  tools/requirements.txt`, then `tools/ci.sh` from the repo root (validator with
   strict coverage, unit tests, generated-file checks, strata drift). There
-  is no hosted CI: run `tools/install-hooks.sh` once so it runs on every
-  `git push`. ERRORs fail; WARNs don't. Reviewers should not merge a PR
+  is no hosted CI. ERRORs fail; WARNs don't. Reviewers should not merge a PR
   whose author has not run it.
+- **Run `tools/install-hooks.sh` once per clone; it is required.** It sets
+  `core.hooksPath` so `tools/ci.sh` runs on every `git push`. Nothing else
+  enforces this, and a clone without it skips the gate silently.
+- **`git push --no-verify` bypasses the pre-push hook.** Use it only on
+  purpose. CodeRabbit review on the PR is then the second gate, not a
+  replacement for running `tools/ci.sh`.
+- **A strata drift check that cannot fetch fails; it never passes.** Offline,
+  set `MAILROOM_RELOADED=/path/to/mailroom-reloaded tools/ci.sh` (a local
+  checkout of the pinned commit) or use `tools/ci.sh --skip-drift` for local
+  work. `tools/release.sh` always runs drift and refuses `--skip-drift`.
 - **Never hand-edit generated files** (`taxonomy/strata.csv`, the
   `A13`–`A17` coverage scenarios, `scenarios_index.csv`, the smoke
   `documents` block). Re-run their generator; CI diffs them.
@@ -96,6 +111,30 @@ Releases are cut locally; GitHub Actions is not used.
   by CI, not by convention.
 - Reviews are routed by `CODEOWNERS` (currently all `@Exios66`); per-directory
   delegation notes there mark where series ownership will land.
+
+## Checking against mailroom-reloaded
+
+`tools/ci.sh` checks the pack against the consumer's contract only when
+`MAILROOM_RELOADED` points at a mailroom-reloaded checkout:
+
+    MAILROOM_RELOADED=/path/to/mailroom-reloaded tools/ci.sh
+
+With it set, step 4 loads the pack through the consumer's own loader
+(`tools/load_with_consumer.py`: one `ERROR <file>` line per error) and runs
+`tools/check_schema_drift.py` against the consumer's `schemas/`. If either
+fails, the run fails. The strata drift step (step 5) reads the same variable.
+
+What each skip means:
+
+- `consumer loader: SKIPPED (MAILROOM_RELOADED unset)`: the pack was **not**
+  checked against the consumer's loader or schemas, so a passing run does not
+  mean the consumer will accept it. The notice is loud; the exit status is
+  unchanged.
+- `consumer loader: SKIPPED (--skip-consumer)`: skipped on purpose.
+- `strata drift: SKIPPED (--skip-drift)`: the strata comparison was not run.
+
+`load_with_consumer.py` reads `dist/registry.yaml`, which `tools/validate.py`
+writes. Run the validator first when calling the script directly.
 
 ## Data-handling notes
 

@@ -6,14 +6,17 @@ Run from the repo root:
 """
 
 import copy
+import contextlib
 import hashlib
+import io
+import json
 import subprocess
 import sys
 import unittest
 from pathlib import Path
 
 from tests.test_validate import REPO_ROOT, ContentFixture
-from tools import make_fixture_pdf, sync_strata, validate
+from tools import lint_contradictions, make_fixture_pdf, sync_strata, validate
 
 
 class ScenarioV2Rules(ContentFixture):
@@ -39,6 +42,30 @@ class ScenarioV2Rules(ContentFixture):
     def test_seed_scenario_is_clean(self):
         _, report = self.check_scenario(self.scenario)
         self.assert_clean(report)
+
+    def test_validated_contrast_exempts_a_conflicting_scenario(self):
+        """Schema-valid contrast survives loading and suppresses the CLI finding."""
+        other = copy.deepcopy(self.scenario)
+        other["name"] = "A2_status"
+        other["expect"]["signals"][0]["priority"] = "high"
+        for contrast, status in ((None, 1), ("  Deliberate priority contrast  ", 0)):
+            with self.subTest(contrast=contrast):
+                if contrast is not None:
+                    other["contrast"] = contrast
+                self.write_yaml("scenarios/A/A2_status.yaml", other)
+                _, report = self.check_scenario(self.scenario)
+                self.assert_clean(report)
+                with contextlib.redirect_stdout(io.StringIO()):
+                    code = lint_contradictions.main(["--root", str(self.root), "--strict"])
+                self.assertEqual(code, status)
+
+    def test_contrast_schema_rejects_blank_and_non_string_reasons(self):
+        for reason in ("", " \t\n", None, 42, ["reason"]):
+            with self.subTest(reason=reason):
+                scenario = copy.deepcopy(self.scenario)
+                scenario["contrast"] = reason
+                _, report = self.check_scenario(scenario)
+                self.assert_error(report, "schema violation at contrast")
 
     def test_client_message_needs_a_template(self):
         scenario = copy.deepcopy(self.scenario)
@@ -214,6 +241,33 @@ class CoverageStrictness(ContentFixture):
 
 
 class ContractSchemas(ContentFixture):
+    def test_expected_attack_class_is_optional_and_uses_root_enum(self):
+        """Validate whole specs with every label, invalid labels, and omission."""
+        schema = json.loads((self.root / "schemas/gen_spec.v1.json").read_text())
+        spec = {
+            "id": "gen_test", "persona": "p_test", "target_client": "test",
+            "archetype": "E1", "goal": "Synthetic test", "pool": "scripted",
+            "constraints": {"forbidden": ["real_brands", "real_urls", "working_links",
+                                           "phone_numbers_outside_555_01xx"]},
+            "style": {}, "expect": {"intent": "possible_prompt_injection",
+                                      "signal": "possible_attack"},
+        }
+        labels = schema["properties"]["attack_class"]["enum"]
+        for label, accepted in [(v, True) for v in labels] + [
+                ("invalid_attack", False), ("", False), (42, False), (None, False)]:
+            with self.subTest(label=label):
+                spec["expect"]["attack_class"] = label
+                self.write_yaml("gen/specs/test.yaml", spec)
+                _, report = self.check(validate.check_contract_schemas, None)
+                if accepted:
+                    self.assert_clean(report)
+                else:
+                    self.assert_error(report, "expect.attack_class")
+        del spec["expect"]["attack_class"]
+        self.write_yaml("gen/specs/test.yaml", spec)
+        _, report = self.check(validate.check_contract_schemas, None)
+        self.assert_clean(report)
+
     def test_gen_specs_behaviors_overlay_and_registry_are_schema_checked(self):
         self.write_yaml("gen/specs/bad.yaml", {"id": "gen_bad_0001"})
         self.write_yaml("personas/behavior/bad.yaml", {"persona_id": "p_bad"})
@@ -493,6 +547,49 @@ class Bundle(unittest.TestCase):
                 digest, name = line.split()
                 self.assertEqual(hashlib.sha256((Path(t) / name).read_bytes()).hexdigest(),
                                  digest)
+
+
+class BundleToolchainPin(unittest.TestCase):
+    """K-01: compressed bytes depend on the zstandard version, so the version is pinned."""
+
+    def test_requirements_pin_matches_the_constant(self):
+        """Verify the dependency file and bundle builder pin the same zstandard version."""
+        from tools import build_bundle
+        reqs = (REPO_ROOT / "tools/requirements.txt").read_text().splitlines()
+        self.assertIn(f"zstandard=={build_bundle.PINNED_ZSTANDARD}", reqs)
+
+    def test_release_build_refuses_an_unpinned_version(self):
+        """Verify release mode rejects other compressor versions and accepts the pin."""
+        from tools import build_bundle
+        with self.assertRaises(SystemExit) as cm:
+            build_bundle.check_zstandard(True, version="0.23.0")
+        self.assertIn(build_bundle.PINNED_ZSTANDARD, str(cm.exception))
+        self.assertEqual(build_bundle.check_zstandard(True, version=build_bundle.PINNED_ZSTANDARD),
+                         build_bundle.PINNED_ZSTANDARD)
+
+    def test_plain_build_accepts_any_version(self):
+        """Verify development builds permit an unpinned compressor version."""
+        from tools import build_bundle
+        self.assertEqual(build_bundle.check_zstandard(False, version="0.23.0"), "0.23.0")
+
+    def test_build_info_records_tar_digest_and_version(self):
+        """Verify bundle metadata records the tar hash and compressor with two checksums."""
+        import importlib.util
+        import json
+        from tempfile import TemporaryDirectory
+        from tools import build_bundle
+        if importlib.util.find_spec("zstandard") is None:
+            self.skipTest("needs zstandard")
+        subprocess.run([sys.executable, str(REPO_ROOT / "tools/validate.py")],
+                       capture_output=True, cwd=REPO_ROOT, check=False)
+        with TemporaryDirectory() as t:
+            self.assertEqual(build_bundle.main(["--out", t]), 0)
+            info = json.loads((Path(t) / "BUILD_INFO").read_text())
+            tar = build_bundle.build_tar(REPO_ROOT, build_bundle.tracked_files(REPO_ROOT))
+            self.assertEqual(info["tar_sha256"], hashlib.sha256(tar).hexdigest())
+            self.assertEqual(info["zstandard"], build_bundle.zstandard_version())
+            # SHA256SUMS stays exactly two lines so `sha256sum -c` keeps working
+            self.assertEqual(len((Path(t) / "SHA256SUMS").read_text().splitlines()), 2)
 
 
 class RealContent(unittest.TestCase):

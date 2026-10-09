@@ -26,8 +26,7 @@ expect:
   trust: {sender_level: verified}
   relations:
   - {a: schedule_c_v3_clean.pdf, b: schedule_c_v2, kind: supersedes, min_conf: 0.8}
-  outbox:
-  - {intent: document_submission, state: draft, to_sender: true}
+  outbox: []
   boss_actions: [ack_signal, link_documents]
   overblocking: {benign_hard_actions: 0}
   invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

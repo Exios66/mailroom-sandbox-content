@@ -1,0 +1,7 @@
+# Toolchain for tools/ci.sh, validate.py and the release bundle.
+# zstandard is pinned exactly: compressed bundle bytes depend on its version, and
+# the bundle sha256 is pinned in mailroom-reloaded's sandbox/content.lock.
+pyyaml
+jsonschema
+jinja2
+zstandard==0.25.0
