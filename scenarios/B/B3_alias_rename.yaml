@@ -28,8 +28,7 @@ expect:
   trust: {sender_level: verified}
   relations:
   - {a: lease_new, b: lease_v1_unit_4b, kind: supersedes, min_conf: 0.7}
-  outbox:
-  - {intent: document_submission, state: draft, to_sender: true}
+  outbox: []
   boss_actions: [ack_signal, link_documents, annotate_document]
   overblocking: {benign_hard_actions: 0}
   invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]

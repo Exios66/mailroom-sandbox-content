@@ -27,8 +27,7 @@ expect:
   relations:
   - {a: late_property_exhibit, b: archived_property_claim_set, kind: completes, min_conf: 0.8}
   - {a: late_property_exhibit, b: archived_property_claim_set, kind: references, min_conf: 0.7}
-  outbox:
-  - {intent: document_submission, state: draft, to_sender: true}
+  outbox: []
   boss_actions: [ack_signal, link_documents]
   overblocking: {benign_hard_actions: 0}
   invariants: [audit_chain_ok, no_stuck_docs, fast_path_two_calls, comms_offpath]
