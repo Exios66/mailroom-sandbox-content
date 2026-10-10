@@ -36,6 +36,18 @@ All notable changes to the mailroom-sandbox-content pack.
   `tests/test_validate_faults.py` covers the reader and seven fault cases
   end to end. `tools/fault_inject.py` exposes `MUTATIONS` and `main(argv)`
   so the tests can reuse the mutations.
+- **K-02 closed out: the fault harness reports no unexpected accept, and the
+  optional size cap is a WARN.** `tools/fault_inject.py` now classifies the
+  two remaining exit-0 cases as legitimate accepts (`EXPECTED_ACCEPTS`): a
+  UTF-8 BOM on a CSV header is stripped by the strict reader, and an oversized
+  scenario is a WARN. `tools/validate.py` adds the cap the plan called for:
+  a scenario or template over `MAX_CONTENT_BYTES` (1 MB) prints a WARN and
+  does not fail the build (`CONTENT_SPEC.md` §11 records the threshold).
+  Measured on this change, `tools/fault_inject.py` reports 26 CLEAN-FAIL and
+  3 EXPECTED-ACCEPT, with 0 CRASH and 0 unexpected MISSED. New tests:
+  `test_bom_header_is_an_expected_accept_end_to_end`,
+  `test_size_cap_is_a_warn_not_an_error`, and the two expected-accept
+  classification cases.
 - **Release and hook gating could pass without checking** (plan K-04).
   `tools/ci.sh` now stops with the remedies (`--skip-drift` or
   `MAILROOM_RELOADED=...`) when the strata-drift fetch fails, instead of a raw
