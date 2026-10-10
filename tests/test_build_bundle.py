@@ -12,6 +12,7 @@ import hashlib
 import io
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -109,7 +110,15 @@ class ReleaseVersionGuardTests(unittest.TestCase):
     def test_pin_matches_requirements(self):
         """Verify PINNED_ZSTANDARD equals the exact pin in tools/requirements.txt."""
         requirements = (REPO_ROOT / "tools" / "requirements.txt").read_text(encoding="utf-8")
-        self.assertIn(f"zstandard=={build_bundle.PINNED_ZSTANDARD}", requirements)
+        active = [
+            line.split("#", 1)[0].strip()
+            for line in requirements.splitlines()
+        ]
+        pins = [
+            line for line in active
+            if re.match(r"zstandard\s*(?:[=<>!~;\[]|$)", line, re.IGNORECASE)
+        ]
+        self.assertEqual(pins, [f"zstandard=={build_bundle.PINNED_ZSTANDARD}"])
 
     def test_release_refuses_a_non_pinned_version(self):
         """Verify --release rejects another zstandard version with the clear message."""

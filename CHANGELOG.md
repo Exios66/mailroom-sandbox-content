@@ -68,6 +68,9 @@ All notable changes to the mailroom-sandbox-content pack.
   sha256 and the `BUILD_INFO` `tar_sha256` match, checks that `release/` and
   untracked files never ship, and that `--release` refuses a non-pinned
   `zstandard` with the clear message (both the guard and `main(--release)`).
+  The pin test compares the single active `zstandard` line in
+  `tools/requirements.txt` with `PINNED_ZSTANDARD` exactly, so a commented-out
+  pin or a longer version string cannot pass it.
   `CONTENT_SPEC.md` §12 records that the published asset's bytes are the
   verification authority and a rebuild is an audit.
 - **Repository governance files** (no content or tooling change). Four
