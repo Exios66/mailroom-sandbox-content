@@ -6,11 +6,16 @@ explains them. Where this document and a schema disagree, the schema wins.
 mailroom-reloaded owns the contract. A schema here that mailroom-reloaded also
 ships must be a byte-for-byte copy of its `schemas/` file; `tools/check_schema_drift.py`
 (checkout as an argument or in `MAILROOM_RELOADED`) prints `DRIFT <file>` for any
-difference. Schemas that exist only here are content-only. Every shared schema,
-including `scenario.v2.json` and `gen_spec.v1.json`, is a byte-for-byte copy of
-mailroom-reloaded's (K-05; the two content-side additions — the `contrast`
-reason and the `expect.attack_class` enum — were upstreamed to mailroom-reloaded
-first so the mirror holds).
+difference. Schemas that exist only here are content-only. The shared schemas
+currently match [mailroom-reloaded PR #89](https://github.com/Exios66/mailroom-reloaded/pull/89)
+at `d1aa07763c7da66eb0a61a5ea4a8a9afadad62dc`, where the `contrast` reason and
+`expect.attack_class` enum are proposed upstream. PR #89 is still open;
+`scenario.v2.json` and `gen_spec.v1.json` differ from consumer `main` at
+`8c2ce3a238defa1778859870a46262d94f16c835`. K-05 completion and compatibility
+with main remain unverified. After PR #89 merges, pin the resulting main
+commit and run `MAILROOM_RELOADED=<checkout-at-that-commit> tools/ci.sh` with
+no skip flags. Update this paragraph and `CHANGELOG.md` with that commit and
+results only after the consumer loader and schema-drift checks pass.
 
 ## 1. Formats (addendum v2 §12.4)
 
