@@ -140,6 +140,28 @@ class FaultCaseTests(unittest.TestCase):
                 REPO_ROOT, Path(tmp), "csv_crlf", fault_inject.m_csv_crlf)
         self.assertEqual(result, ("csv_crlf", "EXPECTED-ACCEPT", "exit 0"))
 
+    def test_bom_header_is_an_expected_accept_end_to_end(self):
+        """Verify a UTF-8 BOM is stripped and accepted, not counted as a missed fault."""
+        with TemporaryDirectory() as tmp:
+            result = fault_inject.classify(
+                REPO_ROOT, Path(tmp), "csv_bom_header", fault_inject.m_csv_bom_header)
+        self.assertEqual(result, ("csv_bom_header", "EXPECTED-ACCEPT", "exit 0"))
+
+    def test_size_cap_is_a_warn_not_an_error(self):
+        """Verify an oversized scenario validates with a WARN, exit 0 and 0 errors."""
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp) / "pack"
+            shutil.copytree(REPO_ROOT, root, ignore=shutil.ignore_patterns(
+                ".git", "release", ".cache", "__pycache__"))
+            fault_inject.m_huge_scenario(root)
+            proc = subprocess.run(
+                [sys.executable, "tools/validate.py", "--strict-coverage"],
+                cwd=root, capture_output=True, text=True, timeout=300)
+            output = proc.stdout + proc.stderr
+            self.assertEqual(proc.returncode, 0, output[-2000:])
+            self.assertIn(f"exceeds the {validate.MAX_CONTENT_BYTES}-byte cap", output)
+            self.assertIn("errors: 0", output)
+
     def test_fast_fault_cases_fail_cleanly_end_to_end(self):
         """Verify selected mutations fail validation without tracebacks or internal errors."""
         mutations = dict(fault_inject.MUTATIONS)
@@ -239,6 +261,8 @@ class FaultHarnessTests(unittest.TestCase):
         """Verify accepted inputs, ordinary failures and signal deaths stay distinct."""
         cases = (
             ("csv_crlf", 0, "EXPECTED-ACCEPT", "exit 0"),
+            ("csv_bom_header", 0, "EXPECTED-ACCEPT", "exit 0"),
+            ("huge_scenario", 0, "EXPECTED-ACCEPT", "exit 0"),
             ("bad_yaml", 0, "MISSED", "exit 0"),
             ("bad_yaml", 1, "CLEAN-FAIL", "exit 1"),
             ("bad_yaml", 2, "CLEAN-FAIL", "exit 2"),
