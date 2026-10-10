@@ -69,6 +69,13 @@ All notable changes to the mailroom-sandbox-content pack.
   that `git push --no-verify` bypasses it.
 
 ### Added
+- **The historical scenario v2 migration refuses to re-run** (issue #13).
+  `tools/migrate_scenarios_v2.py` already ran; re-running it would revert later
+  edits (for example G9's `outbox: []` from the R1 work). `main` now prints a
+  refusal and exits 2 unless the explicit `--confirm-historical-rerun` flag is
+  passed. The helpers (`Dumper`, `ordered`, `ORDER`) stay importable;
+  `tools/gen_coverage_scenarios.py` uses them. Tests in
+  `tests/test_migrate_guard.py`.
 - **K-01 tests: the bundle build is byte-reproducible and `--release` refuses
   an unpinned `zstandard`.** New `tests/test_build_bundle.py` builds the real
   bundle twice from a throwaway git repository and asserts the `.tar.zst`

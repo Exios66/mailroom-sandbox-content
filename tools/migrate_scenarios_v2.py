@@ -2,9 +2,13 @@
 """One-shot migration of scenarios to the final scenario/v2 shape (CD7, CD18).
 
 Kept in the repo for audit; it is not part of content-ci. Mapping tables
-live in tools/migrations/scenarios_v2_map.py. Run once:
+live in tools/migrations/scenarios_v2_map.py. It already ran, so ``main`` now
+refuses to run again unless the explicit ``--confirm-historical-rerun`` flag is
+given (issue #13): re-running would revert later edits such as G9's
+``outbox: []``. The helpers (``Dumper``, ``ordered``, ``ORDER``) stay
+importable; ``tools/gen_coverage_scenarios.py`` uses them.
 
-  python3 tools/migrate_scenarios_v2.py
+  python3 tools/migrate_scenarios_v2.py [--confirm-historical-rerun]
 
 Changes per scenario:
   * event-level ``attach`` moves under ``client.attach`` (addendum §4.8)
@@ -36,6 +40,9 @@ ORDER = ["name", "title", "seed", "profile", "gen", "transports", "status",
 CLIENT_ORDER = ["ref", "persona", "channel", "claimed_from", "auth", "reply_to",
                 "template", "gen_spec", "vars", "attach"]
 TIME_RE = re.compile(r"^[0-9]{2}:[0-9]{2}(:[0-9]{2})?$")
+# Re-running the reshape would undo edits made after it (for example G9's
+# outbox: [] from the R1 work). main() refuses unless this flag is passed.
+HISTORICAL_FLAG = "--confirm-historical-rerun"
 
 
 class Dumper(yaml.SafeDumper):
@@ -145,7 +152,16 @@ def migrate(path: Path) -> None:
                     encoding="utf-8")
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    """Refuse to re-run unless explicitly confirmed; then reshape the scenarios."""
+    argv = sys.argv[1:] if argv is None else argv
+    if HISTORICAL_FLAG not in argv:
+        print(
+            "tools/migrate_scenarios_v2.py is a historical one-shot (CD7/CD18). "
+            "Re-running it would revert later edits (for example G9's outbox: []). "
+            f"Refusing. To run it anyway, pass {HISTORICAL_FLAG}.",
+            file=sys.stderr)
+        return 2
     write_templates()
     for p in sorted((ROOT / "scenarios").glob("*/*.yaml")):
         migrate(p)
