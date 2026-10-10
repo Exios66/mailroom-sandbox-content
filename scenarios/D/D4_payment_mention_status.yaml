@@ -14,6 +14,7 @@ timeline:
     claimed_from: accounting@tricountytitle.sandbox.invalid
     auth: {spf: pass, dkim: pass, dmarc: pass}
     template: d4_payment_mention_status
+    gen_spec: gen_D4_payment_mention_0302
 expect:
   intent: status_request
   signals:

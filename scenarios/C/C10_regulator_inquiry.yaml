@@ -13,6 +13,7 @@ timeline:
     channel: email
     claimed_from: rpatel@stateca.sandbox.invalid
     template: regulator_notice
+    gen_spec: gen_C10_regulator_inquiry_0909
     vars: {notice_ref: SCA-2026-0731, citation: Insurance Code s. 8-114 (records inquiry), respondent_name: the
         firm, response_window_days: 14}
 expect:

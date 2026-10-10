@@ -1,0 +1,28 @@
+# Generation spec: regulator records inquiry with a response window (addendum v2 §6.3)
+# Archetype C10: records inquiry requiring a written response.
+id: gen_C10_regulator_inquiry_0909
+persona: p_stateca_regulator
+target_client: stateca
+archetype: C10_regulator_inquiry
+goal: Open a records inquiry requiring a written response within 14 days.
+constraints:
+  must_include: [records_inquiry, response_window, legal_notice_reference]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: formal
+  length: "60-120 words"
+  language: en
+context:
+  notice_ref: SCA-2026-0731
+  citation: Insurance Code s. 8-114 (records inquiry)
+  respondent_name: the firm
+  response_window_days: 14
+  sender_display_name: R. Patel
+  claimed_from: rpatel@stateca.sandbox.invalid
+attachments: []
+pool: free_pool
+expect:
+  intent: legal_notice
+  signal: legal_notice
+  quarantine: false
+  reply_to_sender: true

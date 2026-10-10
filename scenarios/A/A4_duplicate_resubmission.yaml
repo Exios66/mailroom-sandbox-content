@@ -22,6 +22,7 @@ timeline:
     channel: email
     claimed_from: jlin@northstar-advisory.sandbox.invalid
     template: resend_submission
+    gen_spec: gen_A4_duplicate_resubmission_0701
     vars: {document_title: the merger agreement, matter_ref: NA-2026-0131}
     attach:
     - {ref: merger_doc_resend, same_as: merger_doc_first_send}

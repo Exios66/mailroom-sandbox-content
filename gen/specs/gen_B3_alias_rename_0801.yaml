@@ -1,0 +1,28 @@
+# Generation spec: unit alias rename on a superseding lease (addendum v2 §6.3)
+# Archetype B3: informal landlord sends a renamed unit's new lease and COI.
+id: gen_B3_alias_rename_0801
+persona: p_brightwater_pm
+target_client: brightwater
+archetype: B3_alias_rename
+goal: Send the signed new lease and updated certificate of insurance, noting the unit was renamed from 4B to 4C.
+constraints:
+  must_include: [alias_rename_notice, lease_supersession_reference, certificate_of_insurance_reference]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: informal
+  length: "30-80 words"
+  language: en
+context:
+  old_unit: 4B
+  new_unit: 4C
+  sender_display_name: T. Reyes
+  claimed_from: treyes@brightwaterpg.sandbox.invalid
+attachments:
+  - lease_img_4471.pdf
+  - coi_unit4c.pdf
+pool: free_pool
+expect:
+  intent: document_submission
+  signal: doc_relation
+  quarantine: false
+  reply_to_sender: true

@@ -13,6 +13,7 @@ timeline:
     channel: email
     claimed_from: treyes@brightwaterpg.sandbox.invalid
     template: attachment_only
+    gen_spec: gen_C11_empty_body_attachment_0910
     vars: {subject_line: ''}
     attach:
     - {file: lease_img_4471.pdf}

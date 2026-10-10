@@ -14,6 +14,7 @@ timeline:
     claimed_from: events@northstar-advisory.sandbox.invalid
     auth: {spf: pass, dkim: pass, dmarc: pass}
     template: d5_calendar_invite
+    gen_spec: gen_D5_calendar_invite_0303
 expect:
   intent: unrelated
   signals:

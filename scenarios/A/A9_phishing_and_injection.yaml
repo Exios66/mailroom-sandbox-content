@@ -13,6 +13,7 @@ timeline:
     channel: email
     claimed_from: jlin@northstar.sandbox.invalid
     template: unrelated_note
+    gen_spec: gen_A9_phishing_injection_0706
     vars: {topic: Placeholder (deprecated; see series E), note: Deprecated placeholder; scenario 9 is
         covered by E1-E13.}
 expect:

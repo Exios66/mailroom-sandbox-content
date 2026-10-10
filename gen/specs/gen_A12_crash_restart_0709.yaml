@@ -1,0 +1,28 @@
+# Generation spec: signed document submission before a mid-triage crash (addendum v2 §6.3)
+# Archetype A12: formal cover note submitting a signed contract.
+id: gen_A12_crash_restart_0709
+persona: p_harlow_counsel
+target_client: harlowpryce
+archetype: A12_crash_restart
+goal: Submit the signed IP assignment for matter HP-2026-0421 with a cover note.
+constraints:
+  must_include: [signed_document_reference, matter_reference, submission_cover_note]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: formal
+  length: "30-80 words"
+  language: en
+context:
+  document_title: the IP assignment
+  matter_ref: HP-2026-0421
+  note: Signed copy.
+  sender_display_name: D. Whitcomb
+  claimed_from: dwhitcomb@harlowpryce.sandbox.invalid
+attachments:
+  - contract_ip.pdf
+pool: free_pool
+expect:
+  intent: document_submission
+  signal: new_info
+  quarantine: false
+  reply_to_sender: true

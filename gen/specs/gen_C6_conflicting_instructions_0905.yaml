@@ -1,0 +1,26 @@
+# Generation spec: two senders give incompatible closing instructions (addendum v2 §6.3)
+# Archetype C6: first of the conflicting closing instructions on matter TC-2026-0912.
+id: gen_C6_conflicting_instructions_0905
+persona: p_tricounty_real
+target_client: tricountytitle
+archetype: C6_conflicting_instructions
+goal: Instruct the recipient to hold the closing documents for matter TC-2026-0912 until the lender confirms funding.
+constraints:
+  must_include: [closing_instruction, matter_reference, hold_directive]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: formal
+  length: "20-60 words"
+  language: en
+context:
+  matter_ref: TC-2026-0912
+  instruction: Please hold the closing documents until the lender confirms funding.
+  sender_display_name: K. Alvarado
+  claimed_from: kalvarado@tricountytitle.sandbox.invalid
+attachments: []
+pool: free_pool
+expect:
+  intent: conflicting_instructions
+  signal: urgent
+  quarantine: false
+  reply_to_sender: true

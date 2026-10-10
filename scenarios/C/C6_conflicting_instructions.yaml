@@ -15,6 +15,7 @@ timeline:
     channel: email
     claimed_from: kalvarado@tricountytitle.sandbox.invalid
     template: closing_instruction
+    gen_spec: gen_C6_conflicting_instructions_0905
     vars: {matter_ref: TC-2026-0912, instruction: Please hold the closing documents until the lender confirms
         funding.}
 - at: "00:05"

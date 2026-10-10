@@ -14,6 +14,7 @@ timeline:
     channel: email
     claimed_from: jlin@northstar-advisory.sandbox.invalid
     template: late_binding_heads_up
+    gen_spec: gen_A10_late_binding_0707
     vars: {document_title: the signed merger agreement, matter_ref: NA-2026-0144}
 - at: "00:09"
   ingress: {ref: merger_doc_late, class: merger_agreement, stratum: all_cash, as: NA-2026-0144_merger_agreement.pdf}

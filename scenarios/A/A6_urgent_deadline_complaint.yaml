@@ -13,6 +13,7 @@ timeline:
     channel: email
     claimed_from: aokafor@okaforfreight.sandbox.invalid
     template: urgent_complaint
+    gen_spec: gen_A6_urgent_deadline_complaint_0703
     vars: {claim_ref: CL-558201, deadline: 5 p.m.}
 expect:
   intent: complaint

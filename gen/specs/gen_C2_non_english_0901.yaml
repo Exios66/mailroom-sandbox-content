@@ -1,0 +1,25 @@
+# Generation spec: non-English (Spanish) policyholder message (addendum v2 §6.3)
+# Archetype C2: pro-se policyholder writes in Spanish about an open claim.
+id: gen_C2_non_english_0901
+persona: p_vega_prose
+target_client: vega
+archetype: C2_non_english_message
+goal: Ask in Spanish whether anything is still missing from claim VG-2026-0447.
+constraints:
+  must_include: [spanish_prose, claim_reference, missing_document_question]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: informal
+  length: "30-70 words"
+  language: es
+context:
+  claim_ref: VG-2026-0447
+  sender_display_name: Marisol Vega
+  claimed_from: marisol.vega@vega.sandbox.invalid
+attachments: []
+pool: free_pool
+expect:
+  intent: general_question
+  signal: new_info
+  quarantine: false
+  reply_to_sender: true

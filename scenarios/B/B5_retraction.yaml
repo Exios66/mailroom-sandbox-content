@@ -23,6 +23,7 @@ timeline:
     channel: email
     claimed_from: dwhitcomb@harlowpryce.sandbox.invalid
     template: retraction_notice
+    gen_spec: gen_B5_retraction_0803
     vars: {document_title: Schedule C (v3), matter_ref: HP-2026-0417}
 expect:
   intent: retraction_or_withdrawal

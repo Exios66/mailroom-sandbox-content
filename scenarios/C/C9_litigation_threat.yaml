@@ -14,6 +14,7 @@ timeline:
     channel: email
     claimed_from: aokafor@okaforfreight.sandbox.invalid
     template: litigation_threat_followup
+    gen_spec: gen_C9_litigation_threat_0908
     vars: {claim_ref: CL-558201}
 expect:
   intent: complaint

@@ -1,0 +1,25 @@
+# Generation spec: routine follow-up ending in a litigation threat (addendum v2 §6.3)
+# Archetype C9: claimant follow-up with a lawyer threat.
+id: gen_C9_litigation_threat_0908
+persona: p_okafor_claimant
+target_client: okafor
+archetype: C9_litigation_threat
+goal: Follow up on claim CL-558201 and threaten to involve a lawyer if there is no response by Friday.
+constraints:
+  must_include: [claim_reference, litigation_threat, followup_pressure]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: frustrated
+  length: "30-70 words"
+  language: en
+context:
+  claim_ref: CL-558201
+  sender_display_name: A. Okafor
+  claimed_from: aokafor@okaforfreight.sandbox.invalid
+attachments: []
+pool: free_pool
+expect:
+  intent: complaint
+  signal: complaint
+  quarantine: false
+  reply_to_sender: false

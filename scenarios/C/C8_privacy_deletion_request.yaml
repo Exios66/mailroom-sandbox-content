@@ -13,6 +13,7 @@ timeline:
     channel: email
     claimed_from: marisol.vega@vega.sandbox.invalid
     template: privacy_deletion_request
+    gen_spec: gen_C8_privacy_deletion_request_0907
     vars: {claim_ref: VG-2026-0447}
 expect:
   intent: privacy_request

@@ -1,0 +1,25 @@
+# Generation spec: verified client uses alarming URGENT wording on routine mail (addendum v2 §6.3)
+# Archetype D3: red herring — urgency lexicon on a non-urgent item.
+id: gen_D3_fake_urgent_0300
+persona: p_tricounty_real
+target_client: tricountytitle
+archetype: D3_fake_urgent_verified
+goal: Use alarming URGENT wording on a routine closing-checklist request that is not actually urgent.
+constraints:
+  must_include: [alarming_urgency_wording, routine_closing_item, no_real_deadline]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: apologetic
+  length: "40-80 words"
+  language: en
+context:
+  closing_day: Friday
+  sender_display_name: K. Alvarado
+  claimed_from: closing@tricountytitle.sandbox.invalid
+attachments: []
+pool: free_pool
+expect:
+  intent: status_request
+  signal: status_request
+  quarantine: false
+  reply_to_sender: true

@@ -1,0 +1,27 @@
+# Generation spec: duplicate resubmission of the same merger document (addendum v2 §6.3)
+# Archetype A4: identical document content resent, no changes.
+id: gen_A4_duplicate_resubmission_0701
+persona: p_northstar_adviser
+target_client: northstar
+archetype: A4_duplicate_resubmission
+goal: Resend the executed merger agreement for matter NA-2026-0131 as a precaution in case the earlier email did not arrive.
+constraints:
+  must_include: [resend_cover_note, unchanged_document_reference, matter_reference]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: brief
+  length: "30-70 words"
+  language: en
+context:
+  document_title: the merger agreement
+  matter_ref: NA-2026-0131
+  sender_display_name: J. Lin
+  claimed_from: jlin@northstar-advisory.sandbox.invalid
+attachments:
+  - merger_agreement_all_cash.pdf
+pool: free_pool
+expect:
+  intent: duplicate_submission
+  signal: new_info
+  quarantine: false
+  reply_to_sender: true

@@ -13,6 +13,7 @@ timeline:
     channel: email
     claimed_from: nbilling@lakeshorebilling.sandbox.invalid
     template: auto_reply_ooo
+    gen_spec: gen_A8_autoreply_storm_0705
     vars: {original_subject: Claim batch received, return_date: Monday}
 - at: "00:07"
   client:

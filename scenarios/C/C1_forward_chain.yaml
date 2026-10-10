@@ -13,6 +13,7 @@ timeline:
     channel: email
     claimed_from: aokafor@okaforfreight.sandbox.invalid
     template: forward_chain
+    gen_spec: gen_C1_forward_chain_0900
     vars: {subject_core: claim CL-558201 paperwork, question: 'See below - is this still what you need?',
       quoted_history: 'Original request for the bill of lading and photos, forwarded twice with notes
         from the yard manager.'}

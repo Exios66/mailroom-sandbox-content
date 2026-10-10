@@ -1,0 +1,27 @@
+# Generation spec: calendar invite plus system notification (addendum v2 §6.3)
+# Archetype D5: red herring — pre-filtered invite that needs no reply.
+id: gen_D5_calendar_invite_0303
+persona: p_northstar_adviser
+target_client: northstar
+archetype: D5_calendar_invite
+goal: Send a calendar invite plus system notification for a quarterly planning sync that needs no reply.
+constraints:
+  must_include: [calendar_invite, system_notification, no_reply_needed]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: neutral
+  length: "30-70 words"
+  language: en
+context:
+  event: quarterly planning sync
+  event_day: Thursday
+  event_time: "10:00"
+  sender_display_name: J. Lin
+  claimed_from: events@northstar-advisory.sandbox.invalid
+attachments: []
+pool: free_pool
+expect:
+  intent: unrelated
+  signal: fyi
+  quarantine: false
+  reply_to_sender: true

@@ -1,0 +1,26 @@
+# Generation spec: new device and signature format (addendum v2 §6.3)
+# Archetype D6: red herring — signature change that should still read as verified.
+id: gen_D6_new_signature_0304
+persona: p_harlow_counsel
+target_client: harlowpryce
+archetype: D6_new_signature_format
+goal: Send a routine status check from a new device and signature format that should still read as verified.
+constraints:
+  must_include: [routine_status_request, new_device_signature, matter_reference]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: casual
+  length: "30-70 words"
+  language: en
+context:
+  matter: the Mitchell matter
+  filing_day: Friday
+  sender_display_name: M. Harlow
+  claimed_from: counsel@harlowpryce.sandbox.invalid
+attachments: []
+pool: free_pool
+expect:
+  intent: status_request
+  signal: status_request
+  quarantine: false
+  reply_to_sender: true

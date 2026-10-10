@@ -13,6 +13,7 @@ timeline:
     channel: email
     claimed_from: treyes@brightwaterpg.sandbox.invalid
     template: informal_photo_submission
+    gen_spec: gen_C4_corrupted_pdf_0903
     vars: {subject_line: scan, note: here's the scan from the site}
     attach:
     - {file: corrupted_scan_01.pdf}

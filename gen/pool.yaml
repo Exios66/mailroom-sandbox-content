@@ -2,6 +2,11 @@
 # Free OpenRouter pool (discovered, scored, rotated) with a three-model paid fallback.
 # The pool itself is a runtime artifact: resolved at sandbox up, never hard-coded here
 # beyond the seed candidates and policy below.
+#
+# [verified 2026-10-10] Seed candidates, exclusions and paid slots cross-checked
+# against the OpenRouter models endpoint (openrouter.ai /api/v1/models; 458 models,
+# 15 `:free`). Six of the seven prior seed candidates had been retired or renamed;
+# paid slot 2's slug (`deepseek-v4.1`) no longer resolves. Re-verify at sandbox up.
 schema: mailroom.gen_pool/v1
 
 free_pool:
@@ -12,19 +17,28 @@ free_pool:
     min_context_tokens: 32768
     router_fallback: openrouter/free   # last free option: the router picks from whatever is free
     exclude_retiring_within_days: 90
-  # Seed candidates seen in September 2026 trackers. Expect churn; re-verify at sandbox up.
+  # Seed candidates verified live 2026-10-10 against the chat-completions API.
+  # Only nemotron-3-ultra answered reliably; gemma is upstream-rate-limited;
+  # the rest below are excluded because they cannot serve this API. Order
+  # matters: the working model first, then the rate-limited retries.
   seed_candidates:
-    - nvidia/nemotron-3-ultra:free
-    - nvidia/nemotron-3.5-lightning:free
-    - openai/gpt-oss-120b:free
-    - openai/gpt-oss-20b:free
-    - qwen/qwen3-coder:free
-    - moonshotai/kimi-k2.6:free
-    - meta-llama/llama-3.3-70b-instruct:free
+    - nvidia/nemotron-3-ultra-550b-a55b:free        # 1M ctx; the reliable free writer
+    - google/gemma-4-31b-it:free                    # upstream 429; retried
+    - google/gemma-4-26b-a4b-it:free
+    - nvidia/nemotron-3-super-120b-a12b:free
   excluded_retiring:
-    # Listed as retiring by 2026-12-31; stay out of the pool. [verify] at sandbox up.
-    - poolside/laguna-models
-    - dots3-note-preview
+    # Unsuitable for this API (verified 2026-10-10), or chain-of-thought leakers.
+    - thinkingmachines/inkling:free                 # 403: agentic-harness-only
+    - thinkingmachines/inkling-small:free           # 403: agentic-harness-only
+    - apodex/apodex-1.1-mini:free                   # empty content
+    - liquid/lfm-2.5-2.6b:free                      # empty content
+    - nvidia/nemotron-3.5-lightning:free            # CoT leaked into content
+    - nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
+    - poolside/laguna-s-2.1:free                    # retiring
+    - poolside/laguna-xs-2.1:free
+    - dots-studio/dots-3-note-preview:free
+    - nvidia/nemotron-3.5-content-safety:free       # safety classifier, not a generator
+    - cohere/north-mini-code:free                   # code-only
   account_limits:
     rpm: 20                      # per account, not per model or key; purchases do not change it
     rpd: 50                      # 1000/day after a one-time $10 credit purchase (uplift persists)
@@ -56,38 +70,43 @@ paid_tier:
   vendor_diversity: 3_different_makers
   # Slots are vendor slots, not pins: sandbox models refresh re-resolves slugs and
   # prices, re-runs the benchmark, and swaps a failing model for the next alternate.
+  # [verified 2026-10-10] prices read from openrouter.ai/api/v1/models.
   slots:
     - slot: 1
       role: cheapest_structured_output_class
       model: xiaomi/mimo-v2.6-flash
       input_per_1m_usd: 0.14
       output_per_1m_usd: 0.28
-      status: slug_and_price_confirmed_2026-10-08
+      status: slug_and_price_confirmed_2026-10-10
       notes: 1M context
     - slot: 2
       role: strong_value_second_vendor
-      model: deepseek-v4.1   # EXACT SLUG [verify] AT SANDBOX UP
-      input_per_1m_usd: 0.30
-      output_per_1m_usd: 1.20
-      status: price_plan_unverified_slug
+      model: deepseek/deepseek-v4-pro   # v4.1 slug retired; pro is the live DeepSeek value line
+      input_per_1m_usd: 0.209
+      output_per_1m_usd: 0.418
+      status: slug_and_price_confirmed_2026-10-10
       notes: >
-        Trackers show $0.30/$1.20 via OpenRouter; v1's $0.15/$0.60 "off-peak" was
-        DeepSeek first-party time-of-day pricing, not corroborated for OpenRouter.
-        Previous DeepSeek V4 Flash lists at $0.14/$0.28 and enters the benchmark
-        as the cheaper sibling.
+        The planned slug `deepseek-v4.1` no longer resolves on OpenRouter
+        (verified 2026-10-10). Live DeepSeek flash line is
+        `deepseek/deepseek-v4.1-flash:batch` ($0.112/$0.336, batch-only);
+        `deepseek/deepseek-v4-pro` is the interactive strong-value sibling
+        with 1M context. Re-check at sandbox up.
     - slot: 3
       role: third_vendor_for_diversity
-      model: z-ai/glm-5.3-flash   # EXACT SLUG [verify]; NOT RE-CHECKED
+      model: z-ai/glm-5.3-flash
       input_per_1m_usd: 0.15
       output_per_1m_usd: 0.50
-      status: price_from_v1_unverified
-  alternates:                    # next in line if a slot fails the acceptance bar; NOT RE-CHECKED [verify]
+      status: slug_and_price_confirmed_2026-10-10
+  alternates:                    # next in line if a slot fails the acceptance bar
     - model: openai/gpt-6-luna
       input_per_1m_usd: 0.10
       output_per_1m_usd: 0.50
     - model: meta/muse-spark-1.3-contributor
       input_per_1m_usd: 0.10
       output_per_1m_usd: 0.20
+    - model: qwen/qwen3.7-flash
+      input_per_1m_usd: 0.03
+      output_per_1m_usd: 0.13
   provider_policy:
     provider.data_collection: deny   # [verify] where the route supports it; free calls cannot deny, hence the payload guard
   cost_notes: >

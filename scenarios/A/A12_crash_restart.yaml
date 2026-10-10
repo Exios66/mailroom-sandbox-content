@@ -13,6 +13,7 @@ timeline:
     channel: email
     claimed_from: dwhitcomb@harlowpryce.sandbox.invalid
     template: document_submission
+    gen_spec: gen_A12_crash_restart_0709
     vars: {document_title: the IP assignment, matter_ref: HP-2026-0421, note: Signed copy.}
     attach:
     - {class: contract, stratum: ip}

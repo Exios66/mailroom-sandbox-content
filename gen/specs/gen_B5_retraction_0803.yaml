@@ -1,0 +1,26 @@
+# Generation spec: sender withdraws an earlier upload (addendum v2 §6.3)
+# Archetype B5: retraction notice for a wrong file.
+id: gen_B5_retraction_0803
+persona: p_harlow_counsel
+target_client: harlowpryce
+archetype: B5_retraction
+goal: Withdraw the earlier Schedule C (v3) upload as the wrong file and promise the correct version.
+constraints:
+  must_include: [withdrawal_of_prior_upload, document_reference, matter_reference]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: brief
+  length: "25-60 words"
+  language: en
+context:
+  document_title: Schedule C (v3)
+  matter_ref: HP-2026-0417
+  sender_display_name: D. Whitcomb
+  claimed_from: dwhitcomb@harlowpryce.sandbox.invalid
+attachments: []
+pool: free_pool
+expect:
+  intent: retraction_or_withdrawal
+  signal: correction
+  quarantine: false
+  reply_to_sender: true

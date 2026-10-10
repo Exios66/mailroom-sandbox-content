@@ -1,0 +1,28 @@
+# Generation spec: forward-of-forward with long quoted history (addendum v2 §6.3)
+# Archetype C1: forwarded chain asking whether the earlier material is still needed.
+id: gen_C1_forward_chain_0900
+persona: p_okafor_claimant
+target_client: okafor
+archetype: C1_forward_chain
+goal: Forward a twice-forwarded thread about claim CL-558201 paperwork and ask whether it is still what the recipient needs.
+constraints:
+  must_include: [forward_chain_markers, quoted_history, clarifying_question]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: informal
+  length: "50-130 words"
+  language: en
+context:
+  claim_ref: CL-558201
+  subject_core: claim CL-558201 paperwork
+  question: See below - is this still what you need?
+  quoted_history: Original request for the bill of lading and photos, forwarded twice with notes from the yard manager.
+  sender_display_name: A. Okafor
+  claimed_from: aokafor@okaforfreight.sandbox.invalid
+attachments: []
+pool: free_pool
+expect:
+  intent: general_question
+  signal: new_info
+  quarantine: false
+  reply_to_sender: true

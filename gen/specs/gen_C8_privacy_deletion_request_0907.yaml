@@ -1,0 +1,25 @@
+# Generation spec: personal-data deletion request (addendum v2 §6.3)
+# Archetype C8: pro-se policyholder asks for deletion and disclosure of recipients.
+id: gen_C8_privacy_deletion_request_0907
+persona: p_vega_prose
+target_client: vega
+archetype: C8_privacy_deletion_request
+goal: Request deletion of all personal data tied to claim VG-2026-0447 and disclosure of everyone it was shared with.
+constraints:
+  must_include: [data_deletion_request, disclosure_request, claim_reference]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: formal
+  length: "30-70 words"
+  language: en
+context:
+  claim_ref: VG-2026-0447
+  sender_display_name: Marisol Vega
+  claimed_from: marisol.vega@vega.sandbox.invalid
+attachments: []
+pool: free_pool
+expect:
+  intent: privacy_request
+  signal: privacy_request
+  quarantine: false
+  reply_to_sender: true

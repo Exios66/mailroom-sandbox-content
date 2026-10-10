@@ -13,6 +13,7 @@ timeline:
     channel: email
     claimed_from: agarcia@prairielabs.sandbox.invalid
     template: unrelated_note
+    gen_spec: gen_A7_unrelated_correspondence_0704
     vars: {topic: Team offsite next Friday, note: 'We''re doing a team offsite next Friday, so replies
         may be slow that day. Nothing needed from you.'}
 expect:

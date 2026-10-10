@@ -13,6 +13,7 @@ timeline:
     channel: email
     claimed_from: kalvarado@tricountytitle.sandbox.invalid
     template: benign_closing_companion
+    gen_spec: gen_A11_out_of_order_delivery_0708
     vars: {document_title: Board resolution, matter_ref: TC-2026-1190}
     attach:
     - {class: corporate_record, stratum: board_resolution}

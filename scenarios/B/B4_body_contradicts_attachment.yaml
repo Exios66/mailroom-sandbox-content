@@ -16,6 +16,7 @@ timeline:
     channel: email
     claimed_from: aokafor@okaforfreight.sandbox.invalid
     template: claim_date_correction
+    gen_spec: gen_B4_contradiction_correction_0802
     vars: {claim_ref: CL-558201, stated_loss_date: March 3, letter_loss_date: March 8}
     attach:
     - {file: inventory_final.csv}

@@ -1,0 +1,28 @@
+# Generation spec: body contradicts an attached letter's loss date (addendum v2 §6.3)
+# Archetype B4: correction request citing two incompatible dates.
+id: gen_B4_contradiction_correction_0802
+persona: p_okafor_claimant
+target_client: okafor
+archetype: B4_body_contradicts_attachment
+goal: Correct the loss date on claim CL-558201 from March 8 to March 3 and resend the inventory.
+constraints:
+  must_include: [contradicting_date_values, claim_reference, correction_request]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: frustrated
+  length: "40-90 words"
+  language: en
+context:
+  claim_ref: CL-558201
+  stated_loss_date: March 3
+  letter_loss_date: March 8
+  sender_display_name: A. Okafor
+  claimed_from: aokafor@okaforfreight.sandbox.invalid
+attachments:
+  - inventory_final.csv
+pool: free_pool
+expect:
+  intent: correction_or_amendment
+  signal: correction
+  quarantine: false
+  reply_to_sender: true

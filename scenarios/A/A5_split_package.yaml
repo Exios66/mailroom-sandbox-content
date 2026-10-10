@@ -13,6 +13,7 @@ timeline:
     channel: email
     claimed_from: dpark@cedarridge.sandbox.invalid
     template: split_package_part
+    gen_spec: gen_A5_split_package_0702
     vars: {claim_ref: CR-2026-0577, part: 1, total: 2}
     attach:
     - {class: insurance_claim, stratum: property, ref: claim_package_part_1, group: cr_0577}

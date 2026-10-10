@@ -16,6 +16,7 @@ timeline:
     channel: email
     claimed_from: treyes@brightwaterpg.sandbox.invalid
     template: alias_rename_lease
+    gen_spec: gen_B3_alias_rename_0801
     vars: {old_unit: 4B, new_unit: 4C}
     attach:
     - {file: lease_img_4471.pdf, ref: lease_new}

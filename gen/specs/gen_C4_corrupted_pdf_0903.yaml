@@ -1,0 +1,27 @@
+# Generation spec: corrupted photo scan quarantined (addendum v2 §6.3)
+# Archetype C4: informal site scan that arrives unreadable.
+id: gen_C4_corrupted_pdf_0903
+persona: p_brightwater_pm
+target_client: brightwater
+archetype: C4_corrupted_pdf
+goal: Send an informal site photo scan that turns out to be unreadable so it can be reviewed and quarantined.
+constraints:
+  must_include: [informal_photo_submission, unreadable_scan, site_photo_reference]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: casual
+  length: "15-45 words"
+  language: en
+context:
+  subject_line: scan
+  note: here's the scan from the site
+  sender_display_name: T. Reyes
+  claimed_from: treyes@brightwaterpg.sandbox.invalid
+attachments:
+  - corrupted_scan_01.pdf
+pool: free_pool
+expect:
+  intent: document_submission
+  signal: missing_doc
+  quarantine: true
+  reply_to_sender: false

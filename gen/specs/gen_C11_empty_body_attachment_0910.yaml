@@ -1,0 +1,26 @@
+# Generation spec: attachment only, empty body (addendum v2 §6.3)
+# Archetype C11: no body text beyond the attachment; no request made.
+id: gen_C11_empty_body_attachment_0910
+persona: p_brightwater_pm
+target_client: brightwater
+archetype: C11_empty_body_attachment
+goal: Send an attachment-only message with an empty body and no request.
+constraints:
+  must_include: [empty_body, attachment_only, no_request]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: neutral
+  length: "0-15 words"
+  language: en
+context:
+  subject_line: ""
+  sender_display_name: T. Reyes
+  claimed_from: treyes@brightwaterpg.sandbox.invalid
+attachments:
+  - lease_img_4471.pdf
+pool: free_pool
+expect:
+  intent: document_submission
+  signal: new_info
+  quarantine: false
+  reply_to_sender: true

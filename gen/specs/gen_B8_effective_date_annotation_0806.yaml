@@ -1,0 +1,27 @@
+# Generation spec: email-only effective-date change (addendum v2 §6.3)
+# Archetype B8: annotation-only update that changes a processed document's meaning.
+id: gen_B8_effective_date_annotation_0806
+persona: p_harlow_counsel
+target_client: harlowpryce
+archetype: B8_effective_date_annotation
+goal: Notify the recipient that the license agreement for matter HP-2026-0388 takes effect July 1, not on signing.
+constraints:
+  must_include: [effective_date_change, document_reference, matter_reference]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: formal
+  length: "30-70 words"
+  language: en
+context:
+  document_title: the license agreement
+  matter_ref: HP-2026-0388
+  effective_date: July 1
+  sender_display_name: D. Whitcomb
+  claimed_from: dwhitcomb@harlowpryce.sandbox.invalid
+attachments: []
+pool: free_pool
+expect:
+  intent: correction_or_amendment
+  signal: correction
+  quarantine: false
+  reply_to_sender: true

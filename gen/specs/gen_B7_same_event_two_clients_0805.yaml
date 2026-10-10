@@ -1,0 +1,28 @@
+# Generation spec: two clients describe the same loss event (addendum v2 §6.3)
+# Archetype B7: claimant's loss report, correlated with the adjuster's field report.
+id: gen_B7_same_event_two_clients_0805
+persona: p_okafor_claimant
+target_client: okafor
+archetype: B7_same_event_two_clients
+goal: Report the loss behind claim CL-558201 with its date and circumstances so it can be correlated with the adjuster's field report.
+constraints:
+  must_include: [loss_event_description, claim_reference, loss_date]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: formal
+  length: "30-80 words"
+  language: en
+context:
+  claim_ref: CL-558201
+  loss_date: March 3
+  loss_summary: our trailer was struck while parked at the Route 9 yard.
+  sender_display_name: A. Okafor
+  claimed_from: aokafor@okaforfreight.sandbox.invalid
+attachments:
+  - insurance_claim_auto.pdf
+pool: free_pool
+expect:
+  intent: document_submission
+  signal: doc_relation
+  quarantine: false
+  reply_to_sender: true

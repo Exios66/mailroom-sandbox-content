@@ -13,6 +13,7 @@ timeline:
     channel: email
     claimed_from: rpatel@stateca.sandbox.invalid
     template: regulator_notice
+    gen_spec: gen_C7_after_hours_legal_notice_0906
     vars: {notice_ref: SCA-2026-0718, citation: Consumer Protection Code s. 12-401, respondent_name: the
         firm, response_window_days: 10}
 expect:

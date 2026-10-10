@@ -16,6 +16,7 @@ timeline:
     channel: email
     claimed_from: dwhitcomb@harlowpryce.sandbox.invalid
     template: effective_date_update
+    gen_spec: gen_B8_effective_date_annotation_0806
     vars: {document_title: the license agreement, matter_ref: HP-2026-0388, effective_date: July 1}
 expect:
   intent: correction_or_amendment

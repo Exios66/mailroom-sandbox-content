@@ -14,6 +14,7 @@ timeline:
     channel: email
     claimed_from: aokafor@okaforfreight.sandbox.invalid
     template: loss_report
+    gen_spec: gen_B7_same_event_two_clients_0805
     vars: {claim_ref: CL-558201, loss_date: March 3, loss_summary: our trailer was struck while parked
         at the Route 9 yard.}
     attach:

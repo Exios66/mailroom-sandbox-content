@@ -1,0 +1,28 @@
+# Generation spec: counterparty ties two matters together (addendum v2 §6.3)
+# Archetype B2: cross-matter submission keyed on a shared counterparty.
+id: gen_B2_cross_matter_0800
+persona: p_northstar_adviser
+target_client: northstar
+archetype: B2_counterparty_cross_matter
+goal: Submit the signed agreement for matter NA-2026-0102 and flag that the same counterparty ties it to NA-2026-0117.
+constraints:
+  must_include: [cross_matter_link, counterparty_reference, document_submission]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: formal
+  length: "50-110 words"
+  language: en
+context:
+  matter_ref: NA-2026-0102
+  other_matter_ref: NA-2026-0117
+  counterparty: Meridian Holdings
+  sender_display_name: J. Lin
+  claimed_from: jlin@northstar-advisory.sandbox.invalid
+attachments:
+  - merger_agreement_all_cash.pdf
+pool: free_pool
+expect:
+  intent: document_submission
+  signal: doc_relation
+  quarantine: false
+  reply_to_sender: true

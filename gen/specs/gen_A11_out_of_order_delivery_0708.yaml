@@ -1,0 +1,27 @@
+# Generation spec: benign closing companion carrying a board resolution (addendum v2 §6.3)
+# Archetype A11: routine submission subject to duplicate/out-of-order delivery.
+id: gen_A11_out_of_order_delivery_0708
+persona: p_tricounty_real
+target_client: tricountytitle
+archetype: A11_out_of_order_delivery
+goal: Submit a board resolution for matter TC-2026-1190 on a benign closing companion note.
+constraints:
+  must_include: [document_reference, matter_reference, submission_cover_note]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: formal
+  length: "25-70 words"
+  language: en
+context:
+  document_title: Board resolution
+  matter_ref: TC-2026-1190
+  sender_display_name: K. Alvarado
+  claimed_from: kalvarado@tricountytitle.sandbox.invalid
+attachments:
+  - corporate_record_board_resolution.pdf
+pool: free_pool
+expect:
+  intent: document_submission
+  signal: new_info
+  quarantine: false
+  reply_to_sender: true

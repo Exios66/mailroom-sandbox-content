@@ -1,0 +1,26 @@
+# Generation spec: claimant chases a still-missing document (addendum v2 §6.3)
+# Archetype A2: polite missing-document follow-up on an open claim.
+id: gen_A2_missing_doc_followup_0700
+persona: p_okafor_claimant
+target_client: okafor
+archetype: A2_missing_document_followup
+goal: Ask the intake desk for a follow-up on the police report still missing from claim CL-558201.
+constraints:
+  must_include: [missing_document_reference, claim_reference, polite_followup]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: concerned
+  length: "40-110 words"
+  language: en
+context:
+  claim_ref: CL-558201
+  missing_item: the police report
+  sender_display_name: A. Okafor
+  claimed_from: aokafor@okaforfreight.sandbox.invalid
+attachments: []
+pool: free_pool
+expect:
+  intent: document_submission
+  signal: missing_doc
+  quarantine: false
+  reply_to_sender: true

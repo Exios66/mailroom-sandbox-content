@@ -14,6 +14,7 @@ timeline:
     channel: email
     claimed_from: jlin@northstar-advisory.sandbox.invalid
     template: cross_matter_note
+    gen_spec: gen_B2_cross_matter_0800
     vars: {matter_ref: NA-2026-0102, other_matter_ref: NA-2026-0117, counterparty: Meridian Holdings}
     attach:
     - {class: merger_agreement, stratum: all_cash}

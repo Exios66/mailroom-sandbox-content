@@ -1,0 +1,28 @@
+# Generation spec: claim package split across two emails (addendum v2 §6.3)
+# Archetype A5: first half of a two-part submission.
+id: gen_A5_split_package_0702
+persona: p_cedarridge_adjuster
+target_client: cedarridge
+archetype: A5_split_package
+goal: Send the first half of a two-part claim package for claim CR-2026-0577.
+constraints:
+  must_include: [split_package_reference, part_number, claim_reference]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: terse
+  length: "20-60 words"
+  language: en
+context:
+  claim_ref: CR-2026-0577
+  part: 1
+  total: 2
+  sender_display_name: D. Park
+  claimed_from: dpark@cedarridge.sandbox.invalid
+attachments:
+  - insurance_claim_property.pdf
+pool: free_pool
+expect:
+  intent: document_submission
+  signal: new_info
+  quarantine: false
+  reply_to_sender: true

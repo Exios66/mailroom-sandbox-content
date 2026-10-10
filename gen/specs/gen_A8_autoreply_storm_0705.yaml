@@ -1,0 +1,26 @@
+# Generation spec: out-of-office auto-reply loop (addendum v2 §6.3)
+# Archetype A8: templated auto-reply from a billing mailbox.
+id: gen_A8_autoreply_storm_0705
+persona: p_lakeshore_biller
+target_client: lakeshore
+archetype: A8_autoreply_storm
+goal: Emit an out-of-office auto-reply from the billing mailbox noting it is closed until Monday.
+constraints:
+  must_include: [automatic_reply_marker, return_date, unmonitored_mailbox]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: automated
+  length: "25-60 words"
+  language: en
+context:
+  original_subject: Claim batch received
+  return_date: Monday
+  sender_display_name: N. Nguyen
+  claimed_from: nbilling@lakeshorebilling.sandbox.invalid
+attachments: []
+pool: free_pool
+expect:
+  intent: auto_reply
+  signal: fyi
+  quarantine: false
+  reply_to_sender: true

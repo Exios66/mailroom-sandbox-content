@@ -1,0 +1,28 @@
+# Generation spec: late exhibit completes an archived claim set (addendum v2 §6.3)
+# Archetype B6: late property exhibit for an already-archived set.
+id: gen_B6_late_exhibit_0804
+persona: p_cedarridge_adjuster
+target_client: cedarridge
+archetype: B6_late_exhibit_completes_set
+goal: Send a late property exhibit to complete the already-archived claim set for claim CR-2026-0560.
+constraints:
+  must_include: [late_exhibit_reference, claim_reference, completes_prior_set]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: terse
+  length: "20-60 words"
+  language: en
+context:
+  claim_ref: CR-2026-0560
+  exhibit_label: Exhibit F (roof photos)
+  group: cr_0560
+  sender_display_name: D. Park
+  claimed_from: dpark@cedarridge.sandbox.invalid
+attachments:
+  - insurance_claim_property.pdf
+pool: free_pool
+expect:
+  intent: document_submission
+  signal: doc_relation
+  quarantine: false
+  reply_to_sender: true

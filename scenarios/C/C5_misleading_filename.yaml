@@ -13,6 +13,7 @@ timeline:
     channel: email
     claimed_from: agarcia@prairielabs.sandbox.invalid
     template: document_submission
+    gen_spec: gen_C5_misleading_filename_0904
     vars: {document_title: invoice.pdf, matter_ref: the reseller deal, note: 'It''s the signed agreement,
         sorry about the filename.'}
     attach:

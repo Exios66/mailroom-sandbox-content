@@ -1,0 +1,28 @@
+# Generation spec: misleading filename, content wins (addendum v2 §6.3)
+# Archetype C5: signed agreement submitted under an invoice.pdf name.
+id: gen_C5_misleading_filename_0904
+persona: p_prairie_founder
+target_client: prairielabs
+archetype: C5_misleading_filename
+goal: Submit the signed reseller agreement under a misleading invoice.pdf filename.
+constraints:
+  must_include: [misleading_filename, signed_agreement_reference, filename_apology]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: casual
+  length: "25-70 words"
+  language: en
+context:
+  document_title: invoice.pdf
+  matter_ref: the reseller deal
+  note: It's the signed agreement, sorry about the filename.
+  sender_display_name: A. Garcia
+  claimed_from: agarcia@prairielabs.sandbox.invalid
+attachments:
+  - invoice.pdf
+pool: free_pool
+expect:
+  intent: document_submission
+  signal: new_info
+  quarantine: false
+  reply_to_sender: true

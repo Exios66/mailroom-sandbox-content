@@ -1,0 +1,26 @@
+# Generation spec: correspondence unrelated to any matter (addendum v2 §6.3)
+# Archetype A7: friendly fyi that needs no action.
+id: gen_A7_unrelated_correspondence_0704
+persona: p_prairie_founder
+target_client: prairielabs
+archetype: A7_unrelated_correspondence
+goal: Send a friendly heads-up that the sender's team is offline next Friday and needs nothing in return.
+constraints:
+  must_include: [out_of_office_notice, no_action_requested]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: casual
+  length: "25-60 words"
+  language: en
+context:
+  topic: Team offsite next Friday
+  note: We're doing a team offsite next Friday, so replies may be slow that day. Nothing needed from you.
+  sender_display_name: A. Garcia
+  claimed_from: agarcia@prairielabs.sandbox.invalid
+attachments: []
+pool: free_pool
+expect:
+  intent: unrelated
+  signal: fyi
+  quarantine: false
+  reply_to_sender: true

@@ -1,0 +1,26 @@
+# Generation spec: email references a document before its ingress event (addendum v2 §6.3)
+# Archetype A10: advance notice of a document that arrives later in the timeline.
+id: gen_A10_late_binding_0707
+persona: p_northstar_adviser
+target_client: northstar
+archetype: A10_late_binding
+goal: Give the recipient a heads-up that a signed merger agreement for matter NA-2026-0144 is on its way.
+constraints:
+  must_include: [advance_document_notice, matter_reference, upcoming_document_reference]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: formal
+  length: "30-70 words"
+  language: en
+context:
+  document_title: the signed merger agreement
+  matter_ref: NA-2026-0144
+  sender_display_name: J. Lin
+  claimed_from: jlin@northstar-advisory.sandbox.invalid
+attachments: []
+pool: free_pool
+expect:
+  intent: document_submission
+  signal: doc_relation
+  quarantine: false
+  reply_to_sender: true

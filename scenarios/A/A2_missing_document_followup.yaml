@@ -14,6 +14,7 @@ timeline:
     channel: email
     claimed_from: aokafor@okaforfreight.sandbox.invalid
     template: missing_doc_followup
+    gen_spec: gen_A2_missing_doc_followup_0700
     vars: {claim_ref: CL-558201, missing_item: the police report, followup_label: Question}
 - at: "00:20"
   client:

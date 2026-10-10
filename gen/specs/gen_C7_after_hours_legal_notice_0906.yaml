@@ -1,0 +1,28 @@
+# Generation spec: after-hours deadline-bearing legal notice (addendum v2 §6.3)
+# Archetype C7: regulator notice demanding a response within a fixed window.
+id: gen_C7_after_hours_legal_notice_0906
+persona: p_stateca_regulator
+target_client: stateca
+archetype: C7_after_hours_legal_notice
+goal: Serve a regulatory legal notice requiring a written response within the stated window.
+constraints:
+  must_include: [legal_notice_reference, response_deadline, records_preservation]
+  forbidden: [real_brands, real_urls, working_links, phone_numbers_outside_555_01xx]
+style:
+  register: formal
+  length: "60-120 words"
+  language: en
+context:
+  notice_ref: SCA-2026-0718
+  citation: Consumer Protection Code s. 12-401
+  respondent_name: the firm
+  response_window_days: 10
+  sender_display_name: R. Patel
+  claimed_from: rpatel@stateca.sandbox.invalid
+attachments: []
+pool: free_pool
+expect:
+  intent: legal_notice
+  signal: legal_notice
+  quarantine: false
+  reply_to_sender: true

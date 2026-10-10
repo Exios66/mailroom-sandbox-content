@@ -14,6 +14,7 @@ timeline:
     channel: email
     claimed_from: marisol.vega@vega.sandbox.invalid
     template: spanish_inquiry
+    gen_spec: gen_C2_non_english_0901
     vars: {claim_ref: VG-2026-0447}
 expect:
   intent: general_question
