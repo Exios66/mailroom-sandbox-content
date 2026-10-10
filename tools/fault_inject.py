@@ -3,14 +3,16 @@
 Usage: python3 -I tools/fault_inject.py <repo root> <empty scratch dir>
 Seed for workstream K-02 (docs/superpowers/plans/2026-10-09-mailroom-core-plan.md in
 mailroom-reloaded). Read-only against the repo: every mutation runs in a copy.
-must_fail mutations that report CRASH or MISSED are defects; csv_crlf is a
-legitimate accept (the csv module handles CRLF).
+must_fail mutations that report CRASH or MISSED are defects. Three mutations
+are legitimate accepts, listed in EXPECTED_ACCEPTS: csv_crlf (the csv module
+handles CRLF), csv_bom_header (the strict reader strips a UTF-8 BOM), and
+huge_scenario (an oversized scenario is a WARN, not an ERROR).
 
 Outcome classes:
   CLEAN-FAIL       exit > 0, no traceback or internal error (clean rejection)
   CRASH            traceback, internal error, or termination by signal
   MISSED           exit 0 (bad input accepted)
-  EXPECTED-ACCEPT  exit 0 for csv_crlf (valid input accepted)
+  EXPECTED-ACCEPT  exit 0 for a mutation in EXPECTED_ACCEPTS (valid input accepted)
 """
 import pathlib
 import shutil
@@ -219,6 +221,12 @@ def m_nul_in_csv(r):
 
 MUTATIONS = [(n[2:], f) for n, f in sorted(globals().items()) if n.startswith("m_") and callable(f)]
 
+# Mutations whose exit-0 result is a legitimate accept, not a missed fault:
+#   csv_crlf        valid CRLF line endings (the csv module handles CRLF).
+#   csv_bom_header  a UTF-8 BOM is accepted and stripped by the strict reader.
+#   huge_scenario   an oversized scenario is a WARN, not an ERROR (K-02 cap).
+EXPECTED_ACCEPTS = {"csv_crlf", "csv_bom_header", "huge_scenario"}
+
 
 def run_validator(root):
     """Run the same strict checks for the baseline and every mutation."""
@@ -244,7 +252,7 @@ def classify(src, work, name, fn):
         last = [ln for ln in err.strip().splitlines() if ln.strip()][-1][:110]
         return (name, "CRASH", last)
     if proc.returncode == 0:
-        result = "EXPECTED-ACCEPT" if name == "csv_crlf" else "MISSED"
+        result = "EXPECTED-ACCEPT" if name in EXPECTED_ACCEPTS else "MISSED"
         return (name, result, "exit 0")
     if proc.returncode < 0:
         return (name, "CRASH", f"signal {-proc.returncode}")
