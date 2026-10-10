@@ -1163,6 +1163,22 @@ def compile_registry(root: Path, clients: dict, contacts: dict,
     return reg
 
 
+def _dataset_references(path: Path) -> list[str]:
+    """The dataset filenames the manifest references (external, not authored).
+
+    In-taxonomy attachments are references to ``Lucius-Morningstar/mailroom-dataset``
+    files (CD15), not pack-authored content, so a real-world token in a dataset
+    filename (a real brand, or a SEC accession number that looks like a phone)
+    is not a pack leak. The leak scan blanks these before scanning.
+    """
+    try:
+        with path.open(newline="", encoding="utf-8") as f:
+            return [r.get("file") or "" for r in csv.DictReader(f)
+                    if (r.get("source") or "") == "dataset"]
+    except (OSError, csv.Error, UnicodeDecodeError):
+        return []
+
+
 def leak_scan(root: Path, rep: Report) -> None:
     allow_path = root / "tools" / "brand_allowlist.txt"
     allow = set()
@@ -1185,7 +1201,16 @@ def leak_scan(root: Path, rep: Report) -> None:
             except (UnicodeDecodeError, ValueError):
                 continue
             rel = str(f.relative_to(root))
-            low = text.lower()
+            # Dataset filenames are external references, not pack-authored
+            # content; blank them (length-preserving) before the scan so a real
+            # brand or an accession-number-as-phone in a filename is not a leak.
+            scan = text
+            if rel == "attachments/manifest.csv":
+                for ref in _dataset_references(f):
+                    if ref:
+                        scan = re.sub(re.escape(ref), " " * len(ref), scan,
+                                      flags=re.IGNORECASE)
+            low = scan.lower()
             # Allowlisted substrings (dataset provenance names, documented
             # allowlist hostnames) are blanked before scanning so embedded
             # brand substrings (e.g. "google" in "gmail.googleapis.com")
@@ -1211,13 +1236,13 @@ def leak_scan(root: Path, rep: Report) -> None:
                     rep.warn(f"{rel}: real-brand mention {brand!r} …{snip}…")
                     break
             # phone numbers outside 555-01xx
-            for m in PHONE_RE.finditer(text):
+            for m in PHONE_RE.finditer(scan):
                 if "555-01" not in m.group(0):
                     rep.error(f"{rel}: non-synthetic phone number "
                               f"{m.group(0)!r}")
                     break
             # real URLs
-            for m in URL_RE.finditer(text):
+            for m in URL_RE.finditer(scan):
                 host = m.group(1).lower()
                 if not (host.endswith(RESERVED_URL_HOSTS)
                         or host in allow):

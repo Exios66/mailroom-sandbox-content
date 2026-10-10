@@ -830,6 +830,28 @@ class LeakScanTests(ContentFixture):
     def test_hex_digest_digit_runs_are_not_phone_numbers(self):
         self.assert_clean(self.scan("sha256: abc1234567890def\nprompt_hash: f012345678901a"))
 
+    def test_dataset_manifest_filenames_are_external_and_not_scanned(self):
+        """Verify dataset reference filenames are exempt, synthetic rows are not."""
+        header = ("attachment_id,file,sha256,doc_id,class,stratum,in_taxonomy,"
+                  "source,dataset_revision,dataset_filename,degradation,inert,notes")
+        # A real dataset filename with a real brand and an accession-number run.
+        self.write("attachments/manifest.csv",
+                   header + "\n"
+                   "att_1000,hyatt-k/deleted_items/358.,,,corporate_record,other,true,"
+                   "dataset,ed7576b6,hyatt-k/deleted_items/358.,per_client_profile,false,"
+                   "client=cedar; dataset content_sha256=abc1234567890def\n")
+        _, report = self.check(validate.leak_scan)
+        self.assert_clean(report)
+        # A pack-authored (synthetic) row with a real brand and a phone still trips.
+        self.write("attachments/manifest.csv",
+                   header + "\n"
+                   "att_0001,Google note.txt,,,,contract,license,true,synthetic,,,none,false,"
+                   "call +1-212-555-1234\n")
+        _, report = self.check(validate.leak_scan)
+        self.assert_error(report, "non-synthetic phone number")
+        self.assertTrue(any("real-brand mention" in w for w in report.warnings),
+                        report.warnings)
+
     def test_pasted_text_warning_boundary_and_directory_scope(self):
         self.assert_clean(self.scan("x" * 2000))
         report = self.scan("x" * 2001)
