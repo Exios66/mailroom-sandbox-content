@@ -2,6 +2,15 @@
 
 <!-- One or two sentences: what this PR does. -->
 
+## Cross-repo schema drift (required)
+
+<!-- The consumer owns the contract; a green ci.sh without MAILROOM_RELOADED does
+NOT check it. Paste the drift result — never infer it. -->
+
+- [ ] `python3 tools/check_schema_drift.py <mailroom-reloaded checkout>` → `__________` (must be `schema drift: none (N shared schema(s) byte-identical)`)
+- [ ] reloaded commit / PR checked against: `__________`
+- [ ] If it reports `DRIFT`: the resolving consumer PR is linked below and the merge order is stated (**reloaded first, then this**). This PR must not merge while it drifts.
+
 ## Type of change
 
 <!-- Tick all that apply. -->
@@ -61,6 +70,7 @@ agent-report:
     strict_coverage: pass|fail|skipped
     contradictions_strict: pass|fail|skipped
     consumer_loader: pass|fail|skipped
+    schema_drift: pass|fail|skipped
     strata_drift: pass|fail|skipped
   version_bump: none|patch|minor|major
   not_verified: []
