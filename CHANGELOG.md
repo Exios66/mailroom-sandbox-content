@@ -21,9 +21,11 @@ All notable changes to the mailroom-sandbox-content pack.
   `file` is a dataset filename; several contain a real brand (e.g. a hotel
   group) or a SEC accession number that matches the phone pattern, so the scan
   raised one ERROR and one WARN. Those filenames are external references, not
-  pack-authored content (CD15). `tools/validate.py` now blanks the `file`
-  values of `source=dataset` rows before scanning; synthetic rows are still
-  scanned in full (a test asserts both). Measured on the pinned revision, 488
+  pack-authored content (CD15). `tools/validate.py` now parses the manifest
+  and blanks only the `file` and `dataset_filename` cells of `source=dataset`
+  rows before scanning; synthetic rows and every `notes` cell are still
+  scanned in full, even where they repeat a dataset filename (tests assert
+  both). Measured on the pinned revision, 488
   of 2979 filenames contain an accession-number run, so filtering the selection
   instead was not viable.
 - **A unit test leaked `taxonomy/strata.csv is out of date ...` into the test

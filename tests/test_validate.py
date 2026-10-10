@@ -852,6 +852,22 @@ class LeakScanTests(ContentFixture):
         self.assertTrue(any("real-brand mention" in w for w in report.warnings),
                         report.warnings)
 
+    def test_dataset_filename_reused_in_pack_cells_is_still_scanned(self):
+        """Verify only dataset rows' filename cells are blanked, not repeats elsewhere."""
+        header = ("attachment_id,file,sha256,doc_id,class,stratum,in_taxonomy,"
+                  "source,dataset_revision,dataset_filename,degradation,inert,notes")
+        ref = "hyatt-k/2125551234.pdf"
+        self.write("attachments/manifest.csv",
+                   header + "\n"
+                   f"att_1000,{ref},,,corporate_record,other,true,"
+                   f"dataset,ed7576b6,{ref},per_client_profile,false,client=cedar\n"
+                   f"att_0001,{ref},,,contract,license,true,synthetic,,,none,false,"
+                   f"copied from {ref}\n")
+        _, report = self.check(validate.leak_scan)
+        self.assert_error(report, "non-synthetic phone number")
+        self.assertTrue(any("real-brand mention" in w for w in report.warnings),
+                        report.warnings)
+
     def test_pasted_text_warning_boundary_and_directory_scope(self):
         self.assert_clean(self.scan("x" * 2000))
         report = self.scan("x" * 2001)
