@@ -273,6 +273,12 @@ asserts that no lookalike domain and none of the forbidden tokens
     `recipient_policy.yaml`).
 12. Coverage (§9); errors under `--strict-coverage`.
 
+An oversized scenario or template file (over `tools/validate.py`'s
+`MAX_CONTENT_BYTES`, 1 MB) is a **WARN**, not an ERROR (plan item K-02,
+"optional cap ... as a WARN first"). The threshold is deliberately generous:
+it catches a runaway generator or an accidental blob, and can be promoted to
+an ERROR once the pack has settled.
+
 `tools/ci.sh` runs the validator with `--strict-coverage`, the contradiction
 lint (`tools/lint_contradictions.py --strict`), then the unit tests, checks
 that generated files (coverage scenarios, scenario index, smoke documents)
