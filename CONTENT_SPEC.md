@@ -6,9 +6,11 @@ explains them. Where this document and a schema disagree, the schema wins.
 mailroom-reloaded owns the contract. A schema here that mailroom-reloaded also
 ships must be a byte-for-byte copy of its `schemas/` file; `tools/check_schema_drift.py`
 (checkout as an argument or in `MAILROOM_RELOADED`) prints `DRIFT <file>` for any
-difference. Schemas that exist only here are content-only. `scenario.v2.json` is
-not currently a copy (the H series pattern and the `unknown` relation kind; see
-CHANGELOG).
+difference. Schemas that exist only here are content-only. Every shared schema,
+including `scenario.v2.json` and `gen_spec.v1.json`, is a byte-for-byte copy of
+mailroom-reloaded's (K-05; the two content-side additions — the `contrast`
+reason and the `expect.attack_class` enum — were upstreamed to mailroom-reloaded
+first so the mirror holds).
 
 ## 1. Formats (addendum v2 §12.4)
 

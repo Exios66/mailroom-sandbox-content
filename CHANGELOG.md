@@ -104,18 +104,22 @@ All notable changes to the mailroom-sandbox-content pack.
 ### Changed
 - `CONTENT_SPEC.md` §3 and `README.md` list the new H (held-out) series;
   `tools/validate.py` accepts the H-series name pattern.
-- **Schema sync (K-05).** mailroom-reloaded owns the contract.
-  `schemas/gen_spec.v1.json` and `schemas/persona_behavior.v1.json` are now
-  byte-for-byte copies of the consumer's, which are stricter (closed objects,
-  required `constraints.forbidden`); the pack validates against them with 0
-  errors. `schemas/scenario.v2.json` is **not** synced: the consumer's name
-  pattern `^[A-GST][0-9]+_[a-z0-9_]+$` rejects all 28 H-series scenarios, so
-  the content copy stays until the consumer admits the H series.
+- **Schema sync (K-05) is complete.** mailroom-reloaded owns the contract.
+  `schemas/gen_spec.v1.json`, `schemas/scenario.v2.json` and
+  `schemas/persona_behavior.v1.json` are now byte-for-byte copies of the
+  consumer's, which are stricter (closed objects, required
+  `constraints.forbidden`); the pack validates against them with 0 errors. The
+  consumer's name pattern `^[A-HST][0-9]+_[a-z0-9_]+$` now admits the H series,
+  so `scenario.v2.json` is synced too. Two content-side additions the consumer
+  lacked — the optional `contrast` reason (used by the contradiction lint) and
+  the `expect.attack_class` enum — were upstreamed to mailroom-reloaded first
+  (mailroom-reloaded PR #89) so the mirror holds. With the mirror in place,
+  `MAILROOM_RELOADED=... tools/ci.sh` is green **with no skip flags** (loader 0
+  errors, `schema drift: none`).
 - **`unknown` is no longer a relation kind.** mailroom-reloaded's
   `relation_kinds.v1.json` allows the eight kinds only (`unknown` is a
-  `linked_docs` placeholder). No pack file uses it, so `tools/validate.py`
-  and its test drop it. `schemas/scenario.v2.json` still lists it until that
-  file is synced.
+  `linked_docs` placeholder). No pack file uses it, and `schemas/scenario.v2.json`
+  no longer lists it now that the file is synced.
 - `CONTENT_SPEC.md` and `README.md` say mailroom-reloaded owns the contract
   and shared schemas are mirrors checked by `tools/check_schema_drift.py`.
 
