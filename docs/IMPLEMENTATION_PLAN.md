@@ -203,29 +203,29 @@ Basis: content `origin/main` 58f4fd6 (clean tree); reloaded `origin/main` 7ce8cb
 
 ### 8.3 Remaining work (prioritised checklist)
 
-Tracker column: the draft issues in the agent's scratch folder (drafts 14, 16-22) are **not filed**. The open content issues are #2, #8, #9, #10, #11, #12, #13 and #14 (verified 2026-10-10; closed issues not checked). "Draft n" below means that scratch file.
+Tracker column: the remaining items were filed on 2026-10-10 as content #16-#22 and Exios66/mailroom-reloaded#75 (X-01 reloaded side), each with an evidence-based completion contract that requires a criterion-to-SHA comment before closing. Older open content issues: #2, #8, #9, #10, #11, #12, #13 and #14.
 
 Priority 1: unblocks the v0.6.0 release and reloaded pin.
 
-- [ ] **K-05 schema mirror.** Copy reloaded `schemas/gen_spec.v1.json` and `scenario.v2.json` from a pinned reloaded commit (never a branch tip); drop `"unknown"`; decide on the three extra reloaded schemas. Evidence: `sha256sum` pairs equal the reloaded copies (`ef3e99dc...`, `0949d535...` at 7ce8cb7); `grep -c '"unknown"' schemas/scenario.v2.json` prints 0; `python3 tools/check_schema_drift.py <reloaded>` exits 0; `MAILROOM_RELOADED=<checkout> tools/ci.sh` passes. Tracker: none filed (Draft 18).
-- [ ] **K-01 residuals.** Add `tests/test_build_bundle.py`: two builds give equal sha256; a wrong `zstandard` version is refused under `--release`. Add the verification-authority paragraph to CONTENT_SPEC.md. Evidence: `python3 -m unittest tests.test_build_bundle -v` exit 0; `grep -n "verification authority" CONTENT_SPEC.md`. Tracker: none filed (Draft 16).
+- [ ] **K-05 schema mirror.** Copy reloaded `schemas/gen_spec.v1.json` and `scenario.v2.json` from a pinned reloaded commit (never a branch tip); drop `"unknown"`; decide on the three extra reloaded schemas. Evidence: `sha256sum` pairs equal the reloaded copies (`ef3e99dc...`, `0949d535...` at 7ce8cb7); `grep -c '"unknown"' schemas/scenario.v2.json` prints 0; `python3 tools/check_schema_drift.py <reloaded>` exits 0; `MAILROOM_RELOADED=<checkout> tools/ci.sh` passes. Tracker: #18.
+- [ ] **K-01 residuals.** Add `tests/test_build_bundle.py`: two builds give equal sha256; a wrong `zstandard` version is refused under `--release`. Add the verification-authority paragraph to CONTENT_SPEC.md. Evidence: `python3 -m unittest tests.test_build_bundle -v` exit 0; `grep -n "verification authority" CONTENT_SPEC.md`. Tracker: #16.
 - [ ] **K-03 finish.** Apply the remaining rows; record owner rulings in CONTENT_SPEC Appendix A. Evidence: `python3 tools/lint_contradictions.py --strict` exit 0; one decision row per changed scenario. Tracker: content #8, #9, #10.
 - [ ] **Release v0.6.0 (content).** After K-05 and K-01 residuals: bump `content.json` to 0.6.0 in its own PR, `tools/release.sh --push` on clean main. Evidence: `gh api repos/Exios66/mailroom-sandbox-content/releases/tags/v0.6.0` lists `BUILD_INFO`, the tar.zst and `SHA256SUMS`; the sha256 is recorded. Owner go-ahead per D2 (approval status unverified). Tracker: content #11. Open question for owner: v0.5.0 has no BUILD_INFO and its tag cannot move; accept that or document it.
-- [ ] **Reloaded bump (X-01 reloaded side).** `mailroom sandbox content bump --tag v0.6.0` in a reloaded PR; update the stale lock header. Evidence: `git diff` of `sandbox/content.lock` shows only the bump output; `mailroom sandbox content pull`, `validate` and `mailroom sandbox conformance --content smoke` exit 0 from a clean checkout. Tracker: reloaded X-01 (Draft 14). The reloaded issue number for it was not verified (X-04 uses #14 for another item).
+- [ ] **Reloaded bump (X-01 reloaded side).** `mailroom sandbox content bump --tag v0.6.0` in a reloaded PR; update the stale lock header. Evidence: `git diff` of `sandbox/content.lock` shows only the bump output; `mailroom sandbox content pull`, `validate` and `mailroom sandbox conformance --content smoke` exit 0 from a clean checkout. Tracker: reloaded X-01 (Exios66/mailroom-reloaded#75).
 
 Priority 2: content completeness (C-series).
 
-- [ ] **K-02 close-out.** Add a size WARN (suggested 1 MB) for scenario and template files with a test; run `python3 tools/fault_inject.py` and record 0 CRASH and 0 unexpected MISSED. Evidence: command output pasted in PR; `python3 -m unittest tests.test_validate_faults -v` names the size test. Tracker: none filed (Draft 17).
-- [ ] **C-06 gen specs.** Write `gen/specs/*.yaml` for the 32 scenarios that name a generation mode without one. Evidence: `python3 tools/validate.py --strict-coverage` shows 0 warnings; `--generate-indexes` second run leaves no diff. Tracker: content #2; Draft 21.
-- [ ] **C-04 E/S/T completion.** Attack-class to scenario mapping table; review log for promoted evasions (`adversary/`, `protocol/`). Evidence: mapping table in PR; no attack class in `protocol/` without a scenario. Tracker: content #2; Draft 21.
+- [ ] **K-02 close-out.** Add a size WARN (suggested 1 MB) for scenario and template files with a test; run `python3 tools/fault_inject.py` and record 0 CRASH and 0 unexpected MISSED. Evidence: command output pasted in PR; `python3 -m unittest tests.test_validate_faults -v` names the size test. Tracker: #17.
+- [ ] **C-06 gen specs.** Write `gen/specs/*.yaml` for the 32 scenarios that name a generation mode without one. Evidence: `python3 tools/validate.py --strict-coverage` shows 0 warnings; `--generate-indexes` second run leaves no diff. Tracker: content #2; #21.
+- [ ] **C-04 E/S/T completion.** Attack-class to scenario mapping table; review log for promoted evasions (`adversary/`, `protocol/`). Evidence: mapping table in PR; no attack class in `protocol/` without a scenario. Tracker: content #2; #21.
 
 Priority 3: blocked on owner or external access.
 
-- [ ] **C-01 dataset join (BLOCKED, B1).** Evidence: `grep -c rows_unverified taxonomy/strata.csv` goes 54 to 0 through the generator only. Tracker: content #2; Draft 19.
-- [ ] **C-02 relation truth (needs C-01).** Evidence: every value in `relations/relations_truth.csv` is in reloaded `relation_kinds.v1.json`; 0 unknown. Tracker: content #2; Draft 19.
-- [ ] **C-03 frozen emails (BLOCKED, B2).** Evidence: generator run with the key in the environment only; `grep -rEi "sk-or-|openrouter_api_key=" emails gen tools docs` empty; provenance on each record. Tracker: content #2; Draft 20.
-- [ ] **C-05 promotion (owner step).** Owner-approved list from the reloaded plan: A13-A17, B1-B8, C1-C11, D1-D6 (30 scenarios). H-series stays `draft`. Evidence: the status diff matches the list exactly. Tracker: content #2; Draft 22.
-- [ ] **C-07 v1.0.0 and nightly run.** Needs C-01 to C-05 and K-05. Evidence: tag and release `v1.0.0` with BUILD_INFO; reloaded bump; one nightly run recorded (command, date, result path). No GitHub Actions (CD19). Tracker: content #2; Draft 22.
+- [ ] **C-01 dataset join (BLOCKED, B1).** Evidence: `grep -c rows_unverified taxonomy/strata.csv` goes 54 to 0 through the generator only. Tracker: content #2; #19.
+- [ ] **C-02 relation truth (needs C-01).** Evidence: every value in `relations/relations_truth.csv` is in reloaded `relation_kinds.v1.json`; 0 unknown. Tracker: content #2; #19.
+- [ ] **C-03 frozen emails (BLOCKED, B2).** Evidence: generator run with the key in the environment only; `grep -rEi "sk-or-|openrouter_api_key=" emails gen tools docs` empty; provenance on each record. Tracker: content #2; #20.
+- [ ] **C-05 promotion (owner step).** Owner-approved list from the reloaded plan: A13-A17, B1-B8, C1-C11, D1-D6 (30 scenarios). H-series stays `draft`. Evidence: the status diff matches the list exactly. Tracker: content #2; #22.
+- [ ] **C-07 v1.0.0 and nightly run.** Needs C-01 to C-05 and K-05. Evidence: tag and release `v1.0.0` with BUILD_INFO; reloaded bump; one nightly run recorded (command, date, result path). No GitHub Actions (CD19). Tracker: content #2; #22.
 
 Priority 4: housekeeping.
 
@@ -252,7 +252,6 @@ See section 5 (B1 to B5). Owner-only actions: B1 network policy or local build; 
 - Strata drift and consumer-loader steps were not run (no reloaded checkout pinned here).
 - Contents of the v0.5.0 bundle (dataset bytes or only manifests) were not inspected.
 - Whether the owner has provided an OpenRouter key (B2), and whether the owner approved the v0.6.0 release (D2).
-- Closed content issues were not checked, so an issue counted as "not filed" (Drafts 14, 16-22) could exist under a closed state. No open issue matches them.
 - The PR-number links for content commits other than #4, #7, #15 were not verified; PRs #5 and #6 are cited from the reloaded plan.
 - The 56 catalog / 54 ground-truth strata counts from 2026-10-08 were not recounted.
 - Reloaded `origin/main` was used for hashes; the reloaded working tree was used only for `check_schema_drift.py`.
