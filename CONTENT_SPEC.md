@@ -292,6 +292,15 @@ hook.
 - **Pinning.** `sandbox/content.lock` in mailroom-reloaded pins repo, tag,
   commit, bundle sha256, schema_version and dataset_revision. Consumers
   never track a branch.
+- **Bundle verification authority.** The bytes of the *published* release
+  asset are the verification authority: a downloader checks them against
+  `sandbox/content.lock`. A local rebuild is an **audit**, not the authority.
+  `tools/build_bundle.py` is deterministic (entries from `git ls-files`, sorted,
+  fixed mtime/owner/modes) and `--release` refuses any `zstandard` version other
+  than the pinned one, because the compressed bytes — and so the pinned sha256 —
+  change with the compressor. `BUILD_INFO` records the `zstandard` version and
+  `tar_sha256` (the uncompressed tar, independent of the compressor) so two
+  rebuilds can be compared even when their `.tar.zst` bytes differ.
 
 ## 13. Amendments to addendum v2 (recorded for M0)
 

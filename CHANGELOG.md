@@ -50,6 +50,14 @@ All notable changes to the mailroom-sandbox-content pack.
   that `git push --no-verify` bypasses it.
 
 ### Added
+- **K-01 tests: the bundle build is byte-reproducible and `--release` refuses
+  an unpinned `zstandard`.** New `tests/test_build_bundle.py` builds the real
+  bundle twice from a throwaway git repository and asserts the `.tar.zst`
+  sha256 and the `BUILD_INFO` `tar_sha256` match, checks that `release/` and
+  untracked files never ship, and that `--release` refuses a non-pinned
+  `zstandard` with the clear message (both the guard and `main(--release)`).
+  `CONTENT_SPEC.md` §12 records that the published asset's bytes are the
+  verification authority and a rebuild is an audit.
 - **Repository governance files** (no content or tooling change). Four
   GitHub issue forms under `.github/ISSUE_TEMPLATE/` (`scenario_defect`,
   `scenario_proposal`, `contract_drift`, `agent_task`) plus `config.yml`
