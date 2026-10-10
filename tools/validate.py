@@ -1175,6 +1175,37 @@ def compile_registry(root: Path, clients: dict, contacts: dict,
     return reg
 
 
+def _blank_dataset_references(text: str) -> str:
+    """The manifest text with each ``source=dataset`` row's filename cells blanked.
+
+    In-taxonomy attachments are references to ``Lucius-Morningstar/mailroom-dataset``
+    files (CD15), not pack-authored content, so a real-world token in a dataset
+    filename (a real brand, or a SEC accession number that looks like a phone)
+    is not a pack leak. Only the ``file`` and ``dataset_filename`` cells of
+    dataset rows are blanked; every other cell (notes, synthetic filenames) is
+    kept so the leak scan still sees it. Unparseable text is returned unchanged.
+    """
+    try:
+        rows = list(csv.reader(io.StringIO(text, newline="")))
+    except csv.Error:
+        return text
+    if not rows:
+        return text
+    header = rows[0]
+    if "source" not in header:
+        return text
+    src = header.index("source")
+    cols = [header.index(c) for c in ("file", "dataset_filename") if c in header]
+    out = io.StringIO()
+    writer = csv.writer(out, lineterminator="\n")
+    writer.writerow(header)
+    for row in rows[1:]:
+        if len(row) > src and row[src] == "dataset":
+            row = [(" " * len(v) if i in cols else v) for i, v in enumerate(row)]
+        writer.writerow(row)
+    return out.getvalue()
+
+
 def leak_scan(root: Path, rep: Report) -> None:
     allow_path = root / "tools" / "brand_allowlist.txt"
     allow = set()
@@ -1197,7 +1228,14 @@ def leak_scan(root: Path, rep: Report) -> None:
             except (UnicodeDecodeError, ValueError):
                 continue
             rel = str(f.relative_to(root))
-            low = text.lower()
+            # Dataset filenames are external references, not pack-authored
+            # content; blank only those cells of source=dataset rows before
+            # the scan so a real brand or an accession-number-as-phone in a
+            # filename is not a leak, while other cells are still scanned.
+            scan = text
+            if rel == "attachments/manifest.csv":
+                scan = _blank_dataset_references(text)
+            low = scan.lower()
             # Allowlisted substrings (dataset provenance names, documented
             # allowlist hostnames) are blanked before scanning so embedded
             # brand substrings (e.g. "google" in "gmail.googleapis.com")
@@ -1219,17 +1257,17 @@ def leak_scan(root: Path, rep: Report) -> None:
                 if m:
                     # find a snippet
                     i = m.start()
-                    snip = text[max(0, i - 30):i + 40].replace("\n", " ")
+                    snip = scan[max(0, i - 30):i + 40].replace("\n", " ")
                     rep.warn(f"{rel}: real-brand mention {brand!r} …{snip}…")
                     break
             # phone numbers outside 555-01xx
-            for m in PHONE_RE.finditer(text):
+            for m in PHONE_RE.finditer(scan):
                 if "555-01" not in m.group(0):
                     rep.error(f"{rel}: non-synthetic phone number "
                               f"{m.group(0)!r}")
                     break
             # real URLs
-            for m in URL_RE.finditer(text):
+            for m in URL_RE.finditer(scan):
                 host = m.group(1).lower()
                 if not (host.endswith(RESERVED_URL_HOSTS)
                         or host in allow):

@@ -16,6 +16,18 @@ All notable changes to the mailroom-sandbox-content pack.
   lint with `--strict`.
 
 ### Fixed
+- **The leak scan flagged dataset reference filenames as pack leaks.**
+  After C-01, `attachments/manifest.csv` carries 233 `source=dataset` rows whose
+  `file` is a dataset filename; several contain a real brand (e.g. a hotel
+  group) or a SEC accession number that matches the phone pattern, so the scan
+  raised one ERROR and one WARN. Those filenames are external references, not
+  pack-authored content (CD15). `tools/validate.py` now parses the manifest
+  and blanks only the `file` and `dataset_filename` cells of `source=dataset`
+  rows before scanning; synthetic rows and every `notes` cell are still
+  scanned in full, even where they repeat a dataset filename (tests assert
+  both). Measured on the pinned revision, 488
+  of 2979 filenames contain an accession-number run, so filtering the selection
+  instead was not viable.
 - **A unit test leaked `taxonomy/strata.csv is out of date ...` into the test
   output** (issue #12). The message came from
   `test_content_v2.SyncStrata.test_roster_flags_and_check_mode`, which
@@ -69,6 +81,16 @@ All notable changes to the mailroom-sandbox-content pack.
   that `git push --no-verify` bypasses it.
 
 ### Added
+- **Dataset join: strata row counts and the attachment slice (plan C-01, C-02).**
+  `tools/build_attachments.py --ground-truth <ground_truth train parquet>` over
+  the pinned revision `ed7576b6` (2979 train rows) filled all 54 ground-truth
+  strata in `taxonomy/strata.csv` (`rows_unverified` 54 → 0; every ground-truth
+  stratum is now `active`) and selected 233 dataset rows into
+  `attachments/manifest.csv`. C-02: the dataset's `responds_to` relationship
+  (the only value in the column, 11 rows) is now mapped to the `answers` kind in
+  `relations/dataset_relation_map.csv`; every kind in `relations_truth.csv` and
+  the map is one of reloaded's eight `schemas/relation_kinds.v1.json` values.
+  `CONTENT_SPEC.md` §9 records the run.
 - **The historical scenario v2 migration refuses to re-run** (issue #13).
   `tools/migrate_scenarios_v2.py` already ran; re-running it would revert later
   edits (for example G9's `outbox: []` from the R1 work). `main` now prints a

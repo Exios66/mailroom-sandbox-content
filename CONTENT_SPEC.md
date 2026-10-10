@@ -232,7 +232,20 @@ asserts that no lookalike domain and none of the forbidden tokens
   dataset_revision`. It never reads `doc_text` and never copies text-derived
   ground-truth fields (`subject_matter`, `keywords`, `gt_fields`). sha256 /
   doc_id for those rows are filled by the bundle build after rendering and
-  degradation.
+  degradation. **C-01 (run 2026-10-10):** `--ground-truth` over the pinned
+  revision `ed7576b6` (2979 train rows) filled all 54 ground-truth strata
+  (`rows_unverified` is now 0; every ground-truth stratum is `active`) and
+  selected 233 dataset rows into `attachments/manifest.csv`.
+- **Dataset filenames are external references, not pack content.** A dataset
+  filename can contain a real-world token (a real brand, or a SEC accession
+  number that looks like a phone), so `tools/validate.py`'s leak scan blanks
+  the `file` values of `source=dataset` manifest rows before scanning. The
+  pack's own (synthetic) filenames, notes and body text are still scanned.
+- **Dataset relation vocabulary** (C-02): the `relationships` column of
+  `ground_truth` train holds `responds_to` (11 rows); it maps to the
+  `answers` kind in `relations/dataset_relation_map.csv`. Every kind in
+  `relations/relations_truth.csv` and in the map is one of reloaded's eight
+  `schemas/relation_kinds.v1.json` values (0 unknown).
 
 ## 10. Tools
 
