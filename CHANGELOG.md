@@ -163,18 +163,24 @@ All notable changes to the mailroom-sandbox-content pack.
 ### Changed
 - `CONTENT_SPEC.md` §3 and `README.md` list the new H (held-out) series;
   `tools/validate.py` accepts the H-series name pattern.
-- **Schema sync (K-05).** mailroom-reloaded owns the contract.
-  `schemas/gen_spec.v1.json` and `schemas/persona_behavior.v1.json` are now
-  byte-for-byte copies of the consumer's, which are stricter (closed objects,
-  required `constraints.forbidden`); the pack validates against them with 0
-  errors. `schemas/scenario.v2.json` is **not** synced: the consumer's name
-  pattern `^[A-GST][0-9]+_[a-z0-9_]+$` rejects all 28 H-series scenarios, so
-  the content copy stays until the consumer admits the H series.
+- **Schema sync (K-05) awaits mailroom-reloaded PR #89 and main verification.**
+  mailroom-reloaded owns the contract.
+  `schemas/gen_spec.v1.json`, `schemas/scenario.v2.json` and
+  `schemas/persona_behavior.v1.json` match the PR's schemas at
+  `d1aa07763c7da66eb0a61a5ea4a8a9afadad62dc`; local validation reports 0 errors.
+  The optional `contrast` reason and `expect.attack_class` enum are proposed
+  upstream in [PR #89](https://github.com/Exios66/mailroom-reloaded/pull/89),
+  which is still open. `gen_spec.v1.json` and `scenario.v2.json` differ from
+  consumer `main` at `8c2ce3a238defa1778859870a46262d94f16c835`, so compatibility
+  with main is not established. After PR #89 merges, pin the resulting main
+  commit, rerun the consumer loader and schema-drift checks via
+  `MAILROOM_RELOADED=<checkout-at-that-commit> tools/ci.sh` with no skip flags,
+  and update this entry and `CONTENT_SPEC.md` with the commit and passing
+  results before declaring K-05 complete.
 - **`unknown` is no longer a relation kind.** mailroom-reloaded's
   `relation_kinds.v1.json` allows the eight kinds only (`unknown` is a
-  `linked_docs` placeholder). No pack file uses it, so `tools/validate.py`
-  and its test drop it. `schemas/scenario.v2.json` still lists it until that
-  file is synced.
+  `linked_docs` placeholder). No pack file uses it, and `schemas/scenario.v2.json`
+  no longer lists it in the copy from PR #89.
 - `CONTENT_SPEC.md` and `README.md` say mailroom-reloaded owns the contract
   and shared schemas are mirrors checked by `tools/check_schema_drift.py`.
 
