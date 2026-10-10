@@ -86,7 +86,7 @@ Run from the repo root.
 Validator ERRORs fail; WARNs do not. Skip flags:
 
 - `tools/ci.sh --skip-drift` skips strata drift. `--skip-consumer` skips the consumer loader and schema drift. Both are local-work conveniences only.
-- Without `MAILROOM_RELOADED`, the consumer step prints a loud SKIPPED notice and the run still exits 0. That is not a pass against the contract. Report it as `skipped`.
+- Without `MAILROOM_RELOADED`, the consumer step prints a loud SKIPPED notice and the run still exits 0. That is not a pass against the contract. Report it as `skipped`. Every content PR must state the `tools/check_schema_drift.py` result in its body (section 8); `schema drift: none` is required unless the PR is the one that resolves a drift.
 - A failed strata fetch stops the run; it is never a pass.
 - Never use a skip flag for release work. `tools/release.sh` refuses `--skip-drift` and `SKIP_DRIFT`.
 - Never `git push --no-verify` unless the human told you to.
@@ -107,7 +107,8 @@ Agents do not tag, push tags, or create releases unless the task card says so at
 - Do exactly what the autonomy level on your task card allows (section 9). With no card, ask before committing.
 - Commit messages: short imperative subject with an area prefix (`tools:`, `scenarios:`, `docs:`), then a body that says why. Follow the commit and PR trailers the harness provides; do not invent your own.
 - Stacked PRs: base on the parent branch and record the parent in `stack_parent` of the agent-report.
-- PRs use `.github/pull_request_template.md`. Fill every section and keep the final `agent-report` YAML block in its exact shape.
+- PRs use `.github/pull_request_template.md`. Fill every section and keep the final `agent-report` YAML block in its exact shape. The `Cross-repo schema drift` section is required: paste the `tools/check_schema_drift.py` result and the reloaded commit you checked against.
+- Verify merge state per PR, never from a summary. After `git fetch --all --prune`, run `git merge-base --is-ancestor origin/<branch> origin/main` (exit 0 = merged) or `git branch -r --merged origin/main`. Do not report a branch as merged because a note, PR list or changelog says so.
 - Issues are created from the forms in `.github/ISSUE_TEMPLATE/`. Agents parse the rendered `### <Label>` headings.
 - Contract or loader problems that belong to the consumer go to https://github.com/Exios66/mailroom-reloaded/issues.
 

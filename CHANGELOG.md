@@ -5,6 +5,14 @@ All notable changes to the mailroom-sandbox-content pack.
 ## [Unreleased]
 
 ### Changed
+- **PR template and git conventions now require surfacing the cross-repo schema
+  drift and verifying merge state per PR.** `.github/pull_request_template.md`
+  gained a required `Cross-repo schema drift` section (paste the
+  `tools/check_schema_drift.py` result and the reloaded commit you checked
+  against; state the merge order when it drifts) and a `schema_drift` gate in the
+  `agent-report` block. `AGENTS.md` section 8 now says to check merge state with
+  `git merge-base --is-ancestor origin/<branch> origin/main` rather than infer it
+  from a summary, note or PR list.
 - **Scenario expectations follow the delegation matrix** (plan K-03). Draft
   replies now require a matrix-sanctioned task: 14 `document_submission`
   scenarios plus G9 and H21 expect `outbox: []`, and G9/H21 also expect
