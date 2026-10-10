@@ -273,6 +273,12 @@ asserts that no lookalike domain and none of the forbidden tokens
     `recipient_policy.yaml`).
 12. Coverage (§9); errors under `--strict-coverage`.
 
+An oversized scenario or template file (over `tools/validate.py`'s
+`MAX_CONTENT_BYTES`, 1 MB) is a **WARN**, not an ERROR (plan item K-02,
+"optional cap ... as a WARN first"). The threshold is deliberately generous:
+it catches a runaway generator or an accidental blob, and can be promoted to
+an ERROR once the pack has settled.
+
 `tools/ci.sh` runs the validator with `--strict-coverage`, the contradiction
 lint (`tools/lint_contradictions.py --strict`), then the unit tests, checks
 that generated files (coverage scenarios, scenario index, smoke documents)
@@ -292,6 +298,15 @@ hook.
 - **Pinning.** `sandbox/content.lock` in mailroom-reloaded pins repo, tag,
   commit, bundle sha256, schema_version and dataset_revision. Consumers
   never track a branch.
+- **Bundle verification authority.** The bytes of the *published* release
+  asset are the verification authority: a downloader checks them against
+  `sandbox/content.lock`. A local rebuild is an **audit**, not the authority.
+  `tools/build_bundle.py` is deterministic (entries from `git ls-files`, sorted,
+  fixed mtime/owner/modes) and `--release` refuses any `zstandard` version other
+  than the pinned one, because the compressed bytes — and so the pinned sha256 —
+  change with the compressor. `BUILD_INFO` records the `zstandard` version and
+  `tar_sha256` (the uncompressed tar, independent of the compressor) so two
+  rebuilds can be compared even when their `.tar.zst` bytes differ.
 
 ## 13. Amendments to addendum v2 (recorded for M0)
 

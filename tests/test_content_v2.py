@@ -372,11 +372,15 @@ class SyncStrata(unittest.TestCase):
             sync_strata.main(["--from", str(src), "--root", str(root)])
             self.assertIn("insurance_claim,auto,true,true,200,active",
                           (root / "taxonomy/strata.csv").read_text())
-            # a hand edit is drift
+            # a hand edit is drift; capture the tool's message so it does not
+            # leak into the suite output and look like a real failure (issue #12)
             with open(root / "taxonomy/strata.csv", "a") as f:
                 f.write("contract,parties,true,true,,rows_unverified\n")
-            self.assertEqual(sync_strata.main(["--from", str(src), "--root", str(root),
-                                               "--check"]), 1)
+            drift = io.StringIO()
+            with contextlib.redirect_stderr(drift):
+                self.assertEqual(sync_strata.main(["--from", str(src), "--root", str(root),
+                                                   "--check"]), 1)
+            self.assertIn("taxonomy/strata.csv is out of date", drift.getvalue())
 
     def test_unknown_surface_fails_loudly(self):
         from tempfile import TemporaryDirectory

@@ -57,6 +57,11 @@ RELATION_KINDS = {
     "references", "supersedes", "duplicates", "amends", "answers",
     "contradicts", "withdraws", "completes",
 }
+# K-02 optional size cap: an oversized scenario or template file is a WARN, not
+# an ERROR (plan item K-02, "optional cap (e.g. 1 MB) ... as a WARN first"). The
+# threshold is far above the largest real file; it catches a runaway generator
+# or an accidental blob. Promote to ERROR once the pack has settled.
+MAX_CONTENT_BYTES = 1_000_000
 BOSS_ACTIONS = {
     "ack_signal", "dismiss_signal", "link_documents", "annotate_document",
     "raise_priority", "request_human_review", "task_correspondent",
@@ -611,6 +616,9 @@ def template_variables(root: Path, rep: Report) -> dict[str, set[str]] | None:
     for sub in ("", "replies"):
         for tf in sorted((tdir / sub).glob("*.j2")):
             rel = tf.relative_to(root)
+            if tf.stat().st_size > MAX_CONTENT_BYTES:
+                rep.warn(f"{rel}: {tf.stat().st_size} bytes exceeds the "
+                         f"{MAX_CONTENT_BYTES}-byte cap (WARN; plan K-02)")
             try:
                 ast_ = env.parse(tf.read_text(encoding="utf-8"))
             except jinja2.TemplateSyntaxError as e:
@@ -667,6 +675,10 @@ def check_scenarios(root: Path, personas: dict, domains_by_client: dict,
         series = series_dir.name
         for yf in sorted(series_dir.glob("*.yaml")):
             stem = yf.stem
+            if yf.stat().st_size > MAX_CONTENT_BYTES:
+                rep.warn(f"scenarios/{series}/{yf.name}: {yf.stat().st_size} "
+                         f"bytes exceeds the {MAX_CONTENT_BYTES}-byte cap "
+                         f"(WARN; plan K-02)")
             try:
                 s = load_yaml(yf)
             except Exception as e:  # noqa: BLE001
