@@ -16,6 +16,13 @@ All notable changes to the mailroom-sandbox-content pack.
   lint with `--strict`.
 
 ### Fixed
+- **A unit test leaked `taxonomy/strata.csv is out of date ...` into the test
+  output** (issue #12). The message came from
+  `test_content_v2.SyncStrata.test_roster_flags_and_check_mode`, which
+  deliberately hand-edits a fixture to assert `sync_strata.py --check` exits 1;
+  it was not real drift. The test now captures the tool's stderr and asserts
+  the message, so a clean tree never prints a message that looks like a
+  failure.
 - **The release bundle sha256 was not reproducible across `zstandard`
   versions** (same commit: 0.25.0 gives the sha256 pinned in
   `content.lock`, 0.23.0 gives a different one). `tools/requirements.txt` pins
