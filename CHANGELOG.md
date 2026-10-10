@@ -50,6 +50,13 @@ All notable changes to the mailroom-sandbox-content pack.
   that `git push --no-verify` bypasses it.
 
 ### Added
+- **The historical scenario v2 migration refuses to re-run** (issue #13).
+  `tools/migrate_scenarios_v2.py` already ran; re-running it would revert later
+  edits (for example G9's `outbox: []` from the R1 work). `main` now prints a
+  refusal and exits 2 unless the explicit `--confirm-historical-rerun` flag is
+  passed. The helpers (`Dumper`, `ordered`, `ORDER`) stay importable;
+  `tools/gen_coverage_scenarios.py` uses them. Tests in
+  `tests/test_migrate_guard.py`.
 - **Repository governance files** (no content or tooling change). Four
   GitHub issue forms under `.github/ISSUE_TEMPLATE/` (`scenario_defect`,
   `scenario_proposal`, `contract_drift`, `agent_task`) plus `config.yml`
