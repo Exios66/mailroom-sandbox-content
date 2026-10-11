@@ -34,13 +34,15 @@ inertness_linter:
 freeze_manifest:
   description: every frozen email carries a manifest entry; determinism comes from freezing, not seeding.
   fields:
-    - model_id        # e.g. xiaomi/mimo-v2.6-flash, or "template" for scripted
-    - tier            # free | paid | scripted
-    - prompt_hash     # sha256 of the prompt (scripted: sha256 of the template name)
-    - timestamp       # frozen_at, UTC
-    - attempts        # total generation attempts for this email
-    - refusals        # refusal count observed while generating this email
-    - linter_actions  # list of rewrite/strip actions the inertness linter applied
+    - model_id          # the concrete model that served the text (router aliases resolved), or "template" for scripted
+    - tier              # free | paid | scripted
+    - prompt_hash       # sha256 of the exact prompt built for this email
+    - frozen_at         # UTC timestamp
+    - attempts          # models tried for this email
+    - refusals          # empty/refusal responses observed while generating this email
+    - lint_actions      # list of rewrite/strip actions the inertness linter applied
+    - conformance       # whether the text passed the conformance check (§6.3)
+    - template_fallback # true when the attempt budget was exhausted and the scripted template was used
   storage: emails/frozen/<series>.jsonl, one JSONL object per email; emails/emails_index.csv carries the audit columns
 
 conformance_check:

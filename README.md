@@ -32,8 +32,8 @@ Release history lives in [`CHANGELOG.md`](CHANGELOG.md).
 | `smoke/` | The pinned smoke subset; `tools/export_smoke.py` exports it for `sandbox/fixtures/smoke/` ([smoke/README.md](smoke/README.md)) |
 | `ids/` | `ranges.yaml`: ID blocks per workstream so parallel agents never collide |
 | `dist/` | Generated at validation time (`registry.yaml`); gitignored, shipped inside the release bundle |
-| `tools/` | `ci.sh` (content-ci, local), `release.sh` + `build_bundle.py` (local release), `install-hooks.sh`, `validate.py`, `sync_strata.py`, `gen_coverage_scenarios.py`, `export_smoke.py`, `build_attachments.py` (dataset join), `make_fixture_pdf.py`, `content.sh` (local shims); see CONTENT_SPEC §10 |
-| `docs/` | `IMPLEMENTATION_PLAN.md`: audit, design decisions (CD1–CD18) and phases for this repo |
+| `tools/` | `ci.sh` (content-ci, local), `release.sh` + `build_bundle.py` (local release), `install-hooks.sh`, `validate.py`, `sync_strata.py`, `gen_coverage_scenarios.py`, `export_smoke.py`, `build_attachments.py` (dataset join), `build_frozen_emails.py` (frozen email generation, [docs/EMAIL_GENERATION.md](docs/EMAIL_GENERATION.md)), `make_fixture_pdf.py`, `content.sh` (local shims); see CONTENT_SPEC §10 |
+| `docs/` | `IMPLEMENTATION_PLAN.md`: audit, design decisions (CD1–CD18) and phases for this repo; `EMAIL_GENERATION.md`: the frozen email pipeline; `CONTRADICTION_AUDIT.md` |
 | `.githooks/` | `pre-push`: runs `tools/ci.sh` before every push (install with `tools/install-hooks.sh`). **This repo does not use GitHub Actions**; all checks and releases run locally. |
 
 ## How mailroom-reloaded consumes this repo

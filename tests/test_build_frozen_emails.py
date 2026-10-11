@@ -155,6 +155,30 @@ class GenerateOneTest(unittest.TestCase):
             self.assertIsNone(B.payload_guard(prompt), f"{sid}: guard tripped")
 
 
+class DedupeTest(unittest.TestCase):
+    def test_keeps_generated_over_fallback(self):
+        records = {
+            "em_X_0001": {"manifest": {"template_fallback": True}},
+            "em_X_0002": {"manifest": {"template_fallback": False}},
+        }
+        rows = [
+            {"email_id": "em_X_0001", "spec_id": "s", "tier": "scripted"},
+            {"email_id": "em_X_0002", "spec_id": "s", "tier": "free"},
+        ]
+        recs, rs, drop = B.dedupe_by_spec(records, rows)
+        self.assertEqual(drop, {"em_X_0001"})
+        self.assertEqual([r["email_id"] for r in rs], ["em_X_0002"])
+        self.assertEqual(list(recs), ["em_X_0002"])
+
+    def test_distinct_specs_are_kept(self):
+        records = {"a": {"manifest": {}}, "b": {"manifest": {}}}
+        rows = [{"email_id": "a", "spec_id": "s1", "tier": "free"},
+                {"email_id": "b", "spec_id": "s2", "tier": "free"}]
+        _, rs, drop = B.dedupe_by_spec(records, rows)
+        self.assertEqual(drop, set())
+        self.assertEqual(len(rs), 2)
+
+
 class RepoCheckTest(unittest.TestCase):
     def test_index_and_jsonl_are_consistent(self):
         # Multi-test runners may run this before generation; treat absence as OK.

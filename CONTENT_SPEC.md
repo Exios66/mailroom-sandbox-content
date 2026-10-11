@@ -169,10 +169,17 @@ checks this. Decisions that applied the rules are in Appendix A.
 | `live` | the `gen_spec`, generated during the run | no (rates with Wilson intervals) |
 | `loop` | an attacker model iterating on the Correspondent's behavior | no |
 
-Frozen text is produced only by the generation layer (`mailroom sandbox
-content build`, M9) and is never hand-patched (CD16). Scenarios that target
-`frozen` but have no `gen_spec` yet render from their templates; CI reports
-them in one summary warning.
+Frozen text is produced only by the generation layer and is never hand-patched
+(CD16). mailroom-reloaded's `mailroom sandbox content build` validates a tree and
+regenerates smoke fixtures but does **not** generate frozen bodies; the interim
+generation layer is this repo's `tools/build_frozen_emails.py` (see
+[`docs/EMAIL_GENERATION.md`](docs/EMAIL_GENERATION.md)). Every frozen record
+carries a freeze manifest (`model_id`, `tier`, `prompt_hash`, `attempts`,
+`lint_actions`, `conformance`, `frozen_at`); when every model fails, the body is
+the scripted template with `tier=scripted` and `template_fallback=true` — never
+relabelled frozen. Scenarios that target `frozen` but have no `gen_spec` yet
+render from their templates; CI reports them in one summary warning (0 as of
+2026-10-10).
 
 ## 6. Hold lanes (addendum v2 §5)
 
@@ -248,11 +255,16 @@ asserts that no lookalike domain and none of the forbidden tokens
   number that looks like a phone), so `tools/validate.py`'s leak scan blanks
   the `file` values of `source=dataset` manifest rows before scanning. The
   pack's own (synthetic) filenames, notes and body text are still scanned.
-- **Dataset relation vocabulary** (C-02): the `relationships` column of
-  `ground_truth` train holds `responds_to` (11 rows); it maps to the
-  `answers` kind in `relations/dataset_relation_map.csv`. Every kind in
-  `relations/relations_truth.csv` and in the map is one of reloaded's eight
-  `schemas/relation_kinds.v1.json` values (0 unknown).
+- **Dataset relation vocabulary** (C-02, verified 2026-10-10): the `relationships`
+  column holds **seven** values across configs — `amendment_of`, `exhibit_of`,
+  `attachment_of`, `supplement_to`, `references`, `duplicate_of`, `responds_to`
+  (ground_truth train has only `responds_to`, 11 rows, all `correspondence`;
+  `bundles`/`streams` train carry the rest; `related_document_ids` names the
+  anchor). `relations/dataset_relation_map.csv` maps each value to one of
+  reloaded's eight `schemas/relation_kinds.v1.json` values (`amends`, `completes`,
+  `completes`, `completes`, `references`, `duplicates`, `answers`). Every kind in
+  `relations/relations_truth.csv` and in the map is one of the eight (0 unknown;
+  `supersedes` is unused — the dataset has no version-chain value).
 
 ## 10. Tools
 
@@ -265,6 +277,7 @@ asserts that no lookalike domain and none of the forbidden tokens
 | `tools/gen_coverage_scenarios.py [--check]` | generate A13–A17 from the client mixes |
 | `tools/export_smoke.py --write-set \| --check \| --out DIR` | the zero-network smoke export for `sandbox/fixtures/smoke/` (see `smoke/README.md`) |
 | `tools/build_attachments.py (--hf \| --ground-truth P) [--counts] [--select N]` | dataset row counts and attachment selection (needs dataset access) |
+| `tools/build_frozen_emails.py [--dry-run \| --render-only \| --check] [--series S] [--spec ID] [--force]` | interim M9 generation layer: `gen_spec` + template → frozen body in `emails/frozen/` and an `emails_index.csv` row; needs `OPENROUTER_API_KEY` for live generation (`docs/EMAIL_GENERATION.md`) |
 | `tools/make_fixture_pdf.py OUT "line" …` | deterministic, inert, single-page synthetic PDF |
 | `tools/migrate_scenarios_v2.py` | one-shot v2 reshape, kept for audit (not run by CI) |
 | `tools/content.sh` | local shims (`validate`, `coverage`, `indexes`, `strata`) |
@@ -340,13 +353,22 @@ hook.
 ## 14. [verify] — content-side open items
 
 - **Dataset row counts** (`strata.csv` rows) and the in-taxonomy slice:
-  run `tools/build_attachments.py` where huggingface.co is reachable.
+  **DONE 2026-10-10** (C-01): all 54 ground-truth strata `active`, 233 dataset
+  rows in `attachments/manifest.csv` (`tools/build_attachments.py
+  --ground-truth` over revision `ed7576b6`).
 - **Dataset relation vocabulary** → `relations/dataset_relation_map.csv`:
-  check against the `relationships` column before C10.
+  **DONE 2026-10-10** (C-02): seven values verified, all mapped to the eight
+  kinds (0 unknown). See §9.
 - **GLM / DeepSeek model slugs** and paid-tier prices (`gen/pool.yaml`):
-  confirm at `sandbox up`.
+  **DONE 2026-10-10**: cross-checked against the OpenRouter models endpoint.
+  Six of seven prior free seeds were retired/renamed; paid slot 2's
+  `deepseek-v4.1` no longer resolves (→ `deepseek/deepseek-v4-pro`); the free
+  pool was re-ordered on evidence (only `nvidia/nemotron-3-ultra-550b-a55b:free`
+  served the API reliably). Re-verify at `sandbox up`; slugs churn.
 - **AgentMail plan limits** and websocket host; **Gmail token lifetime**.
-- **Frozen email output terms** per free model (addendum §13.5).
+- **Frozen email output terms** per free model (addendum §13.5): the pool is
+  re-verified at sandbox up; free models that leak chain-of-thought or refuse
+  are excluded, and the honest outcome is a `template_fallback` record.
 
 ## Appendix A. Expectation decisions (K-03)
 

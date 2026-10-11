@@ -1,7 +1,8 @@
 dataset_relation,mailroom_kind,notes
-bundles,completes,bundle parts jointly complete the set; bundle members map pairwise to completes
-related_document_ids,references,generic related-doc links map to the neutral references kind
-supporting_documents,references,supporting/enclosed documents reference the primary document
-version_chain,supersedes,ordered version chains map to supersedes between successive versions
-duplicate_of,duplicates,explicit duplicate pointers map to duplicates
-responds_to,answers,the only relationship value in ground_truth train (11 rows); a correspondence that responds to an earlier message maps to answers
+amendment_of,amends,an amendment document amends its bundle anchor; 5 train rows in bundles/streams
+exhibit_of,completes,an exhibit is a component that completes its anchor's set; 4 train rows
+attachment_of,completes,an attachment (e.g. a signature page) completes its anchor; 7 train rows
+supplement_to,completes,a supplement completes its anchor; 4 train rows
+references,references,a notice or covering email that references its anchor; 4 train rows
+duplicate_of,duplicates,an explicit duplicate of its anchor (duplicate_type=template_variant); 9 train rows
+responds_to,answers,a correspondence message answering an earlier one; 11 ground_truth train rows, 4 bundles train rows

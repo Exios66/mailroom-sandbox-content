@@ -4,7 +4,41 @@ All notable changes to the mailroom-sandbox-content pack.
 
 ## [Unreleased]
 
+### Added
+- **Frozen email generation — the interim M9 generation layer (plan C-03).**
+  New `tools/build_frozen_emails.py` turns a frozen scenario message's `gen_spec`
+  plus its scripted template into a frozen body: payload guard (`gen/policy.yaml`
+  §6.5), free-first model pool with paid fallback (`gen/pool.yaml`), inertness
+  linter, conformance check (§6.3) and an honest freeze manifest. It writes
+  `emails/frozen/<series>.jsonl` and regenerates `emails/emails_index.csv`
+  (  `sha256` over the canonical line). Measured 2026-10-10: 61 frozen specs, 52
+  generated (28 free / 24 paid), 9 honest `template_fallback` records (mostly
+  adversarial refusals), alongside the 7 pre-existing scripted anchors. The
+  tool resolves a router alias to the concrete model that served the text, so
+  `model_id` is never a bare `openrouter/free`. New
+  `tests/test_build_frozen_emails.py` (19 tests).
+  Pipeline documented in `docs/EMAIL_GENERATION.md` and `AGENTS.md` §5.
+- **C-06: generation specs for the 32 frozen scenarios that had none.** 32 new
+  `gen/specs/*.yaml` (A/B/C/D ID blocks) plus the `gen_spec:` reference on each
+  scenario's primary message. `tools/validate.py --strict-coverage` now reports
+  `0 errors, 0 warnings`.
+
 ### Changed
+- **`gen/pool.yaml` re-verified against the live OpenRouter models endpoint**
+  (2026-10-10; CONTENT_SPEC §14). Six of seven prior free seed candidates were
+  retired or renamed and paid slot 2's `deepseek-v4.1` slug no longer resolves;
+  the pool is re-ordered on evidence (only `nvidia/nemotron-3-ultra-550b-a55b:free`
+  served the API reliably; chain-of-thought-leaking, agentic-only and
+  empty-content models are excluded).
+- **`relations/dataset_relation_map.csv` corrected to the dataset's actual
+  vocabulary** (C-02, verified 2026-10-10): the seven values in the
+  `relationships` column (`amendment_of`, `exhibit_of`, `attachment_of`,
+  `supplement_to`, `references`, `duplicate_of`, `responds_to`) mapped to the
+  eight `relation_kinds.v1.json` values; 0 unknown.
+- **Docs: `docs/EMAIL_GENERATION.md` added; `AGENTS.md`, `CONTENT_SPEC.md`
+  (§5, §9, §10, §14) and `README.md` updated** to spell out how emails are
+  generated from template content and the generation layer's boundary with
+  mailroom-reloaded.
 - **PR template and git conventions now require surfacing the cross-repo schema
   drift and verifying merge state per PR.** `.github/pull_request_template.md`
   gained a required `Cross-repo schema drift` section (paste the
@@ -24,6 +58,9 @@ All notable changes to the mailroom-sandbox-content pack.
   lint with `--strict`.
 
 ### Fixed
+- **`tools/brand_allowlist.txt` allows the `google/` model-slug prefix** (as it
+  already does `nvidia/`), so a live pool entry such as `google/gemma-4-31b-it:free`
+  is not flagged as brand prose by the leak scan.
 - **The leak scan flagged dataset reference filenames as pack leaks.**
   After C-01, `attachments/manifest.csv` carries 233 `source=dataset` rows whose
   `file` is a dataset filename; several contain a real brand (e.g. a hotel

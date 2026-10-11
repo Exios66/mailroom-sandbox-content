@@ -371,6 +371,7 @@ class OpenRouter:
         self.timeout = timeout
         self.max_tokens = max_tokens
         self.temperature = temperature
+        self.last_model = None  # the concrete model the provider served
 
     def __call__(self, model: str, prompt: str) -> str:
         body = json.dumps({
@@ -404,6 +405,9 @@ class OpenRouter:
         if isinstance(content, list):  # some providers return content parts
             content = "".join(p.get("text", "") for p in content
                               if isinstance(p, dict))
+        # Provenance: when a router alias (e.g. openrouter/free) is asked, the
+        # response names the concrete model that actually served it.
+        self.last_model = data.get("model") or model
         return content
 
 
@@ -472,6 +476,7 @@ def generate_one(spec, binding, persona_row, sheet, client, models, *,
         except Retryable as e:
             log(f"  [{spec['id']}] {model} retryable: {e}")
             continue
+        served = getattr(client, "last_model", None) or model
         text = strip_fences(raw)
         if not text or len(text.split()) < 5:
             refusals += 1
@@ -487,10 +492,9 @@ def generate_one(spec, binding, persona_row, sheet, client, models, *,
             log(f"  [{spec['id']}] {model} conformance fail: {why}")
             continue
         lint_actions = acts
-        tier = model_tier(model)
-        return freeze_record(spec, binding, text, draft, model,
+        return freeze_record(spec, binding, text, draft, served,
                              prompt_hash, used, refusals, lint_actions,
-                             tier=tier, fallback=False)
+                             tier=model_tier(served), fallback=False)
 
     # Attempt budget exhausted -> scripted fallback (§6.4), honestly labelled.
     log(f"  [{spec['id']}] fallback to scripted template after {used} attempts")
@@ -569,7 +573,27 @@ def index_row(rec: dict, spec: dict, lang: str) -> dict:
     }
 
 
+def dedupe_by_spec(records: dict[str, dict],
+                   rows: list[dict]) -> tuple[dict[str, dict], list[dict], set]:
+    """One record per spec_id. Keep the best: generated over fallback, then the
+    newest. A regenerated spec must never leave two rows behind."""
+    best: dict[str, tuple] = {}
+    for r in rows:
+        eid = r["email_id"]
+        man = (records.get(eid) or {}).get("manifest", {})
+        score = (0 if man.get("template_fallback") else 1,
+                 1 if r.get("tier") in ("free", "paid") else 0, eid)
+        sid = r["spec_id"]
+        if sid not in best or score > best[sid][0]:
+            best[sid] = (score, eid)
+    keep = {v[1] for v in best.values()}
+    drop = {r["email_id"] for r in rows if r["email_id"] not in keep}
+    return ({e: r for e, r in records.items() if e not in drop},
+            [r for r in rows if r["email_id"] not in drop], drop)
+
+
 def write_outputs(records: dict[str, dict], rows: list[dict]) -> None:
+    records, rows, _ = dedupe_by_spec(records, rows)
     FROZEN.mkdir(parents=True, exist_ok=True)
     by_series: dict[str, list[dict]] = {}
     for rec in records.values():
@@ -605,6 +629,19 @@ def check(root: Path = ROOT) -> int:
         if eid not in {r["email_id"] for r in rows}:
             print(f"ERROR {eid}: JSONL line with no index row")
             bad += 1
+    seen: dict[str, str] = {}
+    for r in rows:
+        sid = r["spec_id"]
+        if sid in seen:
+            print(f"ERROR duplicate spec_id {sid!r}: {seen[sid]} and "
+                  f"{r['email_id']}")
+            bad += 1
+        seen[sid] = r["email_id"]
+    legacy = [e for e, r in records.items()
+              if "template_fallback" not in (r.get("manifest") or {})]
+    if legacy:
+        print(f"note: {len(legacy)} legacy scripted anchor(s) predate the "
+              f"generation layer: {', '.join(sorted(legacy))}")
     print(f"check: {len(rows)} index rows, {len(records)} jsonl records, "
           f"{bad} problem(s)")
     return 1 if bad else 0
@@ -628,12 +665,20 @@ def main(argv: list[str] | None = None) -> int:
                     help="stay on the free pool only; never fall back to paid")
     ap.add_argument("--check", action="store_true",
                     help="verify index <-> jsonl then exit")
+    ap.add_argument("--dedupe", action="store_true",
+                    help="collapse duplicate spec_id rows, rewrite, then check")
     ap.add_argument("--force", action="store_true",
                     help="regenerate specs that already have a frozen record")
     ap.add_argument("--key-file", help="read the key from this file")
     args = ap.parse_args(argv)
 
     if args.check:
+        return check()
+    if args.dedupe:
+        records, rows = load_existing()
+        records, rows, drop = dedupe_by_spec(records, rows)
+        write_outputs(records, rows)
+        print(f"deduped: removed {len(drop)} record(s): {sorted(drop)}")
         return check()
 
     specs = load_specs()

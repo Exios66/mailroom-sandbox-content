@@ -41,7 +41,7 @@ Before changing anything:
 | `ids/ranges.yaml` | ID blocks per workstream |
 | `tools/` | CI, release, validator, generators (section 5); `brand_allowlist.txt` |
 | `tests/` | `unittest` suite |
-| `docs/` | `IMPLEMENTATION_PLAN.md` (historical), `CONTRADICTION_AUDIT.md` |
+| `docs/` | `IMPLEMENTATION_PLAN.md` (historical), `CONTRADICTION_AUDIT.md`, `EMAIL_GENERATION.md` |
 | `.githooks/` | `pre-push` runs `tools/ci.sh` |
 | `.github/` | Issue forms and the PR template |
 | `dist/`, `release/`, `.cache/` | Gitignored build outputs; never commit them |
@@ -54,6 +54,8 @@ Before changing anything:
 | `scenarios/A/A13_*` to `A17_*` (`A1[3-7]_coverage_*.yaml`) | `python3 tools/gen_coverage_scenarios.py` |
 | `scenarios/scenarios_index.csv` | `python3 tools/validate.py --generate-indexes` |
 | `smoke/smoke_set.yaml` `documents` block | `python3 tools/export_smoke.py --write-set` |
+| `emails/frozen/<series>.jsonl` | `python3 tools/build_frozen_emails.py` (frozen bodies only; never hand-edit) |
+| `emails/emails_index.csv` | `python3 tools/build_frozen_emails.py` (regenerated with the frozen bodies) |
 | `dist/registry.yaml` (gitignored) | `python3 tools/validate.py` |
 
 To change a generated file, change its input (client mix, strata source, smoke selection) or the generator, then re-run the generator and commit the result. `tools/ci.sh` diffs these files. `tools/migrate_scenarios_v2.py` and `tools/migrations/scenarios_v2_map.py` are historical one-shots: do not re-run them.
@@ -68,6 +70,16 @@ To change a generated file, change its input (client mix, strata source, smoke s
 - Every inbound message renders from a template in `gen/templates/` (first line `Subject:`).
 - Synthetic only: domains `*.sandbox.invalid`, phones `+1-555-01xx`, no real brands (allowlist: `tools/brand_allowlist.txt`, one lowercase substring per line), no dataset text (only `dataset_revision` plus `dataset_filename` references), passwords and fixtures marked synthetic.
 - `adversary/` material never enters the registry; the validator fails the build if it leaks.
+
+### Frozen email generation (plan C-03)
+
+A message in a `frozen` scenario names a `gen_spec`; the spec plus the scripted template are turned into a frozen body by `tools/build_frozen_emails.py`. Full pipeline: [`docs/EMAIL_GENERATION.md`](docs/EMAIL_GENERATION.md).
+
+- **Frozen text is generated, never hand-written or hand-patched** (decision CD16). To change a body, change its `gen/specs/*.yaml` or its `gen/templates/*.j2` and regenerate. `emails/frozen/<series>.jsonl` and `emails/emails_index.csv` are generated outputs (section 4).
+- **The OpenRouter key is passed only as the `OPENROUTER_API_KEY` environment variable** (or `--key-file`). It is never written to the repo, a log or a PR. A payload guard (`gen/policy.yaml` §6.5) blocks any prompt carrying dataset text, a real URL/phone or a real brand before it leaves the machine.
+- **Provenance is honest.** Every record the generation layer writes carries a freeze manifest (`model_id`, `tier`, `prompt_hash`, `attempts`, `lint_actions`, `conformance`, `frozen_at`). When every model fails, the body is the scripted template with `tier=scripted` and `template_fallback=true` — never relabelled frozen.
+- **Models come from `gen/pool.yaml`** (free pool first, paid fallback). The pool is a runtime artifact re-verified at sandbox up; do not hard-code a model elsewhere.
+- Reloaded's `mailroom sandbox content build` validates a tree and regenerates smoke fixtures; it does **not** generate frozen emails. This tool is the interim M9 generation layer.
 
 ## 6. Gates
 
